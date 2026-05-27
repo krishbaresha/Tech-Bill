@@ -1,0 +1,347 @@
+import { useEffect, useRef, useState } from 'react';
+import { Plus, RefreshCw, X, ShieldAlert, CheckCircle, Ban, Edit3, Building2 } from 'lucide-react';
+import { api } from '../../api/client';
+import type { Tenant } from '../../types';
+import gsap from 'gsap';
+
+interface CreateTenantForm {
+  name: string;
+  slug: string;
+  plan: 'trial' | 'starter' | 'premium' | 'enterprise';
+  maxUsers: number;
+  ownerName: string;
+  ownerEmail: string;
+  ownerPasswordHashOrText: string;
+}
+
+const PLAN_COLORS: Record<string, string> = {
+  trial:      'bg-white/5 text-stitch-on-surface-variant border-white/10',
+  starter:    'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  premium:    'bg-stitch-primary/10 text-stitch-primary border-stitch-primary/20',
+  enterprise: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+};
+
+const inputCls = 'w-full bg-stitch-surface-container-high/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-stitch-on-surface outline-none focus:border-stitch-primary/50 transition-colors placeholder:text-stitch-on-surface-variant/50';
+const labelCls = 'block text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider mb-1';
+
+export default function TenantsPage() {
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
+  const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const [form, setForm] = useState<CreateTenantForm>({
+    name: '', slug: '', plan: 'trial', maxUsers: 5,
+    ownerName: '', ownerEmail: '', ownerPasswordHashOrText: '',
+  });
+
+  const [editForm, setEditForm] = useState({ plan: 'trial', maxUsers: 5, status: 'active' });
+
+  const load = () => {
+    setLoading(true);
+    setError('');
+    api.get<Tenant[]>('/tenants')
+      .then((r) => setTenants(r.data))
+      .catch(() => setError('Failed to load tenants directory.'))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    if (!loading && containerRef.current) {
+      gsap.from(containerRef.current.querySelectorAll('.tenant-row'), {
+        opacity: 0, y: 8, duration: 0.3, stagger: 0.04, ease: 'power2.out',
+      });
+    }
+  }, [loading, tenants]);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      await api.post('/tenants', form);
+      setSuccessMsg(`Tenant "${form.name}" registered successfully.`);
+      setShowAddForm(false);
+      setForm({ name: '', slug: '', plan: 'trial', maxUsers: 5, ownerName: '', ownerEmail: '', ownerPasswordHashOrText: '' });
+      load();
+      setTimeout(() => setSuccessMsg(''), 4000);
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setError(e.response?.data?.message ?? 'Failed to register tenant.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTenant) return;
+    setLoading(true);
+    setError('');
+    try {
+      await api.patch(`/tenants/${editingTenant.id}`, editForm);
+      setSuccessMsg(`Tenant "${editingTenant.name}" updated.`);
+      setEditingTenant(null);
+      load();
+      setTimeout(() => setSuccessMsg(''), 4000);
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setError(e.response?.data?.message ?? 'Failed to update tenant.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleStatus = async (tenant: Tenant) => {
+    setError('');
+    const newStatus = tenant.status === 'active' ? 'suspended' : 'active';
+    try {
+      await api.patch(`/tenants/${tenant.id}`, { status: newStatus });
+      setTenants((prev) => prev.map((t) => t.id === tenant.id ? { ...t, status: newStatus } : t));
+      setSuccessMsg(`Tenant "${tenant.name}" ${newStatus}.`);
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setError(e.response?.data?.message ?? 'Failed to change status.');
+    }
+  };
+
+  return (
+    <div ref={containerRef} className="p-6 space-y-6 max-w-7xl mx-auto">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+            <Building2 size={20} className="text-indigo-400" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-stitch-on-surface font-space">Platform Tenants</h1>
+            <p className="text-xs text-stitch-on-surface-variant">Global SaaS management for shop registrations and subscription plans</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={load}
+            className="flex items-center gap-1.5 text-sm text-stitch-on-surface-variant hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5">
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
+          </button>
+          <button onClick={() => { setShowAddForm(true); setError(''); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition-all active:scale-95">
+            <Plus size={15} /> Create Shop Tenant
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div className="glass-card rounded-xl p-3 border-l-4 border-stitch-error/50">
+          <p className="text-sm text-stitch-error">{error}</p>
+        </div>
+      )}
+      {successMsg && (
+        <div className="glass-card rounded-xl p-3 border-l-4 border-green-500/50">
+          <p className="text-sm text-green-400">{successMsg}</p>
+        </div>
+      )}
+
+      {/* CREATE FORM */}
+      {showAddForm && (
+        <div className="glass-card rounded-xl p-6 space-y-5">
+          <div className="flex items-center justify-between border-b border-white/5 pb-4">
+            <h2 className="font-bold text-stitch-on-surface font-space flex items-center gap-2">
+              <ShieldAlert size={16} className="text-indigo-400" /> Provision New Shop Tenant
+            </h2>
+            <button onClick={() => setShowAddForm(false)} className="text-stitch-on-surface-variant hover:text-white transition-colors">
+              <X size={18} />
+            </button>
+          </div>
+          <form onSubmit={handleAdd} className="space-y-5">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>Shop/Company Name *</label>
+                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  required placeholder="e.g. Galaxy Mobile Shop" className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Slug (URL Segment) *</label>
+                <input value={form.slug}
+                  onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
+                  required placeholder="e.g. galaxy-mobile" className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Pricing Plan *</label>
+                <select value={form.plan} onChange={(e) => setForm({ ...form, plan: e.target.value as CreateTenantForm['plan'] })}
+                  className={inputCls}>
+                  <option value="trial">Trial Plan</option>
+                  <option value="starter">Starter Plan</option>
+                  <option value="premium">Premium Plan</option>
+                  <option value="enterprise">Enterprise Plan</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>User Limit *</label>
+                <input type="number" min={1} value={form.maxUsers}
+                  onChange={(e) => setForm({ ...form, maxUsers: parseInt(e.target.value) || 1 })}
+                  required className={inputCls} />
+              </div>
+            </div>
+
+            <div className="border-t border-white/5 pt-4">
+              <p className="text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider mb-3">Primary Owner Account</p>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className={labelCls}>Owner Full Name *</label>
+                  <input value={form.ownerName} onChange={(e) => setForm({ ...form, ownerName: e.target.value })}
+                    required placeholder="e.g. Hammad Khan" className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Owner Email *</label>
+                  <input type="email" value={form.ownerEmail} onChange={(e) => setForm({ ...form, ownerEmail: e.target.value })}
+                    required placeholder="e.g. hammad@galaxy.com" className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Owner Password *</label>
+                  <input type="password" value={form.ownerPasswordHashOrText}
+                    onChange={(e) => setForm({ ...form, ownerPasswordHashOrText: e.target.value })}
+                    required minLength={8} placeholder="At least 8 characters" className={inputCls} />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end pt-3 border-t border-white/5">
+              <button type="button" onClick={() => setShowAddForm(false)}
+                className="px-4 py-2 text-sm text-stitch-on-surface-variant border border-white/10 rounded-lg hover:bg-white/5 transition-colors">
+                Cancel
+              </button>
+              <button type="submit" disabled={loading}
+                className="px-4 py-2 text-sm bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-all active:scale-95">
+                {loading ? 'Registering…' : 'Register Tenant & Owner'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* EDIT MODAL */}
+      {editingTenant && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="glass-modal rounded-xl p-6 w-full max-w-md border border-white/10 space-y-4">
+            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+              <h2 className="font-bold text-stitch-on-surface font-space flex items-center gap-2">
+                <Edit3 size={16} className="text-indigo-400" /> Edit: {editingTenant.name}
+              </h2>
+              <button onClick={() => setEditingTenant(null)} className="text-stitch-on-surface-variant hover:text-white transition-colors">
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div>
+                <label className={labelCls}>Pricing Plan</label>
+                <select value={editForm.plan} onChange={(e) => setEditForm({ ...editForm, plan: e.target.value })}
+                  className={inputCls}>
+                  <option value="trial">Trial Plan</option>
+                  <option value="starter">Starter Plan</option>
+                  <option value="premium">Premium Plan</option>
+                  <option value="enterprise">Enterprise Plan</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>User Limit</label>
+                <input type="number" min={1} value={editForm.maxUsers}
+                  onChange={(e) => setEditForm({ ...editForm, maxUsers: parseInt(e.target.value) || 1 })}
+                  className={inputCls} />
+              </div>
+              <div className="flex gap-2 justify-end pt-2 border-t border-white/5">
+                <button type="button" onClick={() => setEditingTenant(null)}
+                  className="px-4 py-2 text-sm text-stitch-on-surface-variant border border-white/10 rounded-lg hover:bg-white/5 transition-colors">
+                  Cancel
+                </button>
+                <button type="submit" disabled={loading}
+                  className="px-4 py-2 text-sm bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-all active:scale-95">
+                  {loading ? 'Updating…' : 'Save Settings'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* TENANTS TABLE */}
+      <div className="glass-card rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-stitch-surface-container-high/50 border-b border-white/5">
+                {['Company & Slug', 'Plan', 'Users', 'Limit', 'Status', 'Actions'].map((h) => (
+                  <th key={h} className="px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider whitespace-nowrap">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {tenants.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-16 text-center">
+                    {loading ? (
+                      <span className="inline-block w-6 h-6 border-2 border-stitch-primary/30 border-t-stitch-primary rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Building2 size={32} className="mx-auto mb-2 text-stitch-on-surface-variant/30" />
+                        <p className="text-sm text-stitch-on-surface-variant">No tenants provisioned yet.</p>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ) : (
+                tenants.map((t) => (
+                  <tr key={t.id} className="tenant-row hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3">
+                      <p className="font-semibold text-stitch-on-surface text-sm">{t.name}</p>
+                      <p className="text-[10px] text-stitch-tertiary font-mono mt-0.5">/{t.slug}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border capitalize ${PLAN_COLORS[t.plan] ?? ''}`}>
+                        {t.plan}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm tabular-nums text-stitch-on-surface-variant">{t._count?.users ?? 0}</td>
+                    <td className="px-4 py-3 text-sm tabular-nums text-stitch-on-surface-variant">{t.maxUsers}</td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase ${
+                        t.status === 'active'
+                          ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                          : 'bg-stitch-error/10 text-stitch-error border-stitch-error/20'
+                      }`}>
+                        {t.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => { setEditingTenant(t); setEditForm({ plan: t.plan, maxUsers: t.maxUsers, status: t.status }); }}
+                          title="Edit Tenant"
+                          className="p-1.5 text-stitch-on-surface-variant hover:text-indigo-400 rounded-lg hover:bg-indigo-500/10 transition-colors">
+                          <Edit3 size={14} />
+                        </button>
+                        <button onClick={() => toggleStatus(t)}
+                          title={t.status === 'active' ? 'Suspend Tenant' : 'Activate Tenant'}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            t.status === 'active'
+                              ? 'text-stitch-on-surface-variant hover:text-stitch-error hover:bg-stitch-error/10'
+                              : 'text-stitch-on-surface-variant hover:text-green-400 hover:bg-green-500/10'
+                          }`}>
+                          {t.status === 'active' ? <Ban size={14} /> : <CheckCircle size={14} />}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}

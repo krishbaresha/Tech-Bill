@@ -1,0 +1,286 @@
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import * as bcrypt from 'bcrypt';
+import * as nodemailer from 'nodemailer';
+import { Role } from '@prisma/client';
+import { PrismaService } from '../../prisma/prisma.service';
+import { OtpService } from './otp.service';
+import { LoginDto } from './dto/login.dto';
+
+@Injectable()
+export class AuthService {
+  private mailer: nodemailer.Transporter;
+
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+    private configService: ConfigService,
+    private otpService: OtpService,
+    private eventEmitter: EventEmitter2,
+  ) {
+    this.mailer = nodemailer.createTransport({
+      host: configService.get('SMTP_HOST'),
+      port: parseInt(configService.get('SMTP_PORT', '465')),
+      secure: configService.get('SMTP_SECURE') === 'true',
+      auth: {
+        user: configService.get('SMTP_USER'),
+        pass: configService.get('SMTP_PASS'),
+      },
+    });
+  }
+
+  async login(dto: LoginDto, ipAddress?: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+      include: {
+        tenant: { select: { id: true, name: true, status: true } },
+      },
+    });
+
+    if (!user || !user.isActive) {
+      this.eventEmitter.emit('user.failed_login', {
+        email: dto.email,
+        ipAddress,
+      });
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (!user.passwordHash) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Block suspended/cancelled tenant
+    if (user.tenant && user.tenant.status !== 'active') {
+      throw new UnauthorizedException('Your shop account has been suspended. Contact platform admin.');
+    }
+
+    const passwordValid = await bcrypt.compare(dto.password, user.passwordHash);
+    if (!passwordValid) {
+      this.eventEmitter.emit('user.failed_login', {
+        email: dto.email,
+        ipAddress,
+      });
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      tenantId: user.tenantId,
+      permissions: user.permissions,
+    };
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: this.configService.get('JWT_ACCESS_EXPIRES_IN', '15m'),
+    });
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: this.configService.get('JWT_REFRESH_SECRET'),
+      expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d'),
+    });
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    await this.prisma.refreshToken.create({
+      data: {
+        token: refreshToken,
+        userId: user.id,
+        expiresAt,
+        ipAddress: ipAddress ?? null,
+      },
+    });
+
+    this.eventEmitter.emit('user.login', { userId: user.id, ipAddress });
+
+    return {
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        name: user.name,
+        tenantId: user.tenantId,
+        tenantName: user.tenant?.name ?? null,
+        permissions: user.permissions,
+      },
+    };
+  }
+
+  async refresh(refreshToken: string, ipAddress?: string) {
+    let payload: { sub: string; email: string; role: string; tenantId: string | null; permissions: string[] };
+    try {
+      payload = this.jwtService.verify(refreshToken, {
+        secret: this.configService.get('JWT_REFRESH_SECRET'),
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const stored = await this.prisma.refreshToken.findUnique({
+      where: { token: refreshToken },
+    });
+    if (!stored || stored.revokedAt || stored.expiresAt < new Date()) {
+      throw new UnauthorizedException('Refresh token expired or revoked');
+    }
+
+    await this.prisma.refreshToken.update({
+      where: { token: refreshToken },
+      data: { revokedAt: new Date() },
+    });
+
+    // Reload user to get fresh permissions/tenant status
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      include: { tenant: { select: { status: true } } },
+    });
+
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('User inactive');
+    }
+
+    if (user.tenant && user.tenant.status !== 'active') {
+      throw new UnauthorizedException('Tenant suspended');
+    }
+
+    const newPayload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      tenantId: user.tenantId,
+      permissions: user.permissions,
+    };
+    const newAccessToken = this.jwtService.sign(newPayload, {
+      expiresIn: this.configService.get('JWT_ACCESS_EXPIRES_IN', '15m'),
+    });
+    const newRefreshToken = this.jwtService.sign(newPayload, {
+      secret: this.configService.get('JWT_REFRESH_SECRET'),
+      expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d'),
+    });
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    await this.prisma.refreshToken.create({
+      data: {
+        token: newRefreshToken,
+        userId: payload.sub,
+        expiresAt,
+        ipAddress: ipAddress ?? null,
+      },
+    });
+
+    return { accessToken: newAccessToken, refreshToken: newRefreshToken };
+  }
+
+  async logout(refreshToken: string) {
+    await this.prisma.refreshToken.updateMany({
+      where: { token: refreshToken, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
+
+  async requestOtp(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.isActive)
+      throw new BadRequestException('User not found');
+
+    const code = await this.otpService.generate(userId);
+
+    await this.mailer.sendMail({
+      from: this.configService.get('SMTP_FROM'),
+      to: user.email,
+      subject: 'ElectroTrack OTP',
+      text: `Your OTP is: ${code}. Valid for ${this.configService.get('OTP_TTL_SECONDS', '300')} seconds.`,
+    });
+  }
+
+  async verifyOtp(userId: string, code: string) {
+    const valid = await this.otpService.verify(userId, code);
+    if (!valid) throw new UnauthorizedException('Invalid or expired OTP');
+
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      otp: true,
+    };
+    const otpToken = this.jwtService.sign(payload, {
+      expiresIn: this.configService.get('JWT_OTP_EXPIRES_IN', '2m'),
+    });
+
+    return { otpToken };
+  }
+
+  // ─── Password Reset (admin/owner self-reset via OTP) ──────────────────────
+
+  async requestPasswordReset(email: string) {
+    // Always return generic message to prevent enumeration
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    // Only platform_admin and owner can self-reset
+    if (
+      user &&
+      user.isActive &&
+      (user.role === Role.platform_admin || user.role === Role.owner)
+    ) {
+      const code = await this.otpService.generate(user.id);
+      try {
+        await this.mailer.sendMail({
+          from: this.configService.get('SMTP_FROM'),
+          to: user.email,
+          subject: 'ElectroTrack Password Reset',
+          text: `Your password reset OTP is: ${code}. Valid for ${this.configService.get('OTP_TTL_SECONDS', '300')} seconds.`,
+        });
+      } catch {
+        // Silently fail — don't reveal email delivery status
+      }
+    }
+
+    return {
+      message:
+        'If this account can reset password, an OTP has been sent.',
+    };
+  }
+
+  async confirmPasswordReset(
+    email: string,
+    otp: string,
+    newPassword: string,
+  ) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user || !user.isActive) {
+      throw new BadRequestException('Invalid reset request');
+    }
+
+    // Only platform_admin and owner can self-reset
+    if (user.role !== Role.platform_admin && user.role !== Role.owner) {
+      throw new ForbiddenException('Workers cannot reset their own password. Contact your admin.');
+    }
+
+    const valid = await this.otpService.verify(user.id, otp);
+    if (!valid) {
+      throw new UnauthorizedException('Invalid or expired OTP');
+    }
+
+    const rounds = parseInt(this.configService.get('BCRYPT_ROUNDS', '12'));
+    const hash = await bcrypt.hash(newPassword, rounds);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: hash },
+    });
+
+    return { message: 'Password reset successful' };
+  }
+}

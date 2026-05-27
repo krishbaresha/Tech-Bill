@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment secrets — never commit these
+.env
+.env.local
+.env.*.local
+electrotrack-api/.env
+electrotrack-pos/.env
+
+# Build outputs
+dist/
+build/
+electrotrack-api/dist/
+electrotrack-pos/dist/
+
+# Logs
+*.log
+api.log
+npm-debug.log*
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/settings.json
+
+# Zip archives
+*.zip

@@ -1,0 +1,528 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { PrismaService } from '../../prisma/prisma.service';
+import { SalesSummaryQueryDto } from './dto/sales-summary-query.dto';
+import { ReconciliationDto } from './dto/reconciliation.dto';
+import { FilterReconciliationDto } from './dto/filter-reconciliation.dto';
+import { SaleStatus, UnitStatus, PaymentMethod } from '@prisma/client';
+
+@Injectable()
+export class ReportsService {
+  constructor(
+    private prisma: PrismaService,
+    private eventEmitter: EventEmitter2,
+  ) {}
+
+  // ─── Sales Summary ────────────────────────────────────────────────────────────
+
+  async salesSummary(query: SalesSummaryQueryDto, tenantId: string) {
+    const date = query.date ?? new Date().toISOString().slice(0, 10);
+    const start = new Date(date + 'T00:00:00+05:00');
+    const end = new Date(date + 'T23:59:59+05:00');
+    return this.buildSummary(start, end, date, tenantId);
+  }
+
+  async salesSummaryRange(query: SalesSummaryQueryDto, tenantId: string) {
+    const from = query.from ?? new Date().toISOString().slice(0, 10);
+    const to = query.to ?? from;
+    const start = new Date(from + 'T00:00:00+05:00');
+    const end = new Date(to + 'T23:59:59+05:00');
+    return this.buildSummary(start, end, `${from} to ${to}`, tenantId);
+  }
+
+  private async buildSummary(start: Date, end: Date, label: string, tenantId: string) {
+    const where = {
+      tenantId,
+      status: SaleStatus.completed,
+      createdAt: { gte: start, lte: end },
+    };
+
+    const [totals, byPayment, items] = await Promise.all([
+      this.prisma.sale.aggregate({
+        where,
+        _count: { id: true },
+        _sum: { totalAmount: true, discountAmount: true },
+      }),
+      this.prisma.sale.groupBy({
+        by: ['paymentMethod'],
+        where,
+        _count: { id: true },
+        _sum: { totalAmount: true },
+      }),
+      this.prisma.saleItem.findMany({
+        where: {
+          sale: {
+            tenantId,
+            status: SaleStatus.completed,
+            createdAt: { gte: start, lte: end },
+          },
+        },
+        select: {
+          sellingPrice: true,
+          inventoryUnit: {
+            select: {
+              product: { select: { id: true, name: true } },
+            },
+          },
+        },
+      }),
+    ]);
+
+    const productMap = new Map<
+      string,
+      { name: string; units: number; revenue: number }
+    >();
+    for (const item of items) {
+      const pid = item.inventoryUnit.product.id;
+      const entry = productMap.get(pid) ?? {
+        name: item.inventoryUnit.product.name,
+        units: 0,
+        revenue: 0,
+      };
+      productMap.set(pid, {
+        ...entry,
+        units: entry.units + 1,
+        revenue: entry.revenue + Number(item.sellingPrice),
+      });
+    }
+
+    const topProducts = [...productMap.entries()]
+      .map(([productId, d]) => ({ productId, ...d }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 10);
+
+    return {
+      period: label,
+      totalRevenue: Number(totals._sum.totalAmount ?? 0),
+      totalSales: totals._count.id,
+      totalItems: items.length,
+      totalDiscounts: Number(totals._sum.discountAmount ?? 0),
+      byPaymentMethod: byPayment.map((g) => ({
+        method: g.paymentMethod,
+        count: g._count.id,
+        revenue: Number(g._sum.totalAmount ?? 0),
+      })),
+      topProducts,
+    };
+  }
+
+  // ─── Stock Valuation ──────────────────────────────────────────────────────────
+
+  async stockValuation(tenantId: string) {
+    const units = await this.prisma.inventoryUnit.findMany({
+      where: { status: UnitStatus.in_stock, tenantId },
+      select: {
+        purchasePrice: true,
+        product: {
+          select: {
+            id: true,
+            name: true,
+            brand: true,
+            category: true,
+            sellingPrice: true,
+          },
+        },
+      },
+    });
+
+    const productMap = new Map<
+      string,
+      {
+        productId: string;
+        productName: string;
+        brand: string | null;
+        category: string | null;
+        inStockCount: number;
+        costValue: number;
+        sellingValue: number;
+      }
+    >();
+
+    for (const unit of units) {
+      const pid = unit.product.id;
+      const entry = productMap.get(pid) ?? {
+        productId: pid,
+        productName: unit.product.name,
+        brand: unit.product.brand,
+        category: unit.product.category,
+        inStockCount: 0,
+        costValue: 0,
+        sellingValue: 0,
+      };
+      productMap.set(pid, {
+        ...entry,
+        inStockCount: entry.inStockCount + 1,
+        costValue: entry.costValue + Number(unit.purchasePrice ?? 0),
+        sellingValue: entry.sellingValue + Number(unit.product.sellingPrice),
+      });
+    }
+
+    const breakdown = [...productMap.values()].sort(
+      (a, b) => b.sellingValue - a.sellingValue,
+    );
+    const totalCostValue = breakdown.reduce((s, p) => s + p.costValue, 0);
+    const totalSellingValue = breakdown.reduce((s, p) => s + p.sellingValue, 0);
+
+    return {
+      totalUnits: units.length,
+      totalCostValue,
+      totalSellingValue,
+      potentialProfit: totalSellingValue - totalCostValue,
+      breakdown,
+    };
+  }
+
+  // ─── Low-Stock Report ─────────────────────────────────────────────────────────
+
+  async lowStockReport(tenantId: string) {
+    const settings = await this.prisma.shopSettings.findFirst({
+      where: { tenantId },
+    });
+    const threshold = settings?.lowStockThreshold ?? 2;
+
+    const products = await this.prisma.product.findMany({
+      where: { isActive: true, tenantId },
+      select: {
+        id: true,
+        name: true,
+        brand: true,
+        category: true,
+        sellingPrice: true,
+        _count: {
+          select: {
+            inventoryUnits: { where: { status: UnitStatus.in_stock, tenantId } },
+          },
+        },
+      },
+    });
+
+    const lowStock = products
+      .filter((p) => p._count.inventoryUnits <= threshold)
+      .map((p) => ({
+        productId: p.id,
+        productName: p.name,
+        brand: p.brand,
+        category: p.category,
+        inStockCount: p._count.inventoryUnits,
+        sellingPrice: Number(p.sellingPrice),
+      }))
+      .sort((a, b) => a.inStockCount - b.inStockCount);
+
+    return { threshold, products: lowStock };
+  }
+
+  // ─── Cash Reconciliation ──────────────────────────────────────────────────────
+
+  async submitReconciliation(dto: ReconciliationDto, userId: string, tenantId: string) {
+    const start = new Date(dto.date + 'T00:00:00+05:00');
+    const end = new Date(dto.date + 'T23:59:59+05:00');
+
+    const cashSales = await this.prisma.sale.aggregate({
+      where: {
+        tenantId,
+        status: SaleStatus.completed,
+        paymentMethod: PaymentMethod.cash,
+        createdAt: { gte: start, lte: end },
+      },
+      _sum: { totalAmount: true },
+    });
+
+    const cashIn = Number(cashSales._sum.totalAmount ?? 0);
+    const expectedCash = dto.openingBalance + cashIn;
+    const variance = dto.actualCash - expectedCash;
+
+    const record = await this.prisma.cashReconciliation.create({
+      data: {
+        date: new Date(dto.date),
+        openingBalance: dto.openingBalance,
+        expectedCash,
+        actualCash: dto.actualCash,
+        variance,
+        submittedById: userId,
+        notes: dto.notes,
+        tenantId,
+      },
+      include: { submittedBy: { select: { id: true, name: true } } },
+    });
+
+    this.eventEmitter.emit('cash.submitted', {
+      date: dto.date,
+      expected: expectedCash,
+      actual: dto.actualCash,
+      variance,
+      tenantId,
+    });
+
+    return record;
+  }
+
+  // ─── Staff Performance ────────────────────────────────────────────────────────
+
+  async staffPerformance(from?: string, to?: string, tenantId?: string) {
+    const start = from ? new Date(from + 'T00:00:00+05:00') : undefined;
+    const end = to ? new Date(to + 'T23:59:59+05:00') : undefined;
+    const dateFilter = start || end ? { gte: start, lte: end } : undefined;
+
+    const sales = await this.prisma.sale.findMany({
+      where: {
+        status: SaleStatus.completed,
+        tenantId,
+        ...(dateFilter && { createdAt: dateFilter }),
+      },
+      select: {
+        soldById: true,
+        totalAmount: true,
+        soldBy: { select: { id: true, name: true } },
+        _count: { select: { items: true } },
+      },
+    });
+
+    const staffMap = new Map<
+      string,
+      { name: string; totalSales: number; totalRevenue: number }
+    >();
+    for (const sale of sales) {
+      const id = sale.soldById;
+      if (!id || !sale.soldBy) {
+        continue;
+      }
+      const entry = staffMap.get(id) ?? {
+        name: sale.soldBy.name,
+        totalSales: 0,
+        totalRevenue: 0,
+      };
+      staffMap.set(id, {
+        ...entry,
+        totalSales: entry.totalSales + 1,
+        totalRevenue: entry.totalRevenue + Number(sale.totalAmount),
+      });
+    }
+
+    return [...staffMap.entries()].map(([staffId, d]) => ({
+      staffId,
+      staffName: d.name,
+      totalSales: d.totalSales,
+      totalRevenue: d.totalRevenue,
+      avgTransactionValue: d.totalSales > 0 ? d.totalRevenue / d.totalSales : 0,
+    }));
+  }
+
+  // ─── Top Products ─────────────────────────────────────────────────────────────
+
+  async topProducts(limit = 10, from?: string, to?: string, tenantId?: string) {
+    const start = from ? new Date(from + 'T00:00:00+05:00') : undefined;
+    const end = to ? new Date(to + 'T23:59:59+05:00') : undefined;
+    const dateFilter = start || end ? { gte: start, lte: end } : undefined;
+
+    const items = await this.prisma.saleItem.findMany({
+      where: {
+        sale: {
+          tenantId,
+          status: SaleStatus.completed,
+          ...(dateFilter && { createdAt: dateFilter }),
+        },
+      },
+      select: {
+        sellingPrice: true,
+        inventoryUnit: {
+          select: {
+            product: { select: { id: true, name: true, brand: true } },
+          },
+        },
+      },
+    });
+
+    const productMap = new Map<
+      string,
+      { name: string; brand: string | null; unitsSold: number; revenue: number }
+    >();
+    for (const item of items) {
+      const pid = item.inventoryUnit.product.id;
+      const entry = productMap.get(pid) ?? {
+        name: item.inventoryUnit.product.name,
+        brand: item.inventoryUnit.product.brand,
+        unitsSold: 0,
+        revenue: 0,
+      };
+      productMap.set(pid, {
+        ...entry,
+        unitsSold: entry.unitsSold + 1,
+        revenue: entry.revenue + Number(item.sellingPrice),
+      });
+    }
+
+    return [...productMap.entries()]
+      .map(([productId, d]) => ({ productId, ...d }))
+      .sort((a, b) => b.unitsSold - a.unitsSold)
+      .slice(0, limit);
+  }
+
+  // ─── Dead Stock ───────────────────────────────────────────────────────────────
+
+  async deadStock(days = 60, tenantId: string) {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+
+    const units = await this.prisma.inventoryUnit.findMany({
+      where: { status: UnitStatus.in_stock, receivedAt: { lte: cutoff }, tenantId },
+      select: {
+        id: true,
+        serialNumber: true,
+        condition: true,
+        receivedAt: true,
+        product: {
+          select: { id: true, name: true, brand: true, category: true },
+        },
+      },
+      orderBy: { receivedAt: 'asc' },
+    });
+
+    const now = new Date();
+    return units.map((u) => ({
+      unitId: u.id,
+      serialNumber: u.serialNumber,
+      condition: u.condition,
+      productId: u.product.id,
+      productName: u.product.name,
+      brand: u.product.brand,
+      category: u.product.category,
+      receivedAt: u.receivedAt,
+      daysInStock: Math.floor(
+        (now.getTime() - u.receivedAt.getTime()) / 86_400_000,
+      ),
+    }));
+  }
+
+  // ─── Return Analytics ─────────────────────────────────────────────────────────
+
+  async returnAnalytics(from?: string, to?: string, tenantId?: string) {
+    const start = from ? new Date(from + 'T00:00:00+05:00') : undefined;
+    const end = to ? new Date(to + 'T23:59:59+05:00') : undefined;
+    const dateFilter = start || end ? { gte: start, lte: end } : undefined;
+
+    const returns = await this.prisma.return.findMany({
+      where: {
+        tenantId,
+        ...(dateFilter && { createdAt: dateFilter }),
+      },
+      select: {
+        reason: true,
+        refundAmount: true,
+        suspiciousFlag: true,
+        inventoryUnit: {
+          select: { product: { select: { id: true, name: true } } },
+        },
+        sale: {
+          select: {
+            customer: { select: { id: true, name: true, phone: true } },
+          },
+        },
+      },
+    });
+
+    const totalRefundValue = returns.reduce(
+      (s, r) => s + Number(r.refundAmount ?? 0),
+      0,
+    );
+
+    const productMap = new Map<string, { name: string; count: number }>();
+    const reasonMap = new Map<string, number>();
+    const customerMap = new Map<
+      string,
+      { name: string; phone: string; count: number }
+    >();
+
+    for (const r of returns) {
+      const pid = r.inventoryUnit.product.id;
+      const pname = r.inventoryUnit.product.name;
+      const prev = productMap.get(pid) ?? { name: pname, count: 0 };
+      productMap.set(pid, { ...prev, count: prev.count + 1 });
+
+      const reason = r.reason ?? 'unspecified';
+      reasonMap.set(reason, (reasonMap.get(reason) ?? 0) + 1);
+
+      if (r.suspiciousFlag && r.sale?.customer) {
+        const cid = r.sale.customer.id;
+        const cprev = customerMap.get(cid) ?? {
+          name: r.sale.customer.name,
+          phone: r.sale.customer.phone,
+          count: 0,
+        };
+        customerMap.set(cid, { ...cprev, count: cprev.count + 1 });
+      }
+    }
+
+    return {
+      totalReturns: returns.length,
+      totalRefundValue,
+      mostReturnedProducts: [...productMap.entries()]
+        .map(([productId, d]) => ({
+          productId,
+          productName: d.name,
+          returnCount: d.count,
+        }))
+        .sort((a, b) => b.returnCount - a.returnCount)
+        .slice(0, 10),
+      returnReasons: [...reasonMap.entries()]
+        .map(([reason, count]) => ({ reason, count }))
+        .sort((a, b) => b.count - a.count),
+      suspiciousReturnCustomers: [...customerMap.entries()]
+        .map(([customerId, d]) => ({
+          customerId,
+          customerName: d.name,
+          phone: d.phone,
+          returnCount: d.count,
+        }))
+        .sort((a, b) => b.returnCount - a.returnCount),
+    };
+  }
+
+  async reviewReconciliation(id: string, reviewerId: string, tenantId: string) {
+    const record = await this.prisma.cashReconciliation.findFirst({
+      where: { id, tenantId },
+    });
+    if (!record) throw new NotFoundException(`Reconciliation not found`);
+
+    return this.prisma.cashReconciliation.update({
+      where: { id },
+      data: { reviewedById: reviewerId },
+      include: {
+        submittedBy: { select: { id: true, name: true } },
+        reviewedBy: { select: { id: true, name: true } },
+      },
+    });
+  }
+
+  async listReconciliations(filter: FilterReconciliationDto, tenantId: string) {
+    const { from, to, page = 1, limit = 50 } = filter;
+    const skip = (page - 1) * limit;
+
+    const where = {
+      tenantId,
+      ...(from || to
+        ? {
+            date: {
+              ...(from && { gte: new Date(from) }),
+              ...(to && { lte: new Date(to) }),
+            },
+          }
+        : {}),
+    };
+
+    const [records, total] = await this.prisma.$transaction([
+      this.prisma.cashReconciliation.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { date: 'desc' },
+        include: {
+          submittedBy: { select: { id: true, name: true } },
+          reviewedBy: { select: { id: true, name: true } },
+        },
+      }),
+      this.prisma.cashReconciliation.count({ where }),
+    ]);
+
+    return { data: records, meta: { total, page, limit } };
+  }
+}

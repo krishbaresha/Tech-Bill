@@ -1,0 +1,459 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  platform_admin
+  owner
+  cashier
+  inventory_manager
+  accountant
+  technician
+}
+
+enum UnitStatus {
+  in_stock
+  sold
+  return_pending
+  returned
+  damaged
+  reserved
+}
+
+enum UnitCondition {
+  new
+  refurbished
+  damaged
+}
+
+enum SaleStatus {
+  completed
+  voided
+  partial_return
+}
+
+enum PaymentMethod {
+  cash
+  easypaisa
+  jazzcash
+  card
+  bank_transfer
+}
+
+enum ReturnType {
+  cash_refund
+  store_credit
+  exchange
+}
+
+enum ReturnStatus {
+  pending
+  approved
+  rejected
+  completed
+}
+
+enum POStatus {
+  draft
+  sent
+  partial
+  received
+  cancelled
+}
+
+// ─── Tenant model ──────────────────────────────────────────────────────────
+
+model Tenant {
+  id               String   @id @default(uuid()) @db.Uuid
+  name             String   @db.VarChar(255)
+  slug             String   @unique @db.VarChar(100)
+  status           String   @default("active") @db.VarChar(50) // active, suspended, cancelled
+  plan             String   @default("trial") @db.VarChar(50)
+  trialEndsAt      DateTime? @map("trial_ends_at")
+  currentPeriodEnd DateTime? @map("current_period_end")
+  maxUsers         Int      @default(5) @map("max_users")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  users            User[]
+  settings         ShopSettings[]
+  products         Product[]
+  suppliers        Supplier[]
+  purchaseOrders   PurchaseOrder[]
+  goodsReceived    GoodsReceivedNote[]
+  inventoryUnits   InventoryUnit[]
+  customers        Customer[]
+  sales            Sale[]
+  returns          Return[]
+  reconciliations  CashReconciliation[]
+  auditLogs        AuditLog[]
+  notifications    Notification[]
+
+  @@map("tenants")
+}
+
+// ─── Table 1: users ───────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @db.VarChar(100)
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  role         Role
+  isActive     Boolean  @default(true) @map("is_active")
+  tenantId     String?  @map("tenant_id") @db.Uuid
+  tenant       Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  permissions  String[] @default([])
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Multiple relations to same model require distinct names
+  products                 Product[]
+  purchaseOrders           PurchaseOrder[]
+  goodsReceived            GoodsReceivedNote[]
+  auditLogs                AuditLog[]
+  notifications            Notification[]
+  refreshTokens            RefreshToken[]
+  salesAsCashier           Sale[]               @relation("SalesSoldBy")
+  salesDiscountApproved    Sale[]               @relation("SalesDiscountApproved")
+  salesVoided              Sale[]               @relation("SalesVoided")
+  returnsRequested         Return[]             @relation("ReturnsRequestedBy")
+  returnsReviewed          Return[]             @relation("ReturnsReviewedBy")
+  reconciliationsSubmitted CashReconciliation[] @relation("ReconciliationsSubmittedBy")
+  reconciliationsReviewed  CashReconciliation[] @relation("ReconciliationsReviewedBy")
+
+  @@map("users")
+}
+
+// ─── Table 2: refresh_tokens ──────────────────────────────────────────────────
+
+model RefreshToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  token     String   @unique @db.VarChar(512)
+  userId    String   @map("user_id") @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  ipAddress String?   @map("ip_address") @db.VarChar(45)
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}
+
+// ─── Table 3: shop_settings ───────────────────────────────────────────────────
+
+model ShopSettings {
+  id                        String   @id @default(uuid()) @db.Uuid
+  shopName                  String   @map("shop_name") @db.VarChar(255)
+  lowStockThreshold         Int      @default(2) @map("low_stock_threshold")
+  deadStockDays             Int      @default(60) @map("dead_stock_days")
+  maxDiscountWithoutOtp     Decimal  @default(500) @map("max_discount_without_otp") @db.Decimal(10, 2)
+  returnFraudWindowDays     Int      @default(30) @map("return_fraud_window_days")
+  returnFraudCountThreshold Int      @default(2) @map("return_fraud_count_threshold")
+  tenantId                  String   @map("tenant_id") @db.Uuid
+  tenant                    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId])
+  @@map("shop_settings")
+}
+
+// ─── Table 4: products ────────────────────────────────────────────────────────
+
+model Product {
+  id             String   @id @default(uuid()) @db.Uuid
+  name           String   @db.VarChar(255)
+  brand          String?  @db.VarChar(100)
+  category       String?  @db.VarChar(100)
+  description    String?  @db.Text
+  costPrice      Decimal? @map("cost_price") @db.Decimal(10, 2)
+  sellingPrice   Decimal  @map("selling_price") @db.Decimal(10, 2)
+  warrantyMonths Int      @default(0) @map("warranty_months")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdById    String?  @map("created_by_id") @db.Uuid
+  createdBy      User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  tenantId       String   @map("tenant_id") @db.Uuid
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  inventoryUnits     InventoryUnit[]
+  purchaseOrderItems PurchaseOrderItem[]
+
+  @@index([tenantId])
+  @@map("products")
+}
+
+// ─── Table 5: suppliers ───────────────────────────────────────────────────────
+
+model Supplier {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(255)
+  contactName String?  @map("contact_name") @db.VarChar(100)
+  phone       String?  @db.VarChar(20)
+  email       String?  @db.VarChar(255)
+  address     String?  @db.Text
+  tenantId    String   @map("tenant_id") @db.Uuid
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  purchaseOrders PurchaseOrder[]
+
+  @@index([tenantId])
+  @@map("suppliers")
+}
+
+// ─── Table 6: purchase_orders ─────────────────────────────────────────────────
+
+model PurchaseOrder {
+  id          String    @id @default(uuid()) @db.Uuid
+  supplierId  String?   @map("supplier_id") @db.Uuid
+  supplier    Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  status      POStatus  @default(draft)
+  totalAmount Decimal?  @map("total_amount") @db.Decimal(12, 2)
+  notes       String?   @db.Text
+  createdById String?   @map("created_by_id") @db.Uuid
+  createdBy   User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  tenantId    String    @map("tenant_id") @db.Uuid
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  items PurchaseOrderItem[]
+  grns  GoodsReceivedNote[]
+
+  @@index([tenantId])
+  @@map("purchase_orders")
+}
+
+// ─── Table 7: purchase_order_items ────────────────────────────────────────────
+
+model PurchaseOrderItem {
+  id              String        @id @default(uuid()) @db.Uuid
+  purchaseOrderId String        @map("purchase_order_id") @db.Uuid
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productId       String        @map("product_id") @db.Uuid
+  product         Product       @relation(fields: [productId], references: [id])
+  quantityOrdered Int           @map("quantity_ordered")
+  unitCostPrice   Decimal       @map("unit_cost_price") @db.Decimal(10, 2)
+
+  @@map("purchase_order_items")
+}
+
+// ─── Table 8: goods_received_notes ────────────────────────────────────────────
+
+model GoodsReceivedNote {
+  id              String         @id @default(uuid()) @db.Uuid
+  purchaseOrderId String?        @map("purchase_order_id") @db.Uuid
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull)
+  receivedById    String?        @map("received_by_id") @db.Uuid
+  receivedBy      User?          @relation(fields: [receivedById], references: [id], onDelete: SetNull)
+  notes           String?        @db.Text
+  tenantId        String         @map("tenant_id") @db.Uuid
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  receivedAt      DateTime       @default(now()) @map("received_at")
+
+  inventoryUnits InventoryUnit[]
+
+  @@index([tenantId])
+  @@map("goods_received_notes")
+}
+
+// ─── Table 9: inventory_units ─────────────────────────────────────────────────
+
+model InventoryUnit {
+  id            String             @id @default(uuid()) @db.Uuid
+  serialNumber  String             @map("serial_number") @db.VarChar(100)
+  productId     String             @map("product_id") @db.Uuid
+  product       Product            @relation(fields: [productId], references: [id])
+  status        UnitStatus         @default(in_stock)
+  condition     UnitCondition      @default(new)
+  purchasePrice Decimal?           @map("purchase_price") @db.Decimal(10, 2)
+  receivedAt    DateTime           @default(now()) @map("received_at")
+  grnId         String?            @map("grn_id") @db.Uuid
+  grn           GoodsReceivedNote? @relation(fields: [grnId], references: [id], onDelete: SetNull)
+  notes         String?            @db.Text
+  tenantId      String             @map("tenant_id") @db.Uuid
+  tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  saleItems SaleItem[]
+  returns   Return[]
+
+  @@unique([tenantId, serialNumber])
+  @@index([serialNumber])
+  @@index([status])
+  @@index([productId, status])
+  @@index([tenantId])
+  @@map("inventory_units")
+}
+
+// ─── Table 10: customers ──────────────────────────────────────────────────────
+
+model Customer {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(255)
+  phone     String   @db.VarChar(20)
+  email     String?  @db.VarChar(255)
+  tenantId  String   @map("tenant_id") @db.Uuid
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  sales Sale[]
+
+  @@unique([tenantId, phone])
+  @@index([phone])
+  @@index([tenantId])
+  @@map("customers")
+}
+
+// ─── Table 11: sales ──────────────────────────────────────────────────────────
+
+model Sale {
+  id                   String        @id @default(uuid()) @db.Uuid
+  invoiceNumber        String        @map("invoice_number") @db.VarChar(50)
+  customerId           String?       @map("customer_id") @db.Uuid
+  customer             Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  soldById             String?       @map("sold_by_id") @db.Uuid
+  soldBy               User?         @relation("SalesSoldBy", fields: [soldById], references: [id], onDelete: SetNull)
+  paymentMethod        PaymentMethod @map("payment_method")
+  subtotal             Decimal       @db.Decimal(12, 2)
+  discountAmount       Decimal       @default(0) @map("discount_amount") @db.Decimal(10, 2)
+  discountApprovedById String?       @map("discount_approved_by_id") @db.Uuid
+  discountApprovedBy   User?         @relation("SalesDiscountApproved", fields: [discountApprovedById], references: [id], onDelete: SetNull)
+  totalAmount          Decimal       @map("total_amount") @db.Decimal(12, 2)
+  status               SaleStatus    @default(completed)
+  voidReason           String?       @map("void_reason") @db.Text
+  voidedById           String?       @map("voided_by_id") @db.Uuid
+  voidedBy             User?         @relation("SalesVoided", fields: [voidedById], references: [id], onDelete: SetNull)
+  tenantId             String        @map("tenant_id") @db.Uuid
+  tenant               Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt            DateTime      @default(now()) @map("created_at")
+
+  items   SaleItem[]
+  returns Return[]
+
+  @@unique([tenantId, invoiceNumber])
+  @@index([invoiceNumber])
+  @@index([createdAt])
+  @@index([soldById])
+  @@index([tenantId])
+  @@map("sales")
+}
+
+// ─── Table 12: sale_items ─────────────────────────────────────────────────────
+
+model SaleItem {
+  id              String        @id @default(uuid()) @db.Uuid
+  saleId          String        @map("sale_id") @db.Uuid
+  sale            Sale          @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  inventoryUnitId String        @map("inventory_unit_id") @db.Uuid
+  inventoryUnit   InventoryUnit @relation(fields: [inventoryUnitId], references: [id])
+  sellingPrice    Decimal       @map("selling_price") @db.Decimal(10, 2)
+  discount        Decimal       @default(0) @db.Decimal(10, 2)
+
+  @@map("sale_items")
+}
+
+// ─── Table 13: returns ────────────────────────────────────────────────────────
+
+model Return {
+  id              String        @id @default(uuid()) @db.Uuid
+  saleId          String        @map("sale_id") @db.Uuid
+  sale            Sale          @relation(fields: [saleId], references: [id])
+  inventoryUnitId String        @map("inventory_unit_id") @db.Uuid
+  inventoryUnit   InventoryUnit @relation(fields: [inventoryUnitId], references: [id])
+  requestedById   String?       @map("requested_by_id") @db.Uuid
+  requestedBy     User?         @relation("ReturnsRequestedBy", fields: [requestedById], references: [id], onDelete: SetNull)
+  reason          String        @db.Text
+  returnType      ReturnType    @map("return_type")
+  status          ReturnStatus  @default(pending)
+  suspiciousFlag  Boolean       @default(false) @map("suspicious_flag")
+  reviewedById    String?       @map("reviewed_by_id") @db.Uuid
+  reviewedBy      User?         @relation("ReturnsReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewNotes     String?       @map("review_notes") @db.Text
+  refundAmount    Decimal?      @map("refund_amount") @db.Decimal(10, 2)
+  tenantId        String        @map("tenant_id") @db.Uuid
+  tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now()) @map("created_at")
+  resolvedAt      DateTime?     @map("resolved_at")
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([inventoryUnitId])
+  @@index([tenantId])
+  @@map("returns")
+}
+
+// ─── Table 14: cash_reconciliations ──────────────────────────────────────────
+
+model CashReconciliation {
+  id             String   @id @default(uuid()) @db.Uuid
+  date           DateTime @db.Date
+  openingBalance Decimal  @default(0) @map("opening_balance") @db.Decimal(10, 2)
+  expectedCash   Decimal  @map("expected_cash") @db.Decimal(10, 2)
+  actualCash     Decimal? @map("actual_cash") @db.Decimal(10, 2)
+  variance       Decimal? @db.Decimal(10, 2)
+  submittedById  String?  @map("submitted_by_id") @db.Uuid
+  submittedBy    User?    @relation("ReconciliationsSubmittedBy", fields: [submittedById], references: [id], onDelete: SetNull)
+  reviewedById   String?  @map("reviewed_by_id") @db.Uuid
+  reviewedBy     User?    @relation("ReconciliationsReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  notes          String?  @db.Text
+  tenantId       String   @map("tenant_id") @db.Uuid
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([date])
+  @@index([tenantId])
+  @@map("cash_reconciliations")
+}
+
+// ─── Table 15: audit_logs ─────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String   @db.VarChar(100)
+  entityType String?  @map("entity_type") @db.VarChar(50)
+  entityId   String?  @map("entity_id") @db.Uuid
+  oldValue   Json?    @map("old_value")
+  newValue   Json?    @map("new_value")
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  deviceInfo String?  @map("device_info") @db.Text
+  tenantId   String?  @map("tenant_id") @db.Uuid
+  tenant     Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([action])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([entityType, entityId])
+  @@index([tenantId])
+  @@map("audit_logs")
+}
+
+// ─── Table 16: notifications ──────────────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String?  @db.VarChar(100)
+  message   String?  @db.Text
+  isRead    Boolean  @default(false) @map("is_read")
+  actionUrl String?  @map("action_url") @db.Text
+  tenantId  String?  @map("tenant_id") @db.Uuid
+  tenant     Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId, isRead])
+  @@index([tenantId])
+  @@map("notifications")
+}

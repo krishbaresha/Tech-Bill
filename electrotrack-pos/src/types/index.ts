@@ -1,0 +1,237 @@
+export type Role =
+  | 'platform_admin'
+  | 'owner'
+  | 'cashier'
+  | 'inventory_manager'
+  | 'accountant'
+  | 'technician';
+
+// ─── Permission Keys ──────────────────────────────────────────────────────────
+
+export type Permission =
+  | 'pos.read' | 'pos.sell' | 'pos.discount' | 'pos.void'
+  | 'inventory.read' | 'inventory.write' | 'inventory.delete'
+  | 'suppliers.read' | 'suppliers.write'
+  | 'customers.read' | 'customers.write'
+  | 'returns.read' | 'returns.create' | 'returns.review'
+  | 'reports.read' | 'reports.cash_reconciliation'
+  | 'users.read' | 'users.manage' | 'users.permissions'
+  | 'settings.read' | 'settings.manage'
+  | 'audit.read' | 'notifications.read' | 'notifications.manage'
+  | 'warranty.read' | 'loyalty.read' | 'loyalty.manage';
+
+export const ALL_PERMISSIONS: Permission[] = [
+  'pos.read', 'pos.sell', 'pos.discount', 'pos.void',
+  'inventory.read', 'inventory.write', 'inventory.delete',
+  'suppliers.read', 'suppliers.write',
+  'customers.read', 'customers.write',
+  'returns.read', 'returns.create', 'returns.review',
+  'reports.read', 'reports.cash_reconciliation',
+  'users.read', 'users.manage', 'users.permissions',
+  'settings.read', 'settings.manage',
+  'audit.read', 'notifications.read', 'notifications.manage',
+  'warranty.read', 'loyalty.read', 'loyalty.manage',
+];
+
+// ─── User Types ──────────────────────────────────────────────────────────────
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  tenantId: string | null;
+  tenantName: string | null;
+  permissions: string[];
+}
+
+export interface StaffUser {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  isActive: boolean;
+  permissions: string[];
+  createdAt: string;
+}
+
+// ─── Business Types ──────────────────────────────────────────────────────────
+
+export interface ReturnItem {
+  id: string;
+  saleId: string;
+  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  reason: string;
+  returnType: 'cash_refund' | 'store_credit' | 'exchange';
+  refundAmount: number | null;
+  reviewNotes: string | null;
+  suspiciousFlag: boolean;
+  createdAt: string;
+  resolvedAt: string | null;
+  inventoryUnit: {
+    serialNumber: string;
+    product: { name: string; brand: string | null };
+  };
+  sale: {
+    invoiceNumber: string;
+    customer: { name: string; phone: string } | null;
+  };
+  requestedBy: { name: string } | null;
+  reviewedBy: { name: string } | null;
+}
+
+export interface ShopSettings {
+  id: string;
+  shopName: string;
+  lowStockThreshold: number;
+  deadStockDays: number;
+  maxDiscountWithoutOtp: number;
+  returnFraudWindowDays: number;
+  returnFraudCountThreshold: number;
+}
+
+export interface AuditLog {
+  id: string;
+  action: string;
+  entityType: string | null;
+  entityId: string | null;
+  userId: string | null;
+  ipAddress: string | null;
+  createdAt: string;
+  user?: { name: string; email: string } | null;
+}
+
+export interface Reconciliation {
+  id: string;
+  date: string;
+  openingBalance: number;
+  expectedCash: number;
+  actualCash: number | null;
+  variance: number | null;
+  notes: string | null;
+  createdAt: string;
+  submittedBy: { name: string } | null;
+  reviewedBy: { name: string } | null;
+}
+
+export interface StaffPerformance {
+  staffId: string;
+  staffName: string;
+  totalSales: number;
+  totalRevenue: number;
+  avgTransactionValue: number;
+}
+
+export interface DeadStockItem {
+  unitId: string;
+  serialNumber: string;
+  productId: string;
+  productName: string;
+  brand: string | null;
+  daysInStock: number;
+  receivedAt: string;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  brand: string | null;
+  category: string | null;
+  sellingPrice: number;
+  warrantyMonths: number;
+  isActive: boolean;
+}
+
+export interface InventoryUnit {
+  id: string;
+  serialNumber: string;
+  status: 'in_stock' | 'sold' | 'returned' | 'damaged';
+  purchasePrice: number;
+  product: Product;
+}
+
+export interface CartItem {
+  serialNumber: string;
+  productId: string;
+  productName: string;
+  brand: string | null;
+  sellingPrice: number;
+}
+
+export interface SaleItem {
+  id: string;
+  serialNumber: string;
+  sellingPrice: number;
+  inventoryUnit: {
+    product: { id: string; name: string };
+  };
+}
+
+export interface Sale {
+  id: string;
+  invoiceNumber: string;
+  customerName: string | null;
+  customerPhone: string | null;
+  totalAmount: number;
+  discountAmount: number;
+  paymentMethod: string;
+  status: string;
+  createdAt: string;
+  items: SaleItem[];
+}
+
+export interface SalesSummary {
+  period: string;
+  totalRevenue: number;
+  totalSales: number;
+  totalItems: number;
+  totalDiscounts: number;
+  byPaymentMethod: { method: string; count: number; revenue: number }[];
+  topProducts: { productId: string; name: string; units: number; revenue: number }[];
+}
+
+export interface LowStockItem {
+  productId: string;
+  productName: string;
+  brand: string | null;
+  category: string | null;
+  inStockCount: number;
+  sellingPrice: number;
+}
+
+export interface Notification {
+  id: string;
+  type: string | null;
+  message: string | null;
+  isRead: boolean;
+  actionUrl: string | null;
+  createdAt: string;
+}
+
+export interface WsSaleCreatedPayload {
+  id: string;
+  invoiceNumber: string;
+  totalAmount: number;
+  itemCount: number;
+  cashierId: string;
+}
+
+export interface WsStockLowPayload {
+  productId: string;
+  productName: string;
+  stockCount: number;
+}
+
+// ─── Tenant Types (Platform Admin) ───────────────────────────────────────────
+
+export interface Tenant {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+  plan: string;
+  maxUsers: number;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { users: number };
+}

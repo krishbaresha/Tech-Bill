@@ -1,0 +1,309 @@
+import { useState, useEffect, useRef } from 'react';
+import { Plus, ShoppingBag, X, Trash2, Search } from 'lucide-react';
+import { format } from 'date-fns';
+import gsap from 'gsap';
+import { api } from '../../api/client';
+import type { Product } from '../../types';
+
+interface Supplier { id: string; name: string }
+interface PoItem { productId: string; quantityOrdered: number; unitCostPrice: number }
+interface PurchaseOrder {
+  id: string;
+  status: string;
+  totalAmount: number | null;
+  notes: string | null;
+  createdAt: string;
+  supplier: { id: string; name: string } | null;
+  createdBy: { id: string; name: string } | null;
+  _count: { items: number };
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  draft:     'bg-white/5 text-stitch-on-surface-variant border border-white/10',
+  sent:      'bg-blue-500/10 text-blue-400 border border-blue-500/20',
+  partial:   'bg-amber-500/10 text-amber-400 border border-amber-500/20',
+  received:  'bg-green-500/10 text-green-400 border border-green-500/20',
+  cancelled: 'bg-stitch-error/10 text-stitch-error border border-stitch-error/20',
+};
+
+const inputCls = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-stitch-on-surface outline-none focus:border-stitch-primary/50 transition-colors placeholder:text-stitch-on-surface-variant/40';
+const labelCls = 'block text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider mb-1.5';
+
+export default function PurchaseOrdersPage() {
+  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [supplierId, setSupplierId] = useState('');
+  const [notes, setNotes] = useState('');
+  const [items, setItems] = useState<PoItem[]>([{ productId: '', quantityOrdered: 1, unitCostPrice: 0 }]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchOrders = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get<PurchaseOrder[]>('/purchase-orders');
+      setOrders(res.data);
+    } catch {
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void fetchOrders();
+    void api.get<Supplier[]>('/suppliers').then((r) => setSuppliers(r.data)).catch(() => undefined);
+    void api
+      .get<{ data: Product[] } | Product[]>('/inventory/products')
+      .then((r) => {
+        const d = r.data;
+        setProducts(Array.isArray(d) ? d : (d as { data: Product[] }).data ?? []);
+      })
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    if (containerRef.current && orders.length > 0) {
+      gsap.fromTo(
+        containerRef.current.querySelectorAll('.po-row'),
+        { opacity: 0, y: 10 },
+        { opacity: 1, y: 0, duration: 0.35, stagger: 0.04, ease: 'power2.out' },
+      );
+    }
+  }, [orders]);
+
+  const q = search.toLowerCase();
+  const filtered = orders.filter((po) =>
+    !q ||
+    po.id.toLowerCase().includes(q) ||
+    (po.supplier?.name?.toLowerCase().includes(q) ?? false) ||
+    po.status.includes(q),
+  );
+
+  const openCreate = () => {
+    setSupplierId('');
+    setNotes('');
+    setItems([{ productId: '', quantityOrdered: 1, unitCostPrice: 0 }]);
+    setError(null);
+    setShowForm(true);
+  };
+
+  const addItem = () =>
+    setItems((prev) => [...prev, { productId: '', quantityOrdered: 1, unitCostPrice: 0 }]);
+
+  const removeItem = (idx: number) =>
+    setItems((prev) => prev.filter((_, i) => i !== idx));
+
+  const updateItem = (idx: number, patch: Partial<PoItem>) =>
+    setItems((prev) => prev.map((item, i) => (i === idx ? { ...item, ...patch } : item)));
+
+  const totalAmount = items.reduce((s, i) => s + i.quantityOrdered * i.unitCostPrice, 0);
+
+  const handleCreate = async () => {
+    const validItems = items.filter((i) => i.productId);
+    if (validItems.length === 0) { setError('Add at least one product'); return; }
+    setSaving(true);
+    setError(null);
+    try {
+      await api.post('/purchase-orders', {
+        supplierId: supplierId || undefined,
+        notes: notes || undefined,
+        items: validItems,
+      });
+      setShowForm(false);
+      void fetchOrders();
+    } catch {
+      setError('Failed to create purchase order');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div ref={containerRef} className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-stitch-primary/10 flex items-center justify-center shrink-0">
+            <ShoppingBag size={20} className="text-stitch-primary" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-stitch-on-surface font-space">Purchase Orders</h1>
+            <p className="text-xs text-stitch-on-surface-variant">Manage supplier purchase orders</p>
+          </div>
+        </div>
+        <button
+          onClick={openCreate}
+          className="flex items-center gap-1.5 px-4 py-2 bg-stitch-primary text-stitch-on-primary text-sm font-bold rounded-lg hover:bg-stitch-primary/90 transition-all active:scale-95 self-start sm:self-auto"
+        >
+          <Plus size={14} />
+          New PO
+        </button>
+      </div>
+
+      {/* Search */}
+      <div className="relative max-w-xs">
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stitch-on-surface-variant pointer-events-none" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search supplier, status…"
+          className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm text-stitch-on-surface outline-none focus:border-stitch-primary/50 transition-colors placeholder:text-stitch-on-surface-variant/40"
+        />
+      </div>
+
+      {/* Table */}
+      <div className="glass-card rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-white/[0.03] border-b border-white/5">
+                <th className="text-left px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">PO Ref</th>
+                <th className="text-left px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider hidden sm:table-cell">Supplier</th>
+                <th className="text-left px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider hidden md:table-cell">Items</th>
+                <th className="text-left px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Status</th>
+                <th className="text-left px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider hidden lg:table-cell">Date</th>
+                <th className="text-right px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Total</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {loading && (
+                <tr><td colSpan={6} className="text-center py-12 text-stitch-on-surface-variant">Loading…</td></tr>
+              )}
+              {!loading && filtered.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="text-center py-12 text-stitch-on-surface-variant">
+                    {search ? 'No orders match your search' : 'No purchase orders yet'}
+                  </td>
+                </tr>
+              )}
+              {filtered.map((po) => (
+                <tr key={po.id} className="po-row hover:bg-white/[0.03] transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <ShoppingBag size={13} className="text-stitch-primary/60 shrink-0" />
+                      <span className="font-mono text-xs text-stitch-on-surface">{po.id.slice(-8).toUpperCase()}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-stitch-on-surface-variant hidden sm:table-cell">
+                    {po.supplier?.name ?? <span className="text-white/20">—</span>}
+                  </td>
+                  <td className="px-4 py-3 text-sm font-mono text-stitch-tertiary hidden md:table-cell">{po._count.items}</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${STATUS_COLORS[po.status] ?? STATUS_COLORS.draft}`}>
+                      {po.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-stitch-on-surface-variant hidden lg:table-cell">
+                    {format(new Date(po.createdAt), 'dd MMM yyyy')}
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums text-sm font-bold text-stitch-on-surface">
+                    {po.totalAmount != null ? `₨ ${Number(po.totalAmount).toLocaleString()}` : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Create Modal */}
+      {showForm && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="glass-modal rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-white/10 shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 shrink-0">
+              <h2 className="font-bold text-stitch-on-surface font-space">New Purchase Order</h2>
+              <button onClick={() => setShowForm(false)} className="text-stitch-on-surface-variant hover:text-white transition-colors">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-auto p-5 space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelCls}>Supplier</label>
+                  <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className={inputCls}>
+                    <option value="">— None —</option>
+                    {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Notes</label>
+                  <input value={notes} onChange={(e) => setNotes(e.target.value)} className={inputCls} placeholder="Optional" />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className={labelCls}>Line Items</label>
+                  <button onClick={addItem} className="text-xs text-stitch-primary hover:text-stitch-primary/80 flex items-center gap-1">
+                    <Plus size={12} /> Add item
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {items.map((item, idx) => (
+                    <div key={idx} className="flex gap-2 items-center">
+                      <select
+                        value={item.productId}
+                        onChange={(e) => {
+                          const p = products.find((x) => x.id === e.target.value);
+                          updateItem(idx, { productId: e.target.value, unitCostPrice: p ? p.sellingPrice : 0 });
+                        }}
+                        className="flex-1 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-stitch-on-surface outline-none focus:border-stitch-primary/50 min-w-0"
+                      >
+                        <option value="">Select product…</option>
+                        {products.map((p) => <option key={p.id} value={p.id}>{p.name}{p.brand ? ` (${p.brand})` : ''}</option>)}
+                      </select>
+                      <input
+                        type="number" min={1} value={item.quantityOrdered}
+                        onChange={(e) => updateItem(idx, { quantityOrdered: parseInt(e.target.value) || 1 })}
+                        className="w-16 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-center text-stitch-on-surface outline-none focus:border-stitch-primary/50"
+                        placeholder="Qty"
+                      />
+                      <input
+                        type="number" min={0} step={0.01} value={item.unitCostPrice}
+                        onChange={(e) => updateItem(idx, { unitCostPrice: parseFloat(e.target.value) || 0 })}
+                        className="w-24 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-stitch-on-surface outline-none focus:border-stitch-primary/50"
+                        placeholder="Cost"
+                      />
+                      {items.length > 1 && (
+                        <button onClick={() => removeItem(idx)} className="text-stitch-on-surface-variant hover:text-stitch-error transition-colors shrink-0">
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end border-t border-white/5 pt-3">
+                <p className="text-sm font-bold text-stitch-on-surface">
+                  Total: <span className="text-stitch-primary font-mono">₨ {totalAmount.toLocaleString()}</span>
+                </p>
+              </div>
+
+              {error && <p className="text-xs text-stitch-error">{error}</p>}
+            </div>
+
+            <div className="px-5 py-4 flex justify-end gap-2 shrink-0 border-t border-white/5">
+              <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-stitch-on-surface-variant hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                Cancel
+              </button>
+              <button
+                onClick={() => void handleCreate()} disabled={saving}
+                className="px-4 py-2 bg-stitch-primary text-stitch-on-primary text-sm font-bold rounded-lg hover:bg-stitch-primary/90 disabled:opacity-50 active:scale-95 transition-all"
+              >
+                {saving ? 'Creating…' : 'Create PO'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
