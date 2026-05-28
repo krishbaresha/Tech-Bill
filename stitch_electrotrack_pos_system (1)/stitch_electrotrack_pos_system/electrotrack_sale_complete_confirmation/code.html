@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&amp;family=Space+Grotesk:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-container": "#8083ff",
+                        "primary": "#c0c1ff",
+                        "outline": "#908fa0",
+                        "on-tertiary": "#00363e",
+                        "surface": "#0e1322",
+                        "primary-fixed-dim": "#c0c1ff",
+                        "on-error": "#690005",
+                        "on-error-container": "#ffdad6",
+                        "on-surface-variant": "#c7c4d7",
+                        "surface-variant": "#2f3445",
+                        "inverse-primary": "#494bd6",
+                        "tertiary-fixed-dim": "#2fd9f4",
+                        "secondary-container": "#571bc1",
+                        "outline-variant": "#464554",
+                        "on-tertiary-container": "#000608",
+                        "tertiary-fixed": "#a2eeff",
+                        "inverse-surface": "#dee1f7",
+                        "on-primary-fixed-variant": "#2f2ebe",
+                        "inverse-on-surface": "#2b3040",
+                        "secondary": "#d0bcff",
+                        "on-secondary-fixed-variant": "#5516be",
+                        "on-secondary-container": "#c4abff",
+                        "surface-container-lowest": "#090e1c",
+                        "surface-container": "#1a1f2f",
+                        "on-primary": "#1000a9",
+                        "error-container": "#93000a",
+                        "error": "#ffb4ab",
+                        "surface-container-highest": "#2f3445",
+                        "tertiary": "#2fd9f4",
+                        "surface-dim": "#0e1322",
+                        "primary-fixed": "#e1e0ff",
+                        "surface-container-high": "#25293a",
+                        "on-secondary-fixed": "#23005c",
+                        "secondary-fixed": "#e9ddff",
+                        "surface-tint": "#c0c1ff",
+                        "secondary-fixed-dim": "#d0bcff",
+                        "on-tertiary-fixed-variant": "#004e5a",
+                        "on-primary-fixed": "#07006c",
+                        "on-surface": "#dee1f7",
+                        "on-secondary": "#3c0091",
+                        "on-tertiary-fixed": "#001f25",
+                        "on-primary-container": "#0d0096",
+                        "surface-container-low": "#161b2b",
+                        "tertiary-container": "#008395",
+                        "background": "#0e1322",
+                        "on-background": "#dee1f7",
+                        "surface-bright": "#343949"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-lg": "32px",
+                        "container-max": "1440px",
+                        "unit": "4px",
+                        "stack-md": "16px",
+                        "margin": "32px",
+                        "stack-sm": "8px",
+                        "stack-xs": "4px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["DM Sans"],
+                        "label-caps": ["DM Sans"],
+                        "label-mono": ["JetBrains Mono"],
+                        "body-md": ["DM Sans"],
+                        "headline-md": ["Space Grotesk"],
+                        "headline-lg-mobile": ["Space Grotesk"],
+                        "body-lg": ["DM Sans"],
+                        "headline-xl": ["Space Grotesk"],
+                        "headline-lg": ["Space Grotesk"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "1.0", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                        "label-mono": ["13px", {"lineHeight": "1.0", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-md": ["20px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #0A0F1E;
+            overflow: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-modal {
+            background: rgba(17, 24, 39, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(192, 193, 255, 0.05);
+        }
+        .header-gradient {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        }
+        .confetti-dot {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .draw-check {
+            stroke-dasharray: 100;
+            stroke-dashoffset: 100;
+        }
+    </style>
+</head>
+<body class="antialiased text-on-surface font-body-md flex items-center justify-center min-h-screen p-margin">
+<!-- Background Decoration -->
+<div class="fixed inset-0 overflow-hidden pointer-events-none opacity-20">
+<div class="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-primary blur-[160px] rounded-full"></div>
+<div class="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-secondary-container blur-[160px] rounded-full"></div>
+</div>
+<!-- Main Modal Container (shadcn/ui Dialog style) -->
+<div class="relative z-50 w-full max-w-[480px] glass-modal rounded-xl overflow-hidden opacity-0 scale-90 translate-y-8" id="success-modal">
+<!-- Header Section -->
+<div class="header-gradient p-stack-lg flex flex-col items-center text-center relative overflow-hidden">
+<!-- Animated Checkmark Container -->
+<div class="relative w-20 h-20 mb-stack-md flex items-center justify-center">
+<svg class="w-full h-full" viewbox="0 0 52 52">
+<circle class="stroke-white/20 fill-none" cx="26" cy="26" r="25" stroke-width="2"></circle>
+<circle class="stroke-white fill-none draw-check" cx="26" cy="26" id="check-circle" r="25" stroke-width="2"></circle>
+<path class="stroke-white fill-none draw-check" d="M14.1 27.2l7.1 7.2 16.7-16.8" id="check-mark" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"></path>
+</svg>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-white mb-stack-xs tracking-tight">Sale Complete!</h1>
+<p class="text-white/70 font-label-mono text-label-mono">INV-84920 · ₨93,400</p>
+<!-- Confetti Container -->
+<div class="absolute inset-0 pointer-events-none" id="confetti-anchor"></div>
+</div>
+<!-- Body Section -->
+<div class="p-margin space-y-stack-md">
+<!-- 2-Column Summary Grid -->
+<div class="grid grid-cols-2 gap-gutter">
+<div class="space-y-stack-xs">
+<div>
+<span class="block text-on-surface-variant font-label-caps text-[10px] uppercase tracking-widest mb-1">Customer</span>
+<span class="font-medium text-white">Ahmed Raza</span>
+</div>
+<div>
+<span class="block text-on-surface-variant font-label-caps text-[10px] uppercase tracking-widest mb-1">Items</span>
+<span class="font-medium text-white">2 products</span>
+</div>
+</div>
+<div class="space-y-stack-xs">
+<div>
+<span class="block text-on-surface-variant font-label-caps text-[10px] uppercase tracking-widest mb-1">Payment</span>
+<span class="font-medium text-white">Cash</span>
+</div>
+<div>
+<span class="block text-on-surface-variant font-label-caps text-[10px] uppercase tracking-widest mb-1">Cashier</span>
+<span class="font-medium text-white">Ali Hassan</span>
+</div>
+</div>
+</div>
+<!-- Loyalty Section -->
+<div class="flex items-center justify-center">
+<div class="bg-tertiary-container/10 border border-tertiary-container/30 px-3 py-1 rounded-full flex items-center gap-2 shadow-[0_0_15px_rgba(47,217,244,0.1)]">
+<span class="material-symbols-outlined text-[16px] text-tertiary" data-icon="stars" data-weight="fill" style="font-variation-settings: 'FILL' 1;">stars</span>
+<span class="text-tertiary font-label-caps text-[11px]">+934 points earned 🎉</span>
+</div>
+</div>
+<hr class="border-white/10"/>
+<!-- Serial Numbers Section -->
+<div class="space-y-2">
+<span class="block text-on-surface-variant font-label-caps text-[10px] uppercase tracking-widest">Serial Numbers Issued</span>
+<div class="grid grid-cols-1 gap-1">
+<div class="flex items-center justify-between bg-white/5 px-3 py-2 rounded border border-white/5">
+<span class="font-label-mono text-label-mono text-white/90">SN-HPP15-00821</span>
+<span class="material-symbols-outlined text-tertiary text-sm" data-icon="check_circle">check_circle</span>
+</div>
+<div class="flex items-center justify-between bg-white/5 px-3 py-2 rounded border border-white/5">
+<span class="font-label-mono text-label-mono text-white/90">SN-LOG-MK235-18</span>
+<span class="material-symbols-outlined text-tertiary text-sm" data-icon="check_circle">check_circle</span>
+</div>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex flex-col gap-3 pt-stack-sm">
+<button class="w-full h-12 bg-primary-container text-on-primary-container font-headline-md text-headline-md rounded-lg flex items-center justify-center gap-2 hover:bg-primary-container/90 active:scale-[0.98] transition-all shadow-lg shadow-primary-container/20 group">
+<span class="material-symbols-outlined group-hover:rotate-12 transition-transform" data-icon="print">print</span>
+                    Print Receipt
+                </button>
+<div class="flex gap-3">
+<button class="flex-1 h-11 border border-outline/30 text-on-surface font-body-md text-body-md rounded-lg flex items-center justify-center gap-2 hover:bg-white/5 active:scale-[0.98] transition-all backdrop-blur-md">
+<span class="material-symbols-outlined text-[20px]" data-icon="mail">mail</span>
+                        Email
+                    </button>
+<button class="flex-1 h-11 bg-transparent text-primary font-body-md text-body-md rounded-lg flex items-center justify-center gap-2 hover:bg-primary/5 active:scale-[0.98] transition-all">
+<span class="material-symbols-outlined text-[20px]" data-icon="add">add</span>
+                        New Sale
+                    </button>
+</div>
+</div>
+<!-- Footer Action -->
+<div class="text-center pb-stack-sm">
+<button class="text-on-surface-variant font-label-caps text-[11px] hover:text-white transition-colors" id="close-btn">
+                    Close &amp; Continue <span class="text-primary-container" id="countdown">(5s)</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Script for Animations -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('success-modal');
+            const checkCircle = document.getElementById('check-circle');
+            const checkMark = document.getElementById('check-mark');
+            const confettiAnchor = document.getElementById('confetti-anchor');
+            const countdownEl = document.getElementById('countdown');
+
+            // Timeline for Entrance
+            const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
+
+            tl.to(modal, {
+                opacity: 1,
+                scale: 1,
+                y: 0,
+                duration: 0.8,
+                onStart: () => createConfetti()
+            })
+            .to(modal, {
+                scale: 1.02,
+                duration: 0.2,
+                repeat: 1,
+                yoyo: true
+            }, "-=0.4")
+            .to(checkCircle, {
+                strokeDashoffset: 0,
+                duration: 0.6
+            }, "-=0.6")
+            .to(checkMark, {
+                strokeDashoffset: 0,
+                duration: 0.4
+            }, "-=0.2");
+
+            // Confetti Generation
+            function createConfetti() {
+                const colors = ['#ffffff', '#c0c1ff', '#2fd9f4', '#571bc1'];
+                for (let i = 0; i < 40; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'confetti-dot';
+                    dot.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confettiAnchor.appendChild(dot);
+
+                    const angle = Math.random() * Math.PI * 2;
+                    const velocity = 50 + Math.random() * 150;
+                    const x = Math.cos(angle) * velocity;
+                    const y = Math.sin(angle) * velocity;
+
+                    gsap.fromTo(dot, 
+                        { x: 0, y: 0, scale: 0, opacity: 1 },
+                        { 
+                            x: x, 
+                            y: y - 100, 
+                            scale: Math.random(), 
+                            opacity: 0, 
+                            duration: 1.5 + Math.random(), 
+                            ease: "power2.out",
+                            onComplete: () => dot.remove()
+                        }
+                    );
+                }
+            }
+
+            // Countdown Logic
+            let secondsLeft = 5;
+            const timer = setInterval(() => {
+                secondsLeft--;
+                countdownEl.textContent = `(${secondsLeft}s)`;
+                if (secondsLeft <= 0) {
+                    clearInterval(timer);
+                    closeModal();
+                }
+            }, 1000);
+
+            function closeModal() {
+                gsap.to(modal, {
+                    opacity: 0,
+                    scale: 0.9,
+                    y: 20,
+                    duration: 0.5,
+                    ease: "power2.in"
+                });
+            }
+
+            document.getElementById('close-btn').addEventListener('click', () => {
+                clearInterval(timer);
+                closeModal();
+            });
+        });
+    </script>
+</body></html>

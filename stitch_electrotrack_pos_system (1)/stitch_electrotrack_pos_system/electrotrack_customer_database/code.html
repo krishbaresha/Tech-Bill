@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ElectroTrack | Customer Database</title>
+<!-- Font Links -->
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&amp;family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&amp;family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Scripts -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed": "#e1e0ff",
+                    "on-surface-variant": "#c7c4d7",
+                    "on-primary-fixed": "#07006c",
+                    "on-tertiary-fixed-variant": "#004e5a",
+                    "on-tertiary-fixed": "#001f25",
+                    "error-container": "#93000a",
+                    "secondary-fixed-dim": "#d0bcff",
+                    "on-secondary": "#3c0091",
+                    "surface-container-lowest": "#090e1c",
+                    "surface-container-high": "#25293a",
+                    "primary": "#c0c1ff",
+                    "on-secondary-fixed-variant": "#5516be",
+                    "error": "#ffb4ab",
+                    "on-primary": "#1000a9",
+                    "surface-tint": "#c0c1ff",
+                    "primary-fixed-dim": "#c0c1ff",
+                    "surface-dim": "#0e1322",
+                    "on-secondary-fixed": "#23005c",
+                    "surface-container": "#1a1f2f",
+                    "inverse-surface": "#dee1f7",
+                    "on-background": "#dee1f7",
+                    "on-secondary-container": "#c4abff",
+                    "tertiary-fixed": "#a2eeff",
+                    "secondary-fixed": "#e9ddff",
+                    "surface-container-low": "#161b2b",
+                    "surface-bright": "#343949",
+                    "outline": "#908fa0",
+                    "on-error-container": "#ffdad6",
+                    "on-tertiary": "#00363e",
+                    "on-surface": "#dee1f7",
+                    "tertiary": "#2fd9f4",
+                    "secondary-container": "#571bc1",
+                    "tertiary-container": "#008395",
+                    "tertiary-fixed-dim": "#2fd9f4",
+                    "surface-container-highest": "#2f3445",
+                    "on-primary-fixed-variant": "#2f2ebe",
+                    "on-error": "#690005",
+                    "surface-variant": "#2f3445",
+                    "surface": "#0e1322",
+                    "inverse-on-surface": "#2b3040",
+                    "primary-container": "#8083ff",
+                    "secondary": "#d0bcff",
+                    "on-primary-container": "#0d0096",
+                    "outline-variant": "#464554",
+                    "on-tertiary-container": "#000608",
+                    "inverse-primary": "#494bd6",
+                    "background": "#0e1322"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "stack-xs": "4px",
+                    "container-max": "1440px",
+                    "stack-md": "16px",
+                    "margin": "32px",
+                    "unit": "4px",
+                    "stack-sm": "8px",
+                    "gutter": "24px",
+                    "stack-lg": "32px"
+            },
+            "fontFamily": {
+                    "headline-lg-mobile": ["Space Grotesk"],
+                    "headline-md": ["Space Grotesk"],
+                    "headline-xl": ["Space Grotesk"],
+                    "label-caps": ["DM Sans"],
+                    "body-sm": ["DM Sans"],
+                    "headline-lg": ["Space Grotesk"],
+                    "body-md": ["DM Sans"],
+                    "label-mono": ["JetBrains Mono"],
+                    "body-lg": ["DM Sans"]
+            },
+            "fontSize": {
+                    "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                    "headline-md": ["20px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                    "headline-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-caps": ["12px", {"lineHeight": "1.0", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                    "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "label-mono": ["13px", {"lineHeight": "1.0", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { background-color: #0A0F1E; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            backdrop-filter: blur(24px);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        .glow-primary { box-shadow: 0 0 20px rgba(192, 193, 255, 0.15); }
+    </style>
+</head>
+<body class="text-on-surface selection:bg-primary/30 font-body-md overflow-x-hidden">
+<!-- SideNavBar (Shared Component) -->
+<aside class="fixed left-0 top-0 h-screen w-[260px] border-r border-white/10 backdrop-blur-md bg-surface/90 flex flex-col py-stack-lg z-50">
+<div class="px-6 mb-stack-lg">
+<h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tighter">ElectroTrack</h1>
+<p class="font-label-mono text-label-mono text-on-surface-variant/60 mt-1 uppercase">v2.4.0 High-Performance</p>
+</div>
+<nav class="flex-1 px-3 space-y-1 overflow-y-auto custom-scrollbar">
+<a class="text-on-surface-variant hover:text-on-surface px-4 py-3 flex items-center gap-3 transition-colors hover:bg-white/5 rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface px-4 py-3 flex items-center gap-3 transition-colors hover:bg-white/5 rounded-lg" href="#">
+<span class="material-symbols-outlined">point_of_sale</span>
+<span class="font-body-md">POS</span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface px-4 py-3 flex items-center gap-3 transition-colors hover:bg-white/5 rounded-lg" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-body-md">Inventory</span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface px-4 py-3 flex items-center gap-3 transition-colors hover:bg-white/5 rounded-lg" href="#">
+<span class="material-symbols-outlined">assessment</span>
+<span class="font-body-md">Reports</span>
+</a>
+<!-- Active Tab: Customers -->
+<a class="bg-primary-container/20 text-primary border-l-4 border-primary px-4 py-3 flex items-center gap-3 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">group</span>
+<span class="font-body-md font-bold">Customers</span>
+</a>
+</nav>
+<div class="px-3 pt-stack-md border-t border-white/5 mt-auto">
+<a class="text-on-surface-variant hover:text-on-surface px-4 py-3 flex items-center gap-3 transition-colors hover:bg-white/5 rounded-lg" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-body-md">Support</span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface px-4 py-3 flex items-center gap-3 transition-colors hover:bg-white/5 rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md">Settings</span>
+</a>
+<div class="mt-stack-md p-4 bg-error/10 border border-error/20 rounded-xl flex items-center justify-between">
+<span class="font-label-mono text-label-mono text-error uppercase">Terminal Locked</span>
+<span class="material-symbols-outlined text-error text-sm">lock</span>
+</div>
+</div>
+</aside>
+<!-- TopAppBar (Shared Component) -->
+<header class="sticky top-0 right-0 z-40 w-full backdrop-blur-xl bg-surface-container/50 border-b border-white/5 flex justify-between items-center h-16 px-gutter pl-[284px]">
+<div class="flex items-center gap-stack-md flex-1 max-w-md">
+<div class="relative w-full group focus-within:ring-1 focus-within:ring-primary/50 rounded-lg transition-all">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-lg pl-10 pr-4 py-2 text-body-sm font-label-mono focus:ring-0 placeholder:text-on-surface-variant/40" placeholder="Search customer records..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-stack-md">
+<div class="flex items-center gap-2 pr-4 border-r border-white/10">
+<button class="p-2 hover:bg-white/10 rounded-lg transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 hover:bg-white/10 rounded-lg transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</button>
+<button class="p-2 hover:bg-white/10 rounded-lg transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined">history</span>
+</button>
+</div>
+<div class="flex items-center gap-3 ml-2 group cursor-pointer">
+<div class="text-right">
+<p class="font-label-caps text-label-caps text-on-surface">ADMIN_01</p>
+<p class="font-label-mono text-[10px] text-primary">STATION 4</p>
+</div>
+<img alt="User Profile" class="w-10 h-10 rounded-full border-2 border-primary/30" data-alt="Close-up professional portrait of a tech-focused male system administrator in a high-tech server room environment. Soft azure lighting illuminates his face, reflecting the sleek, glassmorphic aesthetic of the digital dashboard he manages. Modern, sharp focus with high contrast and deep navy shadows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0fpdwIlr3kHtxqKDeZTqBx8HvzgPuiDi1Yhifug-ct9XuQHeqKDG1WVcYnL594DNnyArTseS_CVt-I6rgmL6xjFNyrkWIthv1AJCrFKZ9DafGQGm4VpsVe8Ojpl0H0MSkI978lqjQs65zIh1oTpxNbtD-XyckMpiULpXFCuYCM7O4auycPGUPYBG9ydE5FYwoqAJukDDGIGgA0iM3H6iED8-6T1JqVp_Ih-wYDw4vbTbaMOvyZQ9dNqH_lVRCdekQATk_OfbCoWag"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-[260px] min-h-screen p-gutter pb-stack-lg">
+<!-- Header Section -->
+<section class="flex justify-between items-end mb-stack-lg">
+<div>
+<h2 class="font-headline-xl text-headline-xl text-on-surface tracking-tight">Customers</h2>
+<p class="text-on-surface-variant font-body-md">Manage relationships and loyalty performance.</p>
+</div>
+<button class="bg-primary-container text-on-primary-container px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg glow-primary">
+<span class="material-symbols-outlined">person_add</span>
+                Add Customer
+            </button>
+</section>
+<!-- Stats Bento Grid -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-gutter mb-stack-lg">
+<div class="glass-card p-6 rounded-2xl flex flex-col">
+<span class="text-on-surface-variant font-label-caps text-label-caps mb-2">Total Customers</span>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-lg text-headline-lg text-on-surface counter" data-value="1247">0</span>
+<span class="text-tertiary font-label-mono text-[12px]">+12.4%</span>
+</div>
+<div class="w-full h-1 bg-white/5 mt-4 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-2/3"></div>
+</div>
+</div>
+<div class="glass-card p-6 rounded-2xl">
+<span class="text-on-surface-variant font-label-caps text-label-caps mb-2">Repeat Buyers</span>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-lg text-headline-lg text-on-surface counter" data-value="68">0</span>
+<span class="font-headline-lg text-headline-lg text-on-surface">%</span>
+</div>
+<p class="text-on-surface-variant/60 font-body-sm mt-1">Industry benchmark: 42%</p>
+</div>
+<div class="glass-card p-6 rounded-2xl">
+<span class="text-on-surface-variant font-label-caps text-label-caps mb-2">Loyalty Members</span>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-lg text-headline-lg text-on-surface counter" data-value="342">0</span>
+<span class="material-symbols-outlined text-primary text-xl ml-2">stars</span>
+</div>
+<div class="flex gap-1 mt-4">
+<div class="h-1 flex-1 bg-primary rounded-full"></div>
+<div class="h-1 flex-1 bg-tertiary rounded-full"></div>
+<div class="h-1 flex-1 bg-white/5 rounded-full"></div>
+</div>
+</div>
+</section>
+<!-- Toolbar & Filters -->
+<section class="flex flex-wrap items-center gap-stack-md mb-stack-md">
+<div class="flex gap-2">
+<button class="bg-primary text-on-primary px-4 py-1.5 rounded-full font-label-caps text-label-caps">All</button>
+<button class="bg-white/5 hover:bg-white/10 text-on-surface-variant px-4 py-1.5 rounded-full font-label-caps text-label-caps transition-colors">Gold</button>
+<button class="bg-white/5 hover:bg-white/10 text-on-surface-variant px-4 py-1.5 rounded-full font-label-caps text-label-caps transition-colors">Platinum</button>
+<button class="bg-white/5 hover:bg-white/10 text-on-surface-variant px-4 py-1.5 rounded-full font-label-caps text-label-caps transition-colors">New</button>
+</div>
+<div class="ml-auto flex gap-stack-sm">
+<button class="glass-card px-4 py-1.5 rounded-lg flex items-center gap-2 text-on-surface-variant font-body-sm">
+<span class="material-symbols-outlined text-sm">filter_list</span>
+                    Advanced Filter
+                </button>
+<button class="glass-card px-4 py-1.5 rounded-lg flex items-center gap-2 text-on-surface-variant font-body-sm">
+<span class="material-symbols-outlined text-sm">download</span>
+                    Export CSV
+                </button>
+</div>
+</section>
+<!-- Main Database Table -->
+<section class="glass-card rounded-2xl overflow-hidden border border-white/5">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-white/5 border-b border-white/5">
+<tr>
+<th class="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant">Customer Name</th>
+<th class="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant">Phone</th>
+<th class="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant text-right">Total Spent</th>
+<th class="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant text-right">Points</th>
+<th class="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant text-center">Tier</th>
+<th class="px-6 py-4 font-label-caps text-label-caps text-on-surface-variant text-right">Actions</th>
+</tr>
+</thead>
+<tbody id="table-body">
+<!-- Row 1: Expanded (Usman Malik) -->
+<tr class="table-row border-b border-white/5 hover:bg-white/[0.02] transition-colors cursor-pointer group" onclick="toggleDetails('details-1')">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="relative">
+<img alt="Usman Malik" class="w-10 h-10 rounded-full border border-primary/20" data-alt="Headshot of a sophisticated South Asian businessman in his late 30s, dressed in a tailored blazer. The background is a blurred high-end lounge with warm amber and cool neon cyan lighting accents, matching the platinum loyalty status theme." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDz6MsSYqvzRvmW-Zwzo4b0R985MXXLlsMn4O4VYKi7UpkNio1Z2YdMCSOE0bYkWWKsJ5XfsQZp5v6F6jNmO7LHP95G66elxex9mBREAY-_pLNVq2f4MWoPRTjUkjELJ1ZFO8Q_RRi9WjLx_Zix631QVxMRJJTDzHw-o-bvYc8M0tbR6Up3zGxTqhwCxu0FmpPMXr3uD_4nz6jsROdubaU-CcacBkIB2k4kHU0wnkcEQxvmnrx7ZfeyjMWtzIeVWUg6vRXqVyRN_PcC"/>
+<div class="absolute -bottom-1 -right-1 bg-tertiary w-3 h-3 rounded-full border-2 border-surface"></div>
+</div>
+<div>
+<p class="font-bold text-on-surface">Usman Malik</p>
+<p class="text-on-surface-variant text-[12px]">Last visit: 2h ago</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 font-label-mono text-label-mono text-on-surface-variant">+92 300 4567890</td>
+<td class="px-6 py-4 text-right font-headline-md text-headline-md">₨4.6L</td>
+<td class="px-6 py-4 text-right font-headline-md text-headline-md text-primary">4,600</td>
+<td class="px-6 py-4 text-center">
+<span class="px-3 py-1 rounded-full bg-tertiary/10 text-tertiary text-[10px] font-bold border border-tertiary/20 uppercase tracking-widest flex items-center justify-center gap-1 w-fit mx-auto">
+                                    💎 Platinum
+                                </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="p-2 hover:bg-primary/20 rounded-lg text-on-surface-variant group-hover:text-primary transition-all">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Expandable Section for Usman Malik -->
+<tr class="bg-white/[0.03]" id="details-1">
+<td class="px-8 py-6" colspan="6">
+<div class="flex flex-col gap-4 animate-fade-in">
+<h4 class="font-label-caps text-label-caps text-primary border-b border-white/5 pb-2">Recent Activity</h4>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<div class="bg-surface/40 p-4 rounded-xl border border-white/5">
+<p class="font-label-mono text-[10px] text-on-surface-variant">INV-88219</p>
+<p class="font-bold text-on-surface mt-1">₨ 1,24,000</p>
+<p class="text-[11px] text-on-surface-variant/60">Oct 24, 2023 • Paid</p>
+</div>
+<div class="bg-surface/40 p-4 rounded-xl border border-white/5">
+<p class="font-label-mono text-[10px] text-on-surface-variant">INV-88154</p>
+<p class="font-bold text-on-surface mt-1">₨ 86,500</p>
+<p class="text-[11px] text-on-surface-variant/60">Oct 12, 2023 • Paid</p>
+</div>
+<div class="bg-surface/40 p-4 rounded-xl border border-white/5">
+<p class="font-label-mono text-[10px] text-on-surface-variant">INV-87992</p>
+<p class="font-bold text-on-surface mt-1">₨ 2,49,500</p>
+<p class="text-[11px] text-on-surface-variant/60">Sep 28, 2023 • Paid</p>
+</div>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 2: Ahmed Raza -->
+<tr class="table-row border-b border-white/5 hover:bg-white/[0.02] transition-colors cursor-pointer group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<img alt="Ahmed Raza" class="w-10 h-10 rounded-full border border-white/10" data-alt="Modern close-up portrait of a young Pakistani male student with glasses. Bright, dynamic studio lighting with orange and gold color schemes that emphasize the Gold loyalty level. High-resolution photography with a clean, technology-inspired vibe." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAaYr63feaXeBebN3CykAhQaRdMLRgkisZJ68hBUnWgNTDdWyxJJiCFAUgNOUMkVI4T2pkaEZupEwTempws7f8VhkUeIG0exg-t0HQZR2wk9MMDEvNIo_PYf-FOM4zCEiD39e8JtxxfCD-RwO9talRpt-EuVO4wdJVhxRjp6HZqDsSur8W5gyMIBpj4T5z-33iJr_1GWB6mGrAdAVBRPPXgPfPgGbS7nbQOMDCil0omKGNqz0H4j4L-rrq36uYyUlqSrguLMKIr9DIn"/>
+<div>
+<p class="font-bold text-on-surface">Ahmed Raza</p>
+<p class="text-on-surface-variant text-[12px]">Last visit: Yesterday</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 font-label-mono text-label-mono text-on-surface-variant">+92 321 9876543</td>
+<td class="px-6 py-4 text-right font-headline-md text-headline-md">₨2.8L</td>
+<td class="px-6 py-4 text-right font-headline-md text-headline-md text-primary">2,800</td>
+<td class="px-6 py-4 text-center">
+<span class="px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-500 text-[10px] font-bold border border-yellow-500/20 uppercase tracking-widest flex items-center justify-center gap-1 w-fit mx-auto">
+                                    🥇 Gold
+                                </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="p-2 hover:bg-primary/20 rounded-lg text-on-surface-variant group-hover:text-primary transition-all">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3: Hamza Mirza -->
+<tr class="table-row border-b border-white/5 hover:bg-white/[0.02] transition-colors cursor-pointer group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<img alt="Hamza Mirza" class="w-10 h-10 rounded-full border border-white/10" data-alt="Professional headshot of a Middle Eastern man in casual business attire. Cool gray and silver background lighting that correlates with the Silver membership status. Sharp, high-quality image with a minimalist, high-end commercial aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuClv1tKqno5Ru-tMzqH6MzQeEbZfPHFOd_PzcUOYTpoPN1-0IpMpeIqF1WPOdZ1o5cqpOpegpSdfmEj7HE3JzmW80FH7qsbgmVrslQTWp_SZpH8dCA97cy-altQAdqVnq7nmq_9myySqUIr0WfsoiScLv8r0fAn6MeIceCgjgrV2uC0MY8M8T-tVwiNQhcpWash_ZpLb6JUOvI4cTUHHEcQZIP7sLA4526wL_t_i_kO6XLxzBb9gpWy7qW-mxp0pso7f2M_4r9uwdOm"/>
+<div>
+<p class="font-bold text-on-surface">Hamza Mirza</p>
+<p class="text-on-surface-variant text-[12px]">Last visit: 3 days ago</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 font-label-mono text-label-mono text-on-surface-variant">+92 345 1122334</td>
+<td class="px-6 py-4 text-right font-headline-md text-headline-md">₨1.85L</td>
+<td class="px-6 py-4 text-right font-headline-md text-headline-md text-primary">1,850</td>
+<td class="px-6 py-4 text-center">
+<span class="px-3 py-1 rounded-full bg-slate-400/10 text-slate-400 text-[10px] font-bold border border-slate-400/20 uppercase tracking-widest flex items-center justify-center gap-1 w-fit mx-auto">
+                                    🥈 Silver
+                                </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="p-2 hover:bg-primary/20 rounded-lg text-on-surface-variant group-hover:text-primary transition-all">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4: Zara Khan -->
+<tr class="table-row border-b border-white/5 hover:bg-white/[0.02] transition-colors cursor-pointer group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<img alt="Zara Khan" class="w-10 h-10 rounded-full border border-white/10" data-alt="Portrait of a young woman with a friendly expression. Soft, studio lighting with a clean background. High-quality fashion photography style with vibrant skin tones and professional composition, suitable for a high-end customer loyalty application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJ_H7jyNzATCAgAsUulacA9hKGMsDSg73T8q_xR3CPerwjZrdjEbGSSI4FIqe0YoBPq_drbarSJuaiQ_mdZflzEphV-vkKaPkqFTxu-NiezxjK-uN84XKGa0OzvNoNtRBEhrIGBs1EhN4BkLA_IFSMqM0KqlxQgLpW2W8VP9bXsIs7rGoB-7HVIdjbT7CN7aqIXKV9AoJKZIGt5VZG9SaGPcXWak9ea6myi1poi071XqlD8y-dcr4ZSE0krGPGM7chEWp0SXzJ9H00"/>
+<div>
+<p class="font-bold text-on-surface">Zara Khan</p>
+<p class="text-on-surface-variant text-[12px]">Last visit: Oct 15</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 font-label-mono text-label-mono text-on-surface-variant">+92 333 5556667</td>
+<td class="px-6 py-4 text-right font-headline-md text-headline-md">₨1.2L</td>
+<td class="px-6 py-4 text-right font-headline-md text-headline-md text-primary">1,200</td>
+<td class="px-6 py-4 text-center">
+<span class="px-3 py-1 rounded-full bg-slate-400/10 text-slate-400 text-[10px] font-bold border border-slate-400/20 uppercase tracking-widest flex items-center justify-center gap-1 w-fit mx-auto">
+                                    🥈 Silver
+                                </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="p-2 hover:bg-primary/20 rounded-lg text-on-surface-variant group-hover:text-primary transition-all">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 5: Sana Butt -->
+<tr class="table-row hover:bg-white/[0.02] transition-colors cursor-pointer group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<img alt="Sana Butt" class="w-10 h-10 rounded-full border border-white/10" data-alt="Close-up face of a professional female executive. Lighting is warm and soft, with bronze and gold undertones in the background to match the Bronze loyalty level. The style is crisp, clean, and modern with a focus on corporate elegance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3oBFHUXPnNq-bqaWfY9B3KVuhH-9OXdkRbnOWBmXuwUoFQUxyjmTOJ-QxUOC7VL-x3XVxRSZvyztmiwoLHyUyjIYWoBSTBeMumjcw-dpeEHWshiZs3this_JYJiOgy5HMSGxjD3q0xzjYax1rID5uWfwJ_slX1-NQOj1Wz97ShU12OIzaX0CXytY2vDjFvpE71D_JqpZmthQxO0kgyssFItH-Ec-V98hMHT9qgDRrz5zZTiR_1bnOT0LbeQ4Mf5mfnkkiNPqokWDS"/>
+<div>
+<p class="font-bold text-on-surface">Sana Butt</p>
+<p class="text-on-surface-variant text-[12px]">Last visit: Sep 20</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 font-label-mono text-label-mono text-on-surface-variant">+92 312 4443322</td>
+<td class="px-6 py-4 text-right font-headline-md text-headline-md">₨45K</td>
+<td class="px-6 py-4 text-right font-headline-md text-headline-md text-primary">450</td>
+<td class="px-6 py-4 text-center">
+<span class="px-3 py-1 rounded-full bg-amber-600/10 text-amber-600 text-[10px] font-bold border border-amber-600/20 uppercase tracking-widest flex items-center justify-center gap-1 w-fit mx-auto">
+                                    🥉 Bronze
+                                </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="p-2 hover:bg-primary/20 rounded-lg text-on-surface-variant group-hover:text-primary transition-all">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="px-6 py-4 bg-white/5 flex items-center justify-between">
+<span class="text-on-surface-variant font-label-mono text-[12px]">Page 1 of 62</span>
+<div class="flex gap-2">
+<button class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/10 text-on-surface-variant transition-colors disabled:opacity-20" disabled="">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center bg-primary text-on-primary font-bold text-[12px]">1</button>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/10 text-on-surface-variant transition-colors font-bold text-[12px]">2</button>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/10 text-on-surface-variant transition-colors font-bold text-[12px]">3</button>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/10 text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<script>
+        // GSAP Animations
+        window.addEventListener('DOMContentLoaded', () => {
+            // Stagger in table rows
+            gsap.from(".table-row", {
+                duration: 0.8,
+                opacity: 0,
+                y: 20,
+                stagger: 0.05,
+                ease: "power3.out",
+                delay: 0.2
+            });
+
+            // Count-up animations for stats
+            const counters = document.querySelectorAll('.counter');
+            counters.forEach(counter => {
+                const target = +counter.getAttribute('data-value');
+                const duration = 1.5;
+                const obj = { val: 0 };
+                
+                gsap.to(obj, {
+                    val: target,
+                    duration: duration,
+                    ease: "power2.out",
+                    onUpdate: () => {
+                        counter.innerText = Math.ceil(obj.val).toLocaleString();
+                    }
+                });
+            });
+
+            // Entry for stat cards
+            gsap.from(".glass-card", {
+                duration: 1,
+                opacity: 0,
+                scale: 0.95,
+                stagger: 0.1,
+                ease: "power4.out"
+            });
+        });
+
+        // Expandable row logic
+        function toggleDetails(id) {
+            const row = document.getElementById(id);
+            const isHidden = row.classList.contains('hidden');
+            
+            // Note: In this static mockup we keep detail-1 visible but functional
+            // For production, we'd handle other rows
+            if (row.style.display === 'none') {
+                row.style.display = 'table-row';
+                gsap.fromTo(row, { opacity: 0, y: -10 }, { opacity: 1, y: 0, duration: 0.3 });
+            } else {
+                gsap.to(row, { opacity: 0, y: -10, duration: 0.2, onComplete: () => row.style.display = 'none' });
+            }
+        }
+
+        // Initialize state
+        document.querySelectorAll('tr[id^="details-"]').forEach(r => {
+            if (r.id !== 'details-1') r.style.display = 'none';
+        });
+    </script>
+</body></html>

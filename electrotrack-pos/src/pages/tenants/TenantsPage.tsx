@@ -53,9 +53,13 @@ export default function TenantsPage() {
 
   useEffect(() => {
     if (!loading && containerRef.current) {
-      gsap.from(containerRef.current.querySelectorAll('.tenant-row'), {
-        opacity: 0, y: 8, duration: 0.3, stagger: 0.04, ease: 'power2.out',
-      });
+      const els = containerRef.current.querySelectorAll('.tenant-row');
+      gsap.killTweensOf(els);
+      const tw = gsap.fromTo(els,
+        { opacity: 0, y: 6 },
+        { opacity: 1, y: 0, duration: 0.25, stagger: 0.03, ease: 'power3.out', overwrite: true, clearProps: 'transform,opacity' },
+      );
+      return () => { tw.kill(); };
     }
   }, [loading, tenants]);
 

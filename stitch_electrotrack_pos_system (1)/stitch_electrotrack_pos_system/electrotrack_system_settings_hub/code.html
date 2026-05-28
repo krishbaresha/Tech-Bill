@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ElectroTrack | System Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+        body {
+            background-color: #0A0F1E;
+            color: #dee1f7;
+            overflow-x: hidden;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+        }
+        .glass-card:hover {
+            backdrop-filter: blur(24px);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        .glass-header {
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .switch-toggle {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        .switch-toggle input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #2f3445; transition: .4s; border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+            background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #2fd9f4; box-shadow: 0 0 10px rgba(47, 217, 244, 0.4); }
+        input:checked + .slider:before { transform: translateX(20px); }
+        
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-glow {
+            box-shadow: 0 0 15px rgba(192, 193, 255, 0.2);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#2fd9f4",
+                        "secondary": "#d0bcff",
+                        "surface-variant": "#2f3445",
+                        "surface-container-high": "#25293a",
+                        "secondary-fixed": "#e9ddff",
+                        "primary-fixed-dim": "#c0c1ff",
+                        "on-tertiary-fixed": "#001f25",
+                        "on-secondary-fixed-variant": "#5516be",
+                        "on-primary-fixed": "#07006c",
+                        "on-primary-container": "#0d0096",
+                        "on-error": "#690005",
+                        "on-surface": "#dee1f7",
+                        "inverse-surface": "#dee1f7",
+                        "surface-container-low": "#161b2b",
+                        "surface": "#0e1322",
+                        "inverse-on-surface": "#2b3040",
+                        "secondary-fixed-dim": "#d0bcff",
+                        "on-tertiary-container": "#000608",
+                        "error": "#ffb4ab",
+                        "surface-container-highest": "#2f3445",
+                        "tertiary": "#2fd9f4",
+                        "primary-container": "#8083ff",
+                        "tertiary-container": "#008395",
+                        "error-container": "#93000a",
+                        "surface-dim": "#0e1322",
+                        "inverse-primary": "#494bd6",
+                        "surface-container-lowest": "#090e1c",
+                        "outline": "#908fa0",
+                        "on-background": "#dee1f7",
+                        "on-primary": "#1000a9",
+                        "on-surface-variant": "#c7c4d7",
+                        "surface-bright": "#343949",
+                        "primary": "#c0c1ff",
+                        "on-secondary-fixed": "#23005c",
+                        "surface-tint": "#c0c1ff",
+                        "outline-variant": "#464554",
+                        "on-error-container": "#ffdad6",
+                        "secondary-container": "#571bc1",
+                        "primary-fixed": "#e1e0ff",
+                        "on-primary-fixed-variant": "#2f2ebe",
+                        "on-tertiary": "#00363e",
+                        "surface-container": "#1a1f2f",
+                        "on-secondary": "#3c0091",
+                        "background": "#0e1322",
+                        "on-tertiary-fixed-variant": "#004e5a",
+                        "on-secondary-container": "#c4abff",
+                        "tertiary-fixed": "#a2eeff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin": "32px",
+                        "container-max": "1440px",
+                        "stack-xs": "4px",
+                        "stack-sm": "8px",
+                        "unit": "4px",
+                        "gutter": "24px",
+                        "stack-md": "16px",
+                        "stack-lg": "32px"
+                    },
+                    "fontFamily": {
+                        "label-mono": ["JetBrains Mono"],
+                        "headline-xl": ["Space Grotesk"],
+                        "headline-md": ["Space Grotesk"],
+                        "headline-lg-mobile": ["Space Grotesk"],
+                        "body-lg": ["DM Sans"],
+                        "label-caps": ["DM Sans"],
+                        "body-md": ["DM Sans"],
+                        "headline-lg": ["Space Grotesk"],
+                        "body-sm": ["DM Sans"]
+                    },
+                    "fontSize": {
+                        "label-mono": ["13px", {"lineHeight": "1.0", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "headline-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-md": ["20px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "1.0", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="flex min-h-screen">
+<!-- Sidebar Navigation Shell -->
+<aside class="fixed left-0 top-0 h-full flex flex-col p-stack-md bg-surface border-r border-outline-variant/10 shadow-xl w-64 z-50" id="side-nav">
+<div class="flex items-center gap-stack-sm mb-stack-lg px-2">
+<div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary">bolt</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">ElectroTrack</h1>
+<p class="font-body-sm text-label-caps text-on-surface-variant/60">V2.0.4 - Premium POS</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2.5 text-on-surface-variant hover:bg-surface-variant/20 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-on-surface-variant hover:bg-surface-variant/20 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">badge</span>
+<span class="font-body-md">Staff</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-on-surface-variant hover:bg-surface-variant/20 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-body-md">Inventory</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-on-surface-variant hover:bg-surface-variant/20 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">point_of_sale</span>
+<span class="font-body-md">Sales</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-on-surface-variant hover:bg-surface-variant/20 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-body-md">Reports</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-on-surface-variant hover:bg-surface-variant/20 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">local_shipping</span>
+<span class="font-body-md">Suppliers</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-on-surface-variant hover:bg-surface-variant/20 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">history_edu</span>
+<span class="font-body-md">Audit Log</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 bg-secondary-container text-on-secondary-container rounded-lg font-semibold active-glow" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md">Settings</span>
+</a>
+</nav>
+<div class="pt-stack-md mt-auto border-t border-outline-variant/10">
+<a class="flex items-center gap-3 px-3 py-2.5 text-on-surface-variant hover:bg-surface-variant/20 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">help_outline</span>
+<span class="font-body-md text-body-md">Help Center</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-error/80 hover:bg-error-container/20 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-body-md text-body-md">Log Out</span>
+</a>
+</div>
+</aside>
+<!-- Main Workspace -->
+<main class="flex-1 ml-64 p-margin flex flex-col h-screen overflow-y-auto">
+<!-- Header -->
+<header class="flex justify-between items-center mb-stack-lg">
+<div>
+<h2 class="font-headline-lg text-headline-lg font-bold text-on-surface tracking-tight">System Settings</h2>
+<p class="text-on-surface-variant font-body-md">Configure your global POS preferences and AI optimization tools.</p>
+</div>
+<div class="flex items-center gap-gutter">
+<div class="relative">
+<input class="bg-surface-container border-none rounded-xl pl-10 pr-4 py-2 w-64 text-on-surface focus:ring-2 focus:ring-primary/40 font-body-md" placeholder="Search settings..." type="text"/>
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-on-surface-variant">search</span>
+</div>
+<div class="flex gap-stack-sm">
+<button class="w-10 h-10 rounded-full glass-card flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"><span class="material-symbols-outlined text-primary">sync</span></button>
+<button class="w-10 h-10 rounded-full glass-card flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"><span class="material-symbols-outlined text-primary">notifications</span></button>
+</div>
+</div>
+</header>
+<!-- Two Column Content Area -->
+<div class="flex gap-gutter flex-1 mb-24">
+<!-- Left Sub-Nav -->
+<div class="w-[220px] shrink-0">
+<div class="glass-card rounded-xl p-stack-sm sticky top-0">
+<nav class="space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 text-primary font-semibold transition-all duration-200" href="#shop-info">
+<span class="material-symbols-outlined text-[20px]">storefront</span>
+<span class="text-body-sm">Shop Info</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-white/5 transition-all" href="#staff">
+<span class="material-symbols-outlined text-[20px]">group</span>
+<span class="text-body-sm">Staff &amp; Roles</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-white/5 transition-all" href="#security">
+<span class="material-symbols-outlined text-[20px]">lock</span>
+<span class="text-body-sm">Security &amp; OTP</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-white/5 transition-all" href="#ai">
+<span class="material-symbols-outlined text-[20px]">smart_toy</span>
+<span class="text-body-sm">AI Settings</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-white/5 transition-all" href="#payments">
+<span class="material-symbols-outlined text-[20px]">credit_card</span>
+<span class="text-body-sm">Payments</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-white/5 transition-all" href="#receipt">
+<span class="material-symbols-outlined text-[20px]">print</span>
+<span class="text-body-sm">Receipt</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-white/5 transition-all" href="#integrations">
+<span class="material-symbols-outlined text-[20px]">settings_input_antenna</span>
+<span class="text-body-sm">Integrations</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-white/5 transition-all" href="#appearance">
+<span class="material-symbols-outlined text-[20px]">dark_mode</span>
+<span class="text-body-sm">Appearance</span>
+</a>
+</nav>
+</div>
+</div>
+<!-- Right Content Panel -->
+<div class="flex-1 space-y-gutter animate-content">
+<!-- Shop Information Card -->
+<section class="settings-card stagger-item" id="shop-info">
+<div class="glass-card rounded-xl overflow-hidden">
+<div class="glass-header px-stack-md py-stack-sm flex items-center justify-between">
+<h3 class="font-headline-md font-bold text-primary flex items-center gap-2">
+<span class="material-symbols-outlined">store</span> Shop Information
+                            </h3>
+<span class="text-label-caps text-on-surface-variant/50">GENERAL SETUP</span>
+</div>
+<div class="p-stack-md grid grid-cols-2 gap-stack-md">
+<div class="space-y-1">
+<label class="text-label-caps text-on-surface-variant text-[11px]">SHOP NAME</label>
+<input class="w-full bg-white/5 border-b-2 border-outline-variant hover:border-primary focus:border-primary transition-colors border-t-0 border-x-0 font-body-md p-2 focus:ring-0" type="text" value="ElectroTrack HQ"/>
+</div>
+<div class="space-y-1">
+<label class="text-label-caps text-on-surface-variant text-[11px]">PHONE</label>
+<input class="w-full bg-white/5 border-b-2 border-outline-variant focus:border-primary transition-colors border-t-0 border-x-0 font-body-md p-2 focus:ring-0" type="text" value="+1 (555) 0123-456"/>
+</div>
+<div class="space-y-1">
+<label class="text-label-caps text-on-surface-variant text-[11px]">EMAIL ADDRESS</label>
+<input class="w-full bg-white/5 border-b-2 border-outline-variant focus:border-primary transition-colors border-t-0 border-x-0 font-body-md p-2 focus:ring-0" type="email" value="admin@electrotrack.pos"/>
+</div>
+<div class="space-y-1">
+<label class="text-label-caps text-on-surface-variant text-[11px]">CITY</label>
+<input class="w-full bg-white/5 border-b-2 border-outline-variant focus:border-primary transition-colors border-t-0 border-x-0 font-body-md p-2 focus:ring-0" type="text" value="Silicon Valley"/>
+</div>
+<div class="col-span-2 space-y-1">
+<label class="text-label-caps text-on-surface-variant text-[11px]">PHYSICAL ADDRESS</label>
+<input class="w-full bg-white/5 border-b-2 border-outline-variant focus:border-primary transition-colors border-t-0 border-x-0 font-body-md p-2 focus:ring-0" type="text" value="Bldg 4, Tech Plaza, Quantum Drive, CA 90210"/>
+</div>
+<div class="space-y-1">
+<label class="text-label-caps text-on-surface-variant text-[11px]">NTN NUMBER</label>
+<input class="w-full bg-label-mono text-label-mono text-primary font-label-mono bg-white/5 border-b-2 border-outline-variant focus:border-primary transition-colors border-t-0 border-x-0 p-2 focus:ring-0" type="text" value="POS-9988-234-A"/>
+</div>
+<div class="flex gap-4">
+<div class="flex-1 space-y-1">
+<label class="text-label-caps text-on-surface-variant text-[11px]">OPENING</label>
+<input class="w-full bg-white/5 border-b-2 border-outline-variant focus:border-primary transition-colors border-t-0 border-x-0 font-body-md p-2 focus:ring-0" type="time" value="09:00"/>
+</div>
+<div class="flex-1 space-y-1">
+<label class="text-label-caps text-on-surface-variant text-[11px]">CLOSING</label>
+<input class="w-full bg-white/5 border-b-2 border-outline-variant focus:border-primary transition-colors border-t-0 border-x-0 font-body-md p-2 focus:ring-0" type="time" value="21:00"/>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- POS Configuration Card -->
+<section class="settings-card stagger-item">
+<div class="glass-card rounded-xl overflow-hidden">
+<div class="glass-header px-stack-md py-stack-sm">
+<h3 class="font-headline-md font-bold text-primary flex items-center gap-2">
+<span class="material-symbols-outlined">tune</span> POS Configuration
+                            </h3>
+</div>
+<div class="p-stack-md grid grid-cols-2 gap-stack-md">
+<div class="space-y-1">
+<label class="text-label-caps text-on-surface-variant text-[11px]">LOW STOCK THRESHOLD</label>
+<input class="w-full bg-white/5 border-b-2 border-outline-variant focus:border-primary font-label-mono text-label-mono transition-colors border-t-0 border-x-0 p-2 focus:ring-0" type="number" value="5"/>
+</div>
+<div class="space-y-1">
+<label class="text-label-caps text-on-surface-variant text-[11px]">MAX DISCOUNT % (NO OTP)</label>
+<input class="w-full bg-white/5 border-b-2 border-outline-variant focus:border-primary font-label-mono text-label-mono transition-colors border-t-0 border-x-0 p-2 focus:ring-0" type="number" value="10"/>
+</div>
+<div class="space-y-1">
+<label class="text-label-caps text-on-surface-variant text-[11px]">DEAD STOCK DAYS</label>
+<input class="w-full bg-white/5 border-b-2 border-outline-variant focus:border-primary font-label-mono text-label-mono transition-colors border-t-0 border-x-0 p-2 focus:ring-0" type="number" value="60"/>
+</div>
+<div class="space-y-1">
+<label class="text-label-caps text-on-surface-variant text-[11px]">RETURN FRAUD WINDOW (DAYS)</label>
+<input class="w-full bg-white/5 border-b-2 border-outline-variant focus:border-primary font-label-mono text-label-mono transition-colors border-t-0 border-x-0 p-2 focus:ring-0" type="number" value="30"/>
+</div>
+</div>
+</div>
+</section>
+<!-- AI Settings Section -->
+<section class="settings-card stagger-item" id="ai">
+<div class="glass-card rounded-xl overflow-hidden border-tertiary/20">
+<div class="glass-header px-stack-md py-stack-sm flex items-center justify-between bg-tertiary-container/10">
+<h3 class="font-headline-md font-bold text-tertiary flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">auto_awesome</span> AI Neural Core
+                            </h3>
+<span class="bg-tertiary-container/30 text-tertiary px-2 py-0.5 rounded text-[10px] font-bold">V-AI OPTIMIZED</span>
+</div>
+<div class="p-stack-md space-y-4">
+<!-- Toggle Rows -->
+<div class="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+<div class="flex gap-4 items-center">
+<span class="material-symbols-outlined text-tertiary">query_stats</span>
+<div>
+<h4 class="font-body-md font-bold">AI Demand Forecasting</h4>
+<p class="text-body-sm text-on-surface-variant">Predict inventory needs based on seasonal trends.</p>
+</div>
+</div>
+<label class="switch-toggle">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+<div class="flex gap-4 items-center">
+<span class="material-symbols-outlined text-tertiary">security</span>
+<div>
+<h4 class="font-body-md font-bold">AI Fraud Detection on Returns</h4>
+<p class="text-body-sm text-on-surface-variant">Flag suspicious return patterns in real-time.</p>
+</div>
+</div>
+<label class="switch-toggle">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+<div class="flex gap-4 items-center">
+<span class="material-symbols-outlined text-tertiary">social_leaderboard</span>
+<div>
+<h4 class="font-body-md font-bold">AI Staff Performance Scoring</h4>
+<p class="text-body-sm text-on-surface-variant">Automated efficiency metrics for floor staff.</p>
+</div>
+</div>
+<label class="switch-toggle">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors opacity-70">
+<div class="flex gap-4 items-center">
+<span class="material-symbols-outlined text-on-surface-variant">trending_up</span>
+<div>
+<h4 class="font-body-md font-bold">AI Dynamic Pricing Suggestions</h4>
+<p class="text-body-sm text-on-surface-variant">Suggest price changes based on competitor velocity.</p>
+</div>
+</div>
+<label class="switch-toggle">
+<input type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+<div class="flex gap-4 items-center">
+<span class="material-symbols-outlined text-tertiary">dashboard_customize</span>
+<div>
+<h4 class="font-body-md font-bold">AI Daily Insights Widget</h4>
+<p class="text-body-sm text-on-surface-variant">Morning briefing on your dashboard summary.</p>
+</div>
+</div>
+<label class="switch-toggle">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+</div>
+</div>
+</section>
+<!-- Appearance Section -->
+<section class="settings-card stagger-item" id="appearance">
+<div class="glass-card rounded-xl overflow-hidden">
+<div class="glass-header px-stack-md py-stack-sm">
+<h3 class="font-headline-md font-bold text-primary flex items-center gap-2">
+<span class="material-symbols-outlined">palette</span> Appearance
+                            </h3>
+</div>
+<div class="p-stack-md space-y-gutter">
+<!-- Theme Tabs -->
+<div class="space-y-3">
+<p class="text-label-caps text-on-surface-variant text-[11px]">INTERFACE MODE</p>
+<div class="flex p-1 bg-surface-container rounded-xl w-fit">
+<button class="px-6 py-2 rounded-lg text-body-sm text-on-surface-variant hover:text-on-surface transition-colors">Light</button>
+<button class="px-6 py-2 rounded-lg bg-primary text-on-primary font-bold shadow-lg active-glow">Dark</button>
+<button class="px-6 py-2 rounded-lg text-body-sm text-on-surface-variant hover:text-on-surface transition-colors">System</button>
+</div>
+</div>
+<!-- Accent Picker -->
+<div class="space-y-3">
+<p class="text-label-caps text-on-surface-variant text-[11px]">BRAND ACCENT COLOR</p>
+<div class="flex gap-stack-sm">
+<button class="w-8 h-8 rounded-full bg-primary border-2 border-white scale-110 shadow-lg ring-4 ring-primary/20"></button>
+<button class="w-8 h-8 rounded-full bg-[#f43f5e] hover:scale-110 transition-transform"></button>
+<button class="w-8 h-8 rounded-full bg-[#10b981] hover:scale-110 transition-transform"></button>
+<button class="w-8 h-8 rounded-full bg-[#f59e0b] hover:scale-110 transition-transform"></button>
+<button class="w-8 h-8 rounded-full bg-[#3b82f6] hover:scale-110 transition-transform"></button>
+<button class="w-8 h-8 rounded-full bg-[#a855f7] hover:scale-110 transition-transform"></button>
+</div>
+</div>
+<!-- Font Size Tabs -->
+<div class="space-y-3">
+<p class="text-label-caps text-on-surface-variant text-[11px]">TYPOGRAPHY RHYTHM</p>
+<div class="flex p-1 bg-surface-container rounded-xl w-fit">
+<button class="px-6 py-2 rounded-lg text-body-sm text-on-surface-variant hover:text-on-surface transition-colors">Compact</button>
+<button class="px-6 py-2 rounded-lg bg-surface-container-high border border-outline-variant/30 text-on-surface font-semibold shadow-sm">Default</button>
+<button class="px-6 py-2 rounded-lg text-body-sm text-on-surface-variant hover:text-on-surface transition-colors">Comfortable</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<div class="h-10"></div> <!-- Padding for scroll -->
+</div>
+</div>
+</main>
+<!-- Bottom Action Bar -->
+<div class="fixed bottom-0 right-0 left-64 h-20 bg-surface/80 backdrop-blur-xl border-t border-outline-variant/10 px-margin flex items-center justify-end gap-stack-md z-40">
+<button class="px-stack-lg py-3 rounded-xl font-body-md font-semibold text-on-surface-variant hover:bg-white/5 transition-colors">
+            Reset Defaults
+        </button>
+<button class="px-stack-lg py-3 rounded-xl font-body-md font-bold bg-primary text-on-primary active-glow hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">save</span> Save Changes
+        </button>
+</div>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // GSAP Animations
+            gsap.from("#side-nav", {
+                x: -100,
+                opacity: 0,
+                duration: 0.8,
+                ease: "power3.out"
+            });
+
+            gsap.from(".stagger-item", {
+                y: 30,
+                opacity: 0,
+                duration: 0.6,
+                stagger: 0.1,
+                ease: "power2.out",
+                delay: 0.2
+            });
+
+            // Smooth scroll tracking for sub-nav
+            const subNavLinks = document.querySelectorAll('div[w-\\[220px\\]] nav a');
+            subNavLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    subNavLinks.forEach(l => {
+                        l.classList.remove('bg-primary/10', 'text-primary', 'font-semibold');
+                        l.classList.add('text-on-surface-variant', 'hover:bg-white/5');
+                    });
+                    link.classList.add('bg-primary/10', 'text-primary', 'font-semibold');
+                    link.classList.remove('text-on-surface-variant', 'hover:bg-white/5');
+                });
+            });
+
+            // Micro-interaction: Input focus glow
+            const inputs = document.querySelectorAll('input[type="text"], input[type="email"], input[type="number"], input[type="time"]');
+            inputs.forEach(input => {
+                input.addEventListener('focus', () => {
+                    gsap.to(input, { borderBottomColor: '#c0c1ff', duration: 0.3 });
+                });
+                input.addEventListener('blur', () => {
+                    gsap.to(input, { borderBottomColor: 'rgba(144, 143, 160, 0.4)', duration: 0.3 });
+                });
+            });
+        });
+    </script>
+</body></html>

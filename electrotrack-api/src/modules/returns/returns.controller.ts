@@ -52,7 +52,11 @@ export class ReturnsController {
   @Permissions('returns.create')
   @HttpCode(HttpStatus.CREATED)
   createReturn(@Body() dto: CreateReturnDto, @Req() req: RequestWithUser) {
-    return this.returnsService.createReturn(dto, req.user.id, req.user.tenantId);
+    return this.returnsService.createReturn(
+      dto,
+      req.user.id,
+      req.user.tenantId,
+    );
   }
 
   @Patch(':id/approve')
@@ -64,7 +68,12 @@ export class ReturnsController {
     @Body() dto: ReviewReturnDto,
     @Req() req: RequestWithUser,
   ) {
-    return this.returnsService.approveReturn(id, dto, req.user.id, req.user.tenantId);
+    return this.returnsService.approveReturn(
+      id,
+      dto,
+      req.user.id,
+      req.user.tenantId,
+    );
   }
 
   @Patch(':id/reject')
@@ -76,6 +85,11 @@ export class ReturnsController {
     @Body() dto: ReviewReturnDto,
     @Req() req: RequestWithUser,
   ) {
-    return this.returnsService.rejectReturn(id, dto, req.user.id, req.user.tenantId);
+    return this.returnsService.rejectReturn(
+      id,
+      dto,
+      req.user.id,
+      req.user.tenantId,
+    );
   }
 }

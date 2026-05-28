@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ElectroTrack | Add New Product</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&amp;family=Space+Grotesk:wght@300..700&amp;family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-fixed": "#001f25",
+                    "on-primary-container": "#0d0096",
+                    "surface-container-low": "#161b2b",
+                    "tertiary-container": "#008395",
+                    "background": "#0e1322",
+                    "on-background": "#dee1f7",
+                    "surface-bright": "#343949",
+                    "secondary-fixed": "#e9ddff",
+                    "surface-tint": "#c0c1ff",
+                    "secondary-fixed-dim": "#d0bcff",
+                    "on-tertiary-fixed-variant": "#004e5a",
+                    "on-primary-fixed": "#07006c",
+                    "on-surface": "#dee1f7",
+                    "on-secondary": "#3c0091",
+                    "primary-fixed": "#e1e0ff",
+                    "surface-container-high": "#25293a",
+                    "on-secondary-fixed": "#23005c",
+                    "surface-container-lowest": "#090e1c",
+                    "surface-container": "#1a1f2f",
+                    "on-primary": "#1000a9",
+                    "error-container": "#93000a",
+                    "error": "#ffb4ab",
+                    "surface-variant": "#2f3445",
+                    "tertiary": "#2fd9f4",
+                    "surface-dim": "#0e1322",
+                    "secondary": "#d0bcff",
+                    "on-secondary-fixed-variant": "#5516be",
+                    "on-secondary-container": "#c4abff",
+                    "outline-variant": "#464554",
+                    "on-tertiary-container": "#000608",
+                    "tertiary-fixed": "#a2eeff",
+                    "inverse-surface": "#dee1f7",
+                    "on-primary-fixed-variant": "#2f2ebe",
+                    "inverse-on-surface": "#2b3040",
+                    "on-surface-variant": "#c7c4d7",
+                    "inverse-primary": "#494bd6",
+                    "tertiary-fixed-dim": "#2fd9f4",
+                    "secondary-container": "#571bc1",
+                    "primary-container": "#8083ff",
+                    "primary": "#c0c1ff",
+                    "outline": "#908fa0",
+                    "on-tertiary": "#00363e",
+                    "surface": "#0e1322",
+                    "primary-fixed-dim": "#c0c1ff",
+                    "on-error": "#690005",
+                    "on-error-container": "#ffdad6"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "stack-lg": "32px",
+                    "container-max": "1440px",
+                    "unit": "4px",
+                    "stack-md": "16px",
+                    "margin": "32px",
+                    "stack-xs": "4px",
+                    "gutter": "24px",
+                    "stack-sm": "8px"
+            },
+            "fontFamily": {
+                    "body-sm": ["DM Sans"],
+                    "label-caps": ["DM Sans"],
+                    "label-mono": ["JetBrains Mono"],
+                    "body-md": ["DM Sans"],
+                    "headline-md": ["Space Grotesk"],
+                    "headline-lg-mobile": ["Space Grotesk"],
+                    "body-lg": ["DM Sans"],
+                    "headline-xl": ["Space Grotesk"],
+                    "headline-lg": ["Space Grotesk"]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-modal {
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(192, 193, 255, 0.05);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(24px);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        .input-glow:focus {
+            outline: none;
+            border-bottom-color: #c0c1ff;
+            box-shadow: 0 4px 12px -4px rgba(192, 193, 255, 0.3);
+        }
+        .primary-glow-button {
+            background: linear-gradient(135deg, #8083ff 0%, #571bc1 100%);
+            box-shadow: 0 0 15px rgba(128, 131, 255, 0.2);
+            transition: all 0.2s ease;
+        }
+        .primary-glow-button:hover {
+            box-shadow: 0 0 25px rgba(128, 131, 255, 0.4);
+            transform: translateY(-1px);
+        }
+        .primary-glow-button:active {
+            transform: scale(0.98);
+        }
+        .custom-switch {
+            width: 36px;
+            height: 20px;
+            background: #2f3445;
+            border-radius: 999px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .custom-switch.active {
+            background: #c0c1ff;
+        }
+        .custom-switch-handle {
+            width: 14px;
+            height: 14px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            transition: transform 0.3s;
+        }
+        .custom-switch.active .custom-switch-handle {
+            transform: translateX(16px);
+            background: #0d0096;
+        }
+        .input-underline {
+            border: none;
+            border-bottom: 2px solid rgba(144, 143, 160, 0.3);
+            background: rgba(255, 255, 255, 0.03);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex items-center justify-center p-6 overflow-hidden">
+<!-- Mock Background Content (Blurred) -->
+<div class="fixed inset-0 z-0 pointer-events-none opacity-40 blur-xl scale-110 overflow-hidden">
+<div class="absolute top-10 left-10 w-64 h-64 bg-primary/20 rounded-full"></div>
+<div class="absolute bottom-20 right-20 w-96 h-96 bg-tertiary/20 rounded-full"></div>
+<div class="grid grid-cols-4 gap-6 p-10">
+<div class="h-40 glass-card rounded-xl"></div>
+<div class="h-40 glass-card rounded-xl"></div>
+<div class="h-40 glass-card rounded-xl"></div>
+<div class="h-40 glass-card rounded-xl"></div>
+</div>
+</div>
+<!-- Modal Backdrop -->
+<div class="fixed inset-0 bg-[#0A0F1E]/60 backdrop-blur-md z-40"></div>
+<!-- Modal Container -->
+<div class="glass-modal w-full max-w-[560px] rounded-xl z-50 overflow-hidden opacity-0 scale-95" id="product-modal">
+<!-- Header -->
+<header class="p-stack-lg flex justify-between items-start">
+<div class="stagger-item">
+<h1 class="font-headline-md text-headline-md text-on-surface font-bold">Add New Product</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Enter product specifications and inventory thresholds.</p>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors p-2 hover:bg-surface-variant/30 rounded-full">
+<span class="material-symbols-outlined">close</span>
+</button>
+</header>
+<!-- Form Content -->
+<form class="px-stack-lg pb-stack-lg space-y-gutter">
+<div class="grid grid-cols-2 gap-gutter">
+<!-- Left Column -->
+<div class="space-y-stack-md">
+<div class="stagger-item">
+<label class="block font-headline-md text-[14px] font-bold text-on-surface-variant mb-stack-xs">Product Name *</label>
+<input class="w-full input-underline input-glow rounded-t-sm px-3 py-2 font-body-md text-on-surface" placeholder="e.g. MacBook Pro M3" type="text"/>
+<span class="text-error text-[12px] font-medium mt-1 block">Product name is required</span>
+</div>
+<div class="stagger-item">
+<label class="block font-headline-md text-[14px] font-bold text-on-surface-variant mb-stack-xs">Brand</label>
+<input class="w-full input-underline input-glow rounded-t-sm px-3 py-2 font-body-md text-on-surface" placeholder="e.g. Apple" type="text"/>
+</div>
+<div class="stagger-item">
+<label class="block font-headline-md text-[14px] font-bold text-on-surface-variant mb-stack-xs">Category</label>
+<div class="relative group">
+<select class="w-full input-underline input-glow rounded-t-sm px-3 py-2 font-body-md text-on-surface appearance-none bg-surface-variant/20">
+<option value="laptops">Laptops</option>
+<option value="mobiles">Mobiles</option>
+<option value="printers">Printers</option>
+<option value="monitors">Monitors</option>
+<option value="accessories">Accessories</option>
+<option value="audio">Audio</option>
+<option value="storage">Storage</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">expand_more</span>
+</div>
+</div>
+<div class="stagger-item">
+<label class="block font-headline-md text-[14px] font-bold text-on-surface-variant mb-stack-xs">Selling Price ₨ *</label>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant font-label-mono">₨</span>
+<input class="w-full input-underline input-glow rounded-t-sm pl-8 pr-3 py-2 font-label-mono text-on-surface" placeholder="0.00" type="number"/>
+</div>
+</div>
+<div class="stagger-item">
+<label class="block font-headline-md text-[14px] font-bold text-on-surface-variant mb-stack-xs">Purchase Price ₨</label>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant font-label-mono">₨</span>
+<input class="w-full input-underline input-glow rounded-t-sm pl-8 pr-3 py-2 font-label-mono text-on-surface" placeholder="0.00" type="number"/>
+</div>
+</div>
+</div>
+<!-- Right Column -->
+<div class="space-y-stack-md">
+<div class="stagger-item">
+<label class="block font-headline-md text-[14px] font-bold text-on-surface-variant mb-stack-xs">SKU/Model Code</label>
+<input class="w-full input-underline input-glow rounded-t-sm px-3 py-2 font-label-mono text-on-surface text-primary" type="text" value="ET-LPT-2024-001"/>
+</div>
+<div class="stagger-item">
+<label class="block font-headline-md text-[14px] font-bold text-on-surface-variant mb-stack-xs">Warranty Months</label>
+<input class="w-full input-underline input-glow rounded-t-sm px-3 py-2 font-body-md text-on-surface" type="number" value="12"/>
+</div>
+<div class="stagger-item">
+<label class="block font-headline-md text-[14px] font-bold text-on-surface-variant mb-stack-xs">Low Stock Threshold</label>
+<input class="w-full input-underline input-glow rounded-t-sm px-3 py-2 font-body-md text-on-surface" type="number" value="5"/>
+</div>
+<div class="stagger-item">
+<label class="block font-headline-md text-[14px] font-bold text-on-surface-variant mb-stack-xs">Description</label>
+<textarea class="w-full input-underline input-glow rounded-t-sm px-3 py-2 font-body-sm text-on-surface resize-none" placeholder="Enter product details..." rows="3"></textarea>
+</div>
+<div class="stagger-item flex items-center gap-3 pt-2">
+<div class="custom-switch active" id="active-toggle">
+<div class="custom-switch-handle"></div>
+</div>
+<div>
+<label class="block font-headline-md text-[14px] font-bold text-on-surface">Is Active</label>
+<span class="text-[11px] text-on-surface-variant">Product is available for sale</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Image Upload Section -->
+<div class="stagger-item pt-2">
+<label class="block font-headline-md text-[14px] font-bold text-on-surface-variant mb-stack-sm">Product Image</label>
+<div class="glass-card border-dashed border-2 border-outline-variant/50 rounded-xl p-stack-lg flex flex-col items-center justify-center gap-stack-sm cursor-pointer hover:border-primary/50 group transition-all">
+<span class="material-symbols-outlined text-[32px] text-on-surface-variant group-hover:text-primary transition-colors">cloud_upload</span>
+<p class="font-body-md text-on-surface-variant">Drop image or <span class="text-primary font-bold">click to upload</span></p>
+</div>
+</div>
+</form>
+<!-- Footer -->
+<footer class="border-t border-outline-variant/10 p-stack-lg flex justify-end gap-gutter bg-surface-container-lowest">
+<button class="px-6 py-2 rounded-lg font-headline-md text-[14px] font-bold text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/20 transition-all">
+                Cancel
+            </button>
+<button class="primary-glow-button px-8 py-2 rounded-lg font-headline-md text-[14px] font-bold text-on-primary shadow-lg stagger-item">
+                Save Product
+            </button>
+</footer>
+</div>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // GSAP Entry Animation
+            const tl = gsap.timeline();
+            
+            tl.to("#product-modal", {
+                opacity: 1,
+                scale: 1,
+                duration: 0.5,
+                ease: "power3.out"
+            })
+            .from(".stagger-item", {
+                y: 20,
+                opacity: 0,
+                duration: 0.4,
+                stagger: 0.05,
+                ease: "power2.out"
+            }, "-=0.3");
+
+            // Toggle logic
+            const toggle = document.getElementById('active-toggle');
+            toggle.addEventListener('click', () => {
+                toggle.classList.toggle('active');
+            });
+
+            // Hover effects on cards (handled by CSS, but GSAP can enhance)
+            const inputs = document.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.addEventListener('focus', () => {
+                    gsap.to(input, {
+                        backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                        duration: 0.2
+                    });
+                });
+                input.addEventListener('blur', () => {
+                    gsap.to(input, {
+                        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                        duration: 0.2
+                    });
+                });
+            });
+        });
+    </script>
+</body></html>

@@ -15,7 +15,9 @@ import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({
   cors: {
-    origin: process.env.ALLOWED_ORIGINS?.split(',') ?? ['http://localhost:5173'],
+    origin: process.env.ALLOWED_ORIGINS?.split(',') ?? [
+      'http://localhost:5173',
+    ],
     credentials: true,
   },
   namespace: 'events',
@@ -49,7 +51,9 @@ export class EventsGateway
     }
 
     try {
-      const payload = this.jwtService.verify<{ sub: string; role: string }>(token);
+      const payload = this.jwtService.verify<{ sub: string; role: string }>(
+        token,
+      );
       (client.data as Record<string, unknown>).user = payload;
       this.logger.log(`Client connected: ${client.id} (role: ${payload.role})`);
     } catch {
@@ -69,7 +73,9 @@ export class EventsGateway
   ) {
     const user = (client.data as Record<string, { role: string }>).user;
     if (!user || user.role !== 'owner') {
-      throw new UnauthorizedException('Only owners can subscribe to the dashboard room');
+      throw new UnauthorizedException(
+        'Only owners can subscribe to the dashboard room',
+      );
     }
     void client.join(`shop_${data.shopId}`);
     return { event: 'subscribed', room: `shop_${data.shopId}` };

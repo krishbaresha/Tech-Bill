@@ -46,9 +46,13 @@ export default function WarrantyPage() {
 
   useEffect(() => {
     if (containerRef.current) {
-      gsap.from(containerRef.current.querySelectorAll('.stagger-item'), {
-        opacity: 0, y: 20, duration: 0.7, stagger: 0.12, ease: 'power2.out',
-      });
+      const els = containerRef.current.querySelectorAll('.stagger-item');
+      gsap.killTweensOf(els);
+      const tw = gsap.fromTo(els,
+        { opacity: 0, y: 6 },
+        { opacity: 1, y: 0, duration: 0.25, stagger: 0.03, ease: 'power3.out', overwrite: true, clearProps: 'transform,opacity' },
+      );
+      return () => { tw.kill(); };
     }
   }, []);
 
@@ -73,7 +77,11 @@ export default function WarrantyPage() {
         ...prev.slice(0, 9),
       ]);
       if (resultRef.current) {
-        gsap.from(resultRef.current, { opacity: 0, y: 16, duration: 0.5, ease: 'power2.out' });
+        gsap.killTweensOf(resultRef.current);
+        gsap.fromTo(resultRef.current,
+          { opacity: 0, y: 6 },
+          { opacity: 1, y: 0, duration: 0.25, ease: 'power3.out', overwrite: true, clearProps: 'transform,opacity' },
+        );
       }
     } catch {
       setError('Serial number not found. Please check and try again.');

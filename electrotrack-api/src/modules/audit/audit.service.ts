@@ -107,7 +107,11 @@ export class AuditService {
   }
 
   @OnEvent('user.login')
-  async onUserLogin(payload: { userId: string; ipAddress?: string; tenantId?: string }) {
+  async onUserLogin(payload: {
+    userId: string;
+    ipAddress?: string;
+    tenantId?: string;
+  }) {
     await this.log({
       action: 'user.login',
       userId: payload.userId,
@@ -158,7 +162,12 @@ export class AuditService {
   }
 
   @OnEvent('sale.voided')
-  async onSaleVoided(payload: { id: string; userId: string; reason: string; tenantId: string }) {
+  async onSaleVoided(payload: {
+    id: string;
+    userId: string;
+    reason: string;
+    tenantId: string;
+  }) {
     await this.log({
       action: 'sale.voided',
       userId: payload.userId,
@@ -182,7 +191,10 @@ export class AuditService {
       userId: payload.userId,
       entityType: 'inventory_unit',
       entityId: payload.unitId,
-      newValue: { serialNumber: payload.serialNumber, productId: payload.productId },
+      newValue: {
+        serialNumber: payload.serialNumber,
+        productId: payload.productId,
+      },
       tenantId: payload.tenantId,
     });
   }

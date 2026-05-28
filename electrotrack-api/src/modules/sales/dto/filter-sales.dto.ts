@@ -3,6 +3,7 @@ import {
   IsEnum,
   IsInt,
   IsOptional,
+  IsString,
   IsUUID,
   Max,
   Min,
@@ -11,6 +12,10 @@ import { Type } from 'class-transformer';
 import { SaleStatus } from '@prisma/client';
 
 export class FilterSalesDto {
+  @IsString()
+  @IsOptional()
+  search?: string;
+
   @IsEnum(SaleStatus)
   @IsOptional()
   status?: SaleStatus;

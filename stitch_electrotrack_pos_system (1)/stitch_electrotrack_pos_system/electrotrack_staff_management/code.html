@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ElectroTrack | Staff Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&amp;family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&amp;family=JetBrains+Mono:wght@400;500;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@100..900&amp;family=JetBrains+Mono:wght@100..900&amp;family=Space+Grotesk:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            border: 1px border-outline-variant;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(24px);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-4px) scale(1.02);
+        }
+        .glow-primary:focus-within {
+            box-shadow: 0 0 15px rgba(192, 193, 255, 0.3);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2f3445;
+            border-radius: 10px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary-fixed": "#001f25",
+                      "on-tertiary-container": "#000608",
+                      "surface-tint": "#c0c1ff",
+                      "tertiary": "#2fd9f4",
+                      "on-secondary": "#3c0091",
+                      "on-secondary-container": "#c4abff",
+                      "outline": "#908fa0",
+                      "on-primary-fixed": "#07006c",
+                      "surface-container-lowest": "#090e1c",
+                      "secondary-fixed-dim": "#d0bcff",
+                      "primary-container": "#8083ff",
+                      "tertiary-fixed-dim": "#2fd9f4",
+                      "surface-dim": "#0e1322",
+                      "error": "#ffb4ab",
+                      "tertiary-fixed": "#a2eeff",
+                      "surface-container-low": "#161b2b",
+                      "on-secondary-fixed-variant": "#5516be",
+                      "on-primary-container": "#0d0096",
+                      "on-surface-variant": "#c7c4d7",
+                      "on-surface": "#dee1f7",
+                      "inverse-primary": "#494bd6",
+                      "secondary-container": "#571bc1",
+                      "primary-fixed-dim": "#c0c1ff",
+                      "on-secondary-fixed": "#23005c",
+                      "on-error-container": "#ffdad6",
+                      "surface": "#0e1322",
+                      "on-error": "#690005",
+                      "outline-variant": "#464554",
+                      "tertiary-container": "#008395",
+                      "surface-container-highest": "#2f3445",
+                      "primary": "#c0c1ff",
+                      "primary-fixed": "#e1e0ff",
+                      "surface-container-high": "#25293a",
+                      "on-tertiary": "#00363e",
+                      "surface-container": "#1a1f2f",
+                      "on-primary": "#1000a9",
+                      "inverse-surface": "#dee1f7",
+                      "background": "#0e1322",
+                      "surface-bright": "#343949",
+                      "on-tertiary-fixed-variant": "#004e5a",
+                      "secondary": "#d0bcff",
+                      "surface-variant": "#2f3445",
+                      "on-primary-fixed-variant": "#2f2ebe",
+                      "inverse-on-surface": "#2b3040",
+                      "on-background": "#dee1f7",
+                      "secondary-fixed": "#e9ddff",
+                      "error-container": "#93000a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "24px",
+                      "container-max": "1440px",
+                      "stack-lg": "32px",
+                      "margin": "32px",
+                      "unit": "4px",
+                      "stack-md": "16px",
+                      "stack-sm": "8px",
+                      "stack-xs": "4px"
+              },
+              "fontFamily": {
+                      "body-lg": ["DM Sans"],
+                      "label-mono": ["JetBrains Mono"],
+                      "headline-lg-mobile": ["Space Grotesk"],
+                      "body-sm": ["DM Sans"],
+                      "body-md": ["DM Sans"],
+                      "headline-md": ["Space Grotesk"],
+                      "headline-lg": ["Space Grotesk"],
+                      "headline-xl": ["Space Grotesk"],
+                      "label-caps": ["DM Sans"]
+              },
+              "fontSize": {
+                      "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "label-mono": ["13px", {"lineHeight": "1.0", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                      "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "headline-md": ["20px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                      "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "headline-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "label-caps": ["12px", {"lineHeight": "1.0", "letterSpacing": "0.1em", "fontWeight": "700"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-surface text-on-surface font-body-md overflow-hidden">
+<!-- SideNavBar (Shared Component) -->
+<aside class="fixed left-0 top-0 h-screen w-64 border-r border-outline-variant bg-surface-container-lowest z-50 flex flex-col py-stack-lg shadow-lg">
+<div class="px-6 mb-10">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">ElectroTrack</h1>
+<p class="text-on-surface-variant text-xs uppercase tracking-widest mt-1">V3.4 Performance POS</p>
+</div>
+<nav class="flex-1 px-4 space-y-2">
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+<!-- Active Tab: Staff -->
+<a class="flex items-center gap-4 px-4 py-3 text-primary font-bold border-r-4 border-primary bg-primary/10 transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined">badge</span>
+<span class="font-body-md">Staff</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-body-md">Inventory</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-body-md">Sales</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-body-md">Reports</span>
+</a>
+</nav>
+<div class="px-4 mt-auto space-y-4">
+<button class="w-full bg-primary text-on-primary font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined">add</span>
+<span>New Transaction</span>
+</button>
+<div class="pt-4 border-t border-outline-variant">
+<a class="flex items-center gap-4 px-4 py-2 text-on-surface-variant hover:text-on-surface transition-all" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="text-sm">Support</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-2 text-on-surface-variant hover:text-on-surface transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm">Settings</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Canvas -->
+<main class="fixed top-0 right-0 w-[calc(100%-16rem)] h-screen overflow-y-auto bg-[#0A0F1E]">
+<!-- TopAppBar (Shared Component) -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] z-40 bg-surface/80 backdrop-blur-xl border-b border-outline-variant flex justify-between items-center h-16 px-gutter">
+<div class="flex items-center flex-1 max-w-md">
+<div class="relative w-full group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-high border-none rounded-full pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 glow-primary transition-all font-body-md" placeholder="Search staff members..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-all">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-all">history</button>
+</div>
+<div class="h-8 w-[1px] bg-outline-variant"></div>
+<div class="flex items-center gap-3">
+<div class="text-right">
+<p class="text-xs font-bold text-on-surface">Admin Session</p>
+<p class="text-[10px] text-on-surface-variant">Manager Profile</p>
+</div>
+<img class="w-10 h-10 rounded-full border-2 border-primary object-cover" data-alt="A professional headshot of a middle-aged male retail manager with a friendly expression. He is wearing a dark navy corporate shirt. The lighting is crisp and studio-grade, reflecting a high-performance business environment with soft blue background highlights and deep shadows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD85OBiYvzb58blmy_G22rL-8QSDBLO_vlnQ0ggGLW0hBzNr-2t96zQldNIxyk88xO_3PM9-r9UBCvnqE_qhhYrqkVY17aueQGgzKHnJULi54Zht8VnIteqctJayLEZaR0S-_kqTVYrMUdimbJeObQRKP3I6VVyoFjzPVxb9WONMbbUTp-7GExZZpH1F28jpm7lAdBEINmnkwAdaQ1mnWQMunaqMb0Br2oRij-qcl4UoLOqUzIYJf4ueMEoRpUmVEtTN-CN6OhWb_bu"/>
+</div>
+</div>
+</header>
+<!-- Content Area -->
+<div class="pt-24 px-gutter pb-12">
+<!-- Header Section -->
+<div class="flex justify-between items-end mb-stack-lg animate-in">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Staff Management</h2>
+<p class="text-on-surface-variant">Overview of your retail workforce and performance metrics.</p>
+</div>
+<button class="bg-primary text-on-primary font-bold px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
+<span class="material-symbols-outlined">person_add</span>
+<span>Add Staff Member</span>
+</button>
+</div>
+<!-- Stats Row -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-stack-lg">
+<div class="glass-card p-6 rounded-2xl animate-card">
+<p class="text-label-caps text-on-surface-variant mb-2">TOTAL STAFF</p>
+<div class="flex justify-between items-end">
+<span class="font-headline-xl text-headline-xl text-primary counter">8</span>
+<span class="material-symbols-outlined text-primary-container p-2 bg-primary/10 rounded-lg">group</span>
+</div>
+</div>
+<div class="glass-card p-6 rounded-2xl animate-card">
+<p class="text-label-caps text-on-surface-variant mb-2">ON SHIFT</p>
+<div class="flex justify-between items-end">
+<span class="font-headline-xl text-headline-xl text-tertiary counter">3</span>
+<div class="flex items-center gap-2 text-tertiary text-sm">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+                            Live Now
+                        </div>
+</div>
+</div>
+<div class="glass-card p-6 rounded-2xl animate-card">
+<p class="text-label-caps text-on-surface-variant mb-2">TOP PERFORMER</p>
+<div class="flex justify-between items-center">
+<div>
+<p class="font-headline-md text-headline-md text-on-surface">Ali Hassan</p>
+<p class="text-xs text-secondary">Cashier Lead</p>
+</div>
+<span class="material-symbols-outlined text-secondary text-3xl" style="font-variation-settings: 'FILL' 1;">workspace_premium</span>
+</div>
+</div>
+<div class="glass-card p-6 rounded-2xl animate-card">
+<p class="text-label-caps text-on-surface-variant mb-2">AVG SALES</p>
+<div class="flex justify-between items-end">
+<span class="font-headline-xl text-headline-xl text-on-surface counter">23</span>
+<span class="text-on-surface-variant text-body-sm pb-2">/ per day</span>
+</div>
+</div>
+</div>
+<!-- Filters -->
+<div class="flex gap-2 mb-stack-lg overflow-x-auto pb-2 scrollbar-hide">
+<button class="px-6 py-2 rounded-full bg-primary text-on-primary font-bold text-sm whitespace-nowrap">All Staff</button>
+<button class="px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors text-sm whitespace-nowrap">Cashier</button>
+<button class="px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors text-sm whitespace-nowrap">Inventory</button>
+<button class="px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors text-sm whitespace-nowrap">Accountant</button>
+<button class="px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors text-sm whitespace-nowrap">Technician</button>
+</div>
+<!-- Staff Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-stack-lg">
+<!-- Ali Hassan -->
+<div class="glass-card p-6 rounded-3xl flex flex-col items-center text-center animate-card">
+<div class="relative mb-4">
+<div class="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-on-primary font-bold text-xl">AH</div>
+<span class="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-green-500 border-2 border-surface"></span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Ali Hassan</h3>
+<span class="px-3 py-1 rounded-full bg-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider mb-6">Cashier</span>
+<div class="grid grid-cols-3 w-full gap-2 mb-6 text-left">
+<div>
+<p class="text-[10px] text-on-surface-variant uppercase">Sales</p>
+<p class="font-label-mono text-on-surface">187</p>
+</div>
+<div class="border-x border-outline-variant px-2">
+<p class="text-[10px] text-on-surface-variant uppercase">Revenue</p>
+<p class="font-label-mono text-on-surface">Rs 11.2L</p>
+</div>
+<div class="text-right">
+<p class="text-[10px] text-on-surface-variant uppercase">Score</p>
+<p class="font-label-mono text-on-surface">98%</p>
+</div>
+</div>
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full mb-6 overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 98%"></div>
+</div>
+<div class="flex items-center gap-2 text-xs font-medium text-green-400 mb-6">
+<span class="text-[10px]">●</span> Active Now
+                    </div>
+<div class="grid grid-cols-2 gap-3 w-full">
+<button class="bg-surface-container-highest text-on-surface text-sm py-2 rounded-xl hover:bg-surface-variant transition-all">Profile</button>
+<button class="bg-surface-container-highest text-on-surface text-sm py-2 rounded-xl hover:bg-surface-variant transition-all">Edit</button>
+</div>
+</div>
+<!-- Fatima Malik -->
+<div class="glass-card p-6 rounded-3xl flex flex-col items-center text-center animate-card">
+<div class="relative mb-4">
+<div class="w-16 h-16 rounded-full bg-gradient-to-br from-tertiary to-tertiary-container flex items-center justify-center text-on-tertiary font-bold text-xl">FM</div>
+<span class="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-on-surface-variant border-2 border-surface"></span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Fatima Malik</h3>
+<span class="px-3 py-1 rounded-full bg-tertiary/20 text-tertiary text-[10px] font-bold uppercase tracking-wider mb-6">Inventory</span>
+<div class="grid grid-cols-3 w-full gap-2 mb-6 text-left">
+<div>
+<p class="text-[10px] text-on-surface-variant uppercase">Sales</p>
+<p class="font-label-mono text-on-surface">142</p>
+</div>
+<div class="border-x border-outline-variant px-2">
+<p class="text-[10px] text-on-surface-variant uppercase">Revenue</p>
+<p class="font-label-mono text-on-surface">Rs 8.4L</p>
+</div>
+<div class="text-right">
+<p class="text-[10px] text-on-surface-variant uppercase">Score</p>
+<p class="font-label-mono text-on-surface">94%</p>
+</div>
+</div>
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full mb-6 overflow-hidden">
+<div class="bg-tertiary h-full rounded-full" style="width: 94%"></div>
+</div>
+<div class="flex items-center gap-2 text-xs font-medium text-on-surface-variant mb-6">
+<span class="text-[10px]">○</span> Off Shift
+                    </div>
+<div class="grid grid-cols-2 gap-3 w-full">
+<button class="bg-surface-container-highest text-on-surface text-sm py-2 rounded-xl hover:bg-surface-variant transition-all">Profile</button>
+<button class="bg-surface-container-highest text-on-surface text-sm py-2 rounded-xl hover:bg-surface-variant transition-all">Edit</button>
+</div>
+</div>
+<!-- Sana Khan -->
+<div class="glass-card p-6 rounded-3xl flex flex-col items-center text-center animate-card">
+<div class="relative mb-4">
+<div class="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary-container flex items-center justify-center text-on-primary font-bold text-xl">SK</div>
+<span class="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-green-500 border-2 border-surface"></span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Sana Khan</h3>
+<span class="px-3 py-1 rounded-full bg-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider mb-6">Cashier</span>
+<div class="grid grid-cols-3 w-full gap-2 mb-6 text-left">
+<div>
+<p class="text-[10px] text-on-surface-variant uppercase">Sales</p>
+<p class="font-label-mono text-on-surface">98</p>
+</div>
+<div class="border-x border-outline-variant px-2">
+<p class="text-[10px] text-on-surface-variant uppercase">Revenue</p>
+<p class="font-label-mono text-on-surface">Rs 5.1L</p>
+</div>
+<div class="text-right">
+<p class="text-[10px] text-on-surface-variant uppercase">Score</p>
+<p class="font-label-mono text-on-surface">81%</p>
+</div>
+</div>
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full mb-6 overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 81%"></div>
+</div>
+<div class="flex items-center gap-2 text-xs font-medium text-green-400 mb-6">
+<span class="text-[10px]">●</span> Active Now
+                    </div>
+<div class="grid grid-cols-2 gap-3 w-full">
+<button class="bg-surface-container-highest text-on-surface text-sm py-2 rounded-xl hover:bg-surface-variant transition-all">Profile</button>
+<button class="bg-surface-container-highest text-on-surface text-sm py-2 rounded-xl hover:bg-surface-variant transition-all">Edit</button>
+</div>
+</div>
+<!-- Hamza Mirza -->
+<div class="glass-card p-6 rounded-3xl flex flex-col items-center text-center animate-card">
+<div class="relative mb-4">
+<div class="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white font-bold text-xl">HM</div>
+<span class="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-on-surface-variant border-2 border-surface"></span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Hamza Mirza</h3>
+<span class="px-3 py-1 rounded-full bg-green-400/20 text-green-400 text-[10px] font-bold uppercase tracking-wider mb-6">Accountant</span>
+<div class="grid grid-cols-3 w-full gap-2 mb-6 text-left">
+<div>
+<p class="text-[10px] text-on-surface-variant uppercase">Sales</p>
+<p class="font-label-mono text-on-surface">45</p>
+</div>
+<div class="border-x border-outline-variant px-2">
+<p class="text-[10px] text-on-surface-variant uppercase">Revenue</p>
+<p class="font-label-mono text-on-surface">Rs 2.1L</p>
+</div>
+<div class="text-right">
+<p class="text-[10px] text-on-surface-variant uppercase">Score</p>
+<p class="font-label-mono text-on-surface">89%</p>
+</div>
+</div>
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full mb-6 overflow-hidden">
+<div class="bg-green-400 h-full rounded-full" style="width: 89%"></div>
+</div>
+<div class="flex items-center gap-2 text-xs font-medium text-on-surface-variant mb-6">
+<span class="text-[10px]">○</span> Off Shift
+                    </div>
+<div class="grid grid-cols-2 gap-3 w-full">
+<button class="bg-surface-container-highest text-on-surface text-sm py-2 rounded-xl hover:bg-surface-variant transition-all">Profile</button>
+<button class="bg-surface-container-highest text-on-surface text-sm py-2 rounded-xl hover:bg-surface-variant transition-all">Edit</button>
+</div>
+</div>
+<!-- Zoya Butt -->
+<div class="glass-card p-6 rounded-3xl flex flex-col items-center text-center animate-card">
+<div class="relative mb-4">
+<div class="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-bold text-xl">ZB</div>
+<span class="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-green-500 border-2 border-surface"></span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Zoya Butt</h3>
+<span class="px-3 py-1 rounded-full bg-amber-400/20 text-amber-400 text-[10px] font-bold uppercase tracking-wider mb-6">Technician</span>
+<div class="grid grid-cols-3 w-full gap-2 mb-6 text-left">
+<div>
+<p class="text-[10px] text-on-surface-variant uppercase">Sales</p>
+<p class="font-label-mono text-on-surface">12</p>
+</div>
+<div class="border-x border-outline-variant px-2">
+<p class="text-[10px] text-on-surface-variant uppercase">Revenue</p>
+<p class="font-label-mono text-on-surface">Rs 0.6L</p>
+</div>
+<div class="text-right">
+<p class="text-[10px] text-on-surface-variant uppercase">Score</p>
+<p class="font-label-mono text-on-surface">76%</p>
+</div>
+</div>
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full mb-6 overflow-hidden">
+<div class="bg-amber-400 h-full rounded-full" style="width: 76%"></div>
+</div>
+<div class="flex items-center gap-2 text-xs font-medium text-green-400 mb-6">
+<span class="text-[10px]">●</span> Active Now
+                    </div>
+<div class="grid grid-cols-2 gap-3 w-full">
+<button class="bg-surface-container-highest text-on-surface text-sm py-2 rounded-xl hover:bg-surface-variant transition-all">Profile</button>
+<button class="bg-surface-container-highest text-on-surface text-sm py-2 rounded-xl hover:bg-surface-variant transition-all">Edit</button>
+</div>
+</div>
+<!-- Tariq Shah -->
+<div class="glass-card p-6 rounded-3xl flex flex-col items-center text-center animate-card">
+<div class="relative mb-4">
+<div class="w-16 h-16 rounded-full bg-gradient-to-br from-tertiary to-primary-container flex items-center justify-center text-on-tertiary font-bold text-xl">TS</div>
+<span class="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-on-surface-variant border-2 border-surface"></span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Tariq Shah</h3>
+<span class="px-3 py-1 rounded-full bg-tertiary/20 text-tertiary text-[10px] font-bold uppercase tracking-wider mb-6">Inventory</span>
+<div class="grid grid-cols-3 w-full gap-2 mb-6 text-left">
+<div>
+<p class="text-[10px] text-on-surface-variant uppercase">Sales</p>
+<p class="font-label-mono text-on-surface">88</p>
+</div>
+<div class="border-x border-outline-variant px-2">
+<p class="text-[10px] text-on-surface-variant uppercase">Revenue</p>
+<p class="font-label-mono text-on-surface">Rs 4.3L</p>
+</div>
+<div class="text-right">
+<p class="text-[10px] text-on-surface-variant uppercase">Score</p>
+<p class="font-label-mono text-on-surface">85%</p>
+</div>
+</div>
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full mb-6 overflow-hidden">
+<div class="bg-tertiary h-full rounded-full" style="width: 85%"></div>
+</div>
+<div class="flex items-center gap-2 text-xs font-medium text-on-surface-variant mb-6">
+<span class="text-[10px]">○</span> Off Shift
+                    </div>
+<div class="grid grid-cols-2 gap-3 w-full">
+<button class="bg-surface-container-highest text-on-surface text-sm py-2 rounded-xl hover:bg-surface-variant transition-all">Profile</button>
+<button class="bg-surface-container-highest text-on-surface text-sm py-2 rounded-xl hover:bg-surface-variant transition-all">Edit</button>
+</div>
+</div>
+</div>
+<!-- Recent Activity -->
+<div class="glass-card p-8 rounded-3xl animate-card">
+<div class="flex justify-between items-center mb-8">
+<h4 class="font-headline-md text-headline-md text-on-surface">Recent Activity</h4>
+<button class="text-primary text-sm font-bold flex items-center gap-1 hover:underline">
+                        View All <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+<div class="space-y-6">
+<!-- Activity 1 -->
+<div class="flex items-center gap-4 pl-4 border-l-4 border-primary">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">AH</div>
+<div class="flex-1">
+<p class="text-on-surface text-sm"><span class="font-bold">Ali Hassan</span> completed a high-value transaction of <span class="font-label-mono text-primary">Rs 45,000</span></p>
+<p class="text-on-surface-variant text-[10px]">2 minutes ago</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">shopping_bag</span>
+</div>
+<!-- Activity 2 -->
+<div class="flex items-center gap-4 pl-4 border-l-4 border-tertiary">
+<div class="w-10 h-10 rounded-full bg-tertiary/10 flex items-center justify-center text-tertiary font-bold text-xs shrink-0">FM</div>
+<div class="flex-1">
+<p class="text-on-surface text-sm"><span class="font-bold">Fatima Malik</span> updated stock levels for <span class="font-bold text-tertiary">iPhone 15 Pro Max</span></p>
+<p class="text-on-surface-variant text-[10px]">15 minutes ago</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">inventory</span>
+</div>
+<!-- Activity 3 -->
+<div class="flex items-center gap-4 pl-4 border-l-4 border-green-400">
+<div class="w-10 h-10 rounded-full bg-green-400/10 flex items-center justify-center text-green-400 font-bold text-xs shrink-0">HM</div>
+<div class="flex-1">
+<p class="text-on-surface text-sm"><span class="font-bold">Hamza Mirza</span> reconciled daily cash report for Station 04</p>
+<p class="text-on-surface-variant text-[10px]">42 minutes ago</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">receipt_long</span>
+</div>
+<!-- Activity 4 -->
+<div class="flex items-center gap-4 pl-4 border-l-4 border-primary">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">SK</div>
+<div class="flex-1">
+<p class="text-on-surface text-sm"><span class="font-bold">Sana Khan</span> logged in at <span class="font-bold">Front Desk Station</span></p>
+<p class="text-on-surface-variant text-[10px]">1 hour ago</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">login</span>
+</div>
+<!-- Activity 5 -->
+<div class="flex items-center gap-4 pl-4 border-l-4 border-amber-400">
+<div class="w-10 h-10 rounded-full bg-amber-400/10 flex items-center justify-center text-amber-400 font-bold text-xs shrink-0">ZB</div>
+<div class="flex-1">
+<p class="text-on-surface text-sm"><span class="font-bold">Zoya Butt</span> resolved technical glitch on POS Terminal 02</p>
+<p class="text-on-surface-variant text-[10px]">2 hours ago</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">build</span>
+</div>
+<!-- Activity 6 -->
+<div class="flex items-center gap-4 pl-4 border-l-4 border-tertiary">
+<div class="w-10 h-10 rounded-full bg-tertiary/10 flex items-center justify-center text-tertiary font-bold text-xs shrink-0">TS</div>
+<div class="flex-1">
+<p class="text-on-surface text-sm"><span class="font-bold">Tariq Shah</span> accepted warehouse delivery #DLV-9921</p>
+<p class="text-on-surface-variant text-[10px]">3 hours ago</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">local_shipping</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initial Stagger Entry
+            gsap.from(".animate-in", {
+                y: 30,
+                opacity: 0,
+                duration: 0.8,
+                ease: "power3.out"
+            });
+
+            gsap.from(".animate-card", {
+                y: 50,
+                opacity: 0,
+                duration: 1,
+                stagger: 0.1,
+                ease: "power2.out",
+                delay: 0.2
+            });
+
+            // Counter Animation
+            const counters = document.querySelectorAll('.counter');
+            counters.forEach(counter => {
+                const target = +counter.innerText;
+                let count = 0;
+                const updateCounter = () => {
+                    const increment = target / 50;
+                    if (count < target) {
+                        count += increment;
+                        counter.innerText = Math.ceil(count);
+                        setTimeout(updateCounter, 20);
+                    } else {
+                        counter.innerText = target;
+                    }
+                };
+                updateCounter();
+            });
+
+            // Hover interactions for glass cards
+            const cards = document.querySelectorAll('.glass-card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    gsap.to(card, {
+                        scale: 1.02,
+                        duration: 0.3,
+                        ease: "power2.out"
+                    });
+                });
+                card.addEventListener('mouseleave', () => {
+                    gsap.to(card, {
+                        scale: 1,
+                        duration: 0.3,
+                        ease: "power2.out"
+                    });
+                });
+            });
+        });
+    </script>
+</body></html>

@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ElectroTrack | Return Loss Analytics</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&amp;family=DM+Sans:ital,wght@0,400..700;1,400..700&amp;family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary-container": "#000608",
+                      "surface-container-highest": "#2f3445",
+                      "on-primary": "#1000a9",
+                      "outline": "#908fa0",
+                      "inverse-on-surface": "#2b3040",
+                      "surface-container-low": "#161b2b",
+                      "on-error": "#690005",
+                      "surface-variant": "#2f3445",
+                      "tertiary-fixed-dim": "#2fd9f4",
+                      "on-secondary-container": "#c4abff",
+                      "surface-container-lowest": "#090e1c",
+                      "on-error-container": "#ffdad6",
+                      "tertiary-container": "#008395",
+                      "primary-fixed": "#e1e0ff",
+                      "background": "#0e1322",
+                      "outline-variant": "#464554",
+                      "on-secondary-fixed-variant": "#5516be",
+                      "on-surface": "#dee1f7",
+                      "tertiary": "#2fd9f4",
+                      "primary-container": "#8083ff",
+                      "error": "#ffb4ab",
+                      "error-container": "#93000a",
+                      "secondary": "#d0bcff",
+                      "secondary-fixed": "#e9ddff",
+                      "on-primary-container": "#0d0096",
+                      "secondary-fixed-dim": "#d0bcff",
+                      "on-secondary-fixed": "#23005c",
+                      "on-primary-fixed": "#07006c",
+                      "on-tertiary-fixed-variant": "#004e5a",
+                      "surface-container-high": "#25293a",
+                      "on-tertiary-fixed": "#001f25",
+                      "on-secondary": "#3c0091",
+                      "surface-bright": "#343949",
+                      "surface": "#0e1322",
+                      "on-tertiary": "#00363e",
+                      "inverse-surface": "#dee1f7",
+                      "surface-tint": "#c0c1ff",
+                      "primary": "#c0c1ff",
+                      "surface-container": "#1a1f2f",
+                      "primary-fixed-dim": "#c0c1ff",
+                      "tertiary-fixed": "#a2eeff",
+                      "on-surface-variant": "#c7c4d7",
+                      "inverse-primary": "#494bd6",
+                      "surface-dim": "#0e1322",
+                      "secondary-container": "#571bc1",
+                      "on-primary-fixed-variant": "#2f2ebe",
+                      "on-background": "#dee1f7"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.5rem",
+                      "lg": "1rem",
+                      "xl": "1.5rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "unit": "4px",
+                      "stack-xs": "4px",
+                      "margin": "32px",
+                      "stack-md": "16px",
+                      "container-max": "1440px",
+                      "stack-sm": "8px",
+                      "gutter": "24px",
+                      "stack-lg": "32px"
+              },
+              "fontFamily": {
+                      "body-sm": ["DM Sans"],
+                      "headline-lg": ["Space Grotesk"],
+                      "headline-xl": ["Space Grotesk"],
+                      "headline-md": ["Space Grotesk"],
+                      "label-mono": ["JetBrains Mono"],
+                      "label-caps": ["DM Sans"],
+                      "body-md": ["DM Sans"],
+                      "body-lg": ["DM Sans"]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+        }
+        .glass-card:hover {
+            backdrop-filter: blur(24px);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+        .table-row-hover:hover {
+            background: rgba(255, 255, 255, 0.03);
+            transform: scale(1.005);
+        }
+        .fraud-alert-glow {
+            box-shadow: 0 0 20px rgba(147, 0, 10, 0.3);
+            border-left: 4px solid #ffb4ab;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0e1322;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #25293a;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md custom-scrollbar">
+<div class="flex min-h-screen">
+<!-- SideNavBar -->
+<aside class="w-72 bg-surface-container-low border-r border-outline-variant flex flex-col shrink-0">
+<div class="p-6">
+<div class="flex flex-col mb-10">
+<h1 class="text-white font-headline-md font-bold tracking-tight">ElectroTrack</h1>
+<p class="text-outline text-body-sm">Admin Console</p>
+</div>
+<nav class="flex flex-col gap-2">
+<div class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface hover:bg-surface-container-high cursor-pointer transition-colors">
+<span class="material-symbols-outlined">dashboard</span>
+<p class="text-sm font-medium">Dashboard</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface hover:bg-surface-container-high cursor-pointer transition-colors">
+<span class="material-symbols-outlined">inventory_2</span>
+<p class="text-sm font-medium">Inventory</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface hover:bg-surface-container-high cursor-pointer transition-colors">
+<span class="material-symbols-outlined">shopping_cart</span>
+<p class="text-sm font-medium">Sales</p>
+</div>
+<!-- Reports Active -->
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary-container/20 text-primary cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">bar_chart</span>
+<p class="text-sm font-bold">Reports</p>
+</div>
+<div class="ml-9 flex flex-col gap-1 mt-1">
+<p class="text-sm text-outline hover:text-on-surface cursor-pointer py-1.5 transition-colors">Sales Reports</p>
+<p class="text-sm text-outline hover:text-on-surface cursor-pointer py-1.5 transition-colors">Inventory Audit</p>
+<!-- Return Analytics Active -->
+<p class="text-sm text-primary font-bold py-1.5 border-l-2 border-primary pl-3">Return Analytics</p>
+</div>
+</div>
+<div class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface hover:bg-surface-container-high cursor-pointer transition-colors">
+<span class="material-symbols-outlined">settings</span>
+<p class="text-sm font-medium">Settings</p>
+</div>
+</nav>
+</div>
+<div class="mt-auto p-6 border-t border-outline-variant">
+<div class="flex items-center gap-3 px-3 py-2 text-on-surface hover:bg-surface-container-high cursor-pointer transition-colors">
+<span class="material-symbols-outlined">swap_horiz</span>
+<p class="text-sm font-medium">Switch Account</p>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-w-0">
+<!-- TopNavBar -->
+<header class="h-16 border-b border-outline-variant bg-surface-container/50 backdrop-blur-md flex items-center justify-between px-8 sticky top-0 z-50">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">analytics</span>
+<h2 class="text-white font-headline-md font-medium">Analytics Engine</h2>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 bg-surface-container-high px-4 py-2 rounded-lg border border-outline-variant">
+<span class="material-symbols-outlined text-outline text-sm">calendar_month</span>
+<span class="text-on-surface text-sm font-medium">Jan 1 - Jan 30, 2024</span>
+<span class="material-symbols-outlined text-outline text-sm ml-2">expand_more</span>
+</div>
+<button class="bg-primary hover:bg-primary-container text-on-primary px-4 py-2 rounded-lg text-sm font-bold transition-all">
+                        Generate PDF
+                    </button>
+<div class="w-10 h-10 rounded-full bg-surface-container-highest border border-outline-variant overflow-hidden">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="A professional portrait of a tech-focused inventory manager in a modern, dark-themed retail environment. The lighting is dramatic and cool-toned, with subtle purple and blue accents reflecting from digital displays. The style is clean and sharp, fitting a high-performance software dashboard user profile." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDe2nJDW4rtjLdTd2PeTFI0o_Jhjc0rY9bgOnjOYi-A_MGS66gpJVkwQWDqT1yHa5UaVPc5K4JIVU2-IzOqg6B3wdtR7GhRajvqKkHfI2M90D5-pLa7UIsPF-nKcN7GBKR0syfgNjuRQLmKgi4_-0TJAxlHEGsV1qtnsF_rovKDqbOGNhaxUTu2_o4RZzos2PdkhShz4gCYVabhamL6vqmI9NgbzHMLNJyzMNVkQ2LVH1hN7FTKGHulgfuA7H1LnHduILwmLzyPSXiA"/>
+</div>
+</div>
+</header>
+<!-- Dashboard Content -->
+<div class="p-8 flex flex-col gap-8 max-w-[1440px] mx-auto w-full">
+<!-- Page Title -->
+<div class="flex flex-col gap-1 reveal">
+<h3 class="text-on-surface font-headline-lg font-bold">Return Loss Analytics</h3>
+<p class="text-outline text-body-md">Monitor return patterns, identify weak inventory points, and suppress fraudulent activities across all channels.</p>
+</div>
+<!-- KPI Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<div class="glass-card p-6 rounded-xl reveal-stagger">
+<div class="flex justify-between items-start mb-4">
+<p class="text-outline text-label-caps uppercase">Total Returns</p>
+<span class="material-symbols-outlined text-primary text-xl">undo</span>
+</div>
+<p class="text-white text-4xl font-headline-md font-bold count-up" data-value="23">0</p>
+<div class="flex items-center gap-1 mt-2 text-tertiary">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<span class="text-xs font-medium">+12% from last month</span>
+</div>
+</div>
+<div class="glass-card p-6 rounded-xl reveal-stagger">
+<div class="flex justify-between items-start mb-4">
+<p class="text-outline text-label-caps uppercase">Return Rate</p>
+<span class="material-symbols-outlined text-tertiary text-xl">percent</span>
+</div>
+<p class="text-white text-4xl font-headline-md font-bold">2.7%</p>
+<div class="flex items-center gap-1 mt-2 text-green-400">
+<span class="material-symbols-outlined text-sm">arrow_downward</span>
+<span class="text-xs font-medium">-0.4% improvement</span>
+</div>
+</div>
+<div class="glass-card p-6 rounded-xl reveal-stagger">
+<div class="flex justify-between items-start mb-4">
+<p class="text-outline text-label-caps uppercase">Loss Value</p>
+<span class="material-symbols-outlined text-primary text-xl">payments</span>
+</div>
+<p class="text-white text-4xl font-label-mono font-bold">₨<span class="count-up" data-value="47200">0</span></p>
+<div class="flex items-center gap-1 mt-2 text-outline">
+<span class="text-xs">Direct margin impact</span>
+</div>
+</div>
+<div class="glass-card p-6 rounded-xl reveal-stagger border-error/20">
+<div class="flex justify-between items-start mb-4">
+<p class="text-error text-label-caps uppercase font-bold">Fraud Detected</p>
+<span class="material-symbols-outlined text-error text-xl animate-pulse">security_update_warning</span>
+</div>
+<p class="text-error text-4xl font-headline-md font-bold count-up" data-value="3">0</p>
+<div class="flex items-center gap-1 mt-2 text-error">
+<span class="text-xs font-bold">Requires Immediate Audit</span>
+</div>
+</div>
+</div>
+<!-- Charts Row -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<!-- Bar Chart: Returns by Reason -->
+<div class="glass-card p-6 rounded-xl flex flex-col gap-6 reveal">
+<h4 class="text-on-surface font-headline-md">Returns by Reason</h4>
+<div class="flex flex-col gap-4">
+<div class="flex flex-col gap-1.5">
+<div class="flex justify-between text-xs text-outline mb-1">
+<span>Defective</span>
+<span class="font-label-mono">8 (35%)</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary bar-anim" data-width="35%" style="width: 0%"></div>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<div class="flex justify-between text-xs text-outline mb-1">
+<span>Wrong Model</span>
+<span class="font-label-mono">5 (22%)</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary bar-anim" data-width="22%" style="width: 0%"></div>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<div class="flex justify-between text-xs text-outline mb-1">
+<span>Changed Mind</span>
+<span class="font-label-mono">4 (17%)</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary bar-anim" data-width="17%" style="width: 0%"></div>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<div class="flex justify-between text-xs text-error mb-1 font-bold">
+<span>Fraud Suspected</span>
+<span class="font-label-mono">3 (13%)</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-error bar-anim" data-width="13%" style="width: 0%"></div>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<div class="flex justify-between text-xs text-outline mb-1">
+<span>Other</span>
+<span class="font-label-mono">3 (13%)</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary bar-anim" data-width="13%" style="width: 0%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Line Chart: Return Trend -->
+<div class="glass-card p-6 rounded-xl reveal">
+<div class="flex justify-between items-center mb-6">
+<h4 class="text-on-surface font-headline-md">Return Trend (30 Days)</h4>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-primary"></div>
+<span class="text-[10px] text-outline uppercase tracking-wider">Returns</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-error"></div>
+<span class="text-[10px] text-outline uppercase tracking-wider">Fraud Spike</span>
+</div>
+</div>
+</div>
+<div class="relative h-48 w-full mt-4">
+<svg class="w-full h-full overflow-visible" viewbox="0 0 500 150">
+<path class="text-primary" d="M0,130 L50,110 L100,120 L150,40 L200,90 L250,100 L300,30 L350,110 L400,125 L450,115 L500,140" fill="none" id="trendLine" stroke="currentColor" stroke-width="3"></path>
+<!-- Fraud Spike Circle -->
+<circle class="animate-ping" cx="150" cy="40" fill="#ffb4ab" r="6" style="animation-duration: 2s;"></circle>
+<circle cx="150" cy="40" fill="#ffb4ab" r="4"></circle>
+<circle class="animate-ping" cx="300" cy="30" fill="#ffb4ab" r="6" style="animation-duration: 2s;"></circle>
+<circle cx="300" cy="30" fill="#ffb4ab" r="4"></circle>
+</svg>
+<div class="flex justify-between mt-4 px-2">
+<span class="text-[10px] text-outline font-label-mono">Day 1</span>
+<span class="text-[10px] text-outline font-label-mono">Day 15</span>
+<span class="text-[10px] text-outline font-label-mono">Day 30</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Product Return Leaderboard -->
+<div class="glass-card rounded-xl overflow-hidden reveal">
+<div class="p-6 border-b border-outline-variant flex justify-between items-center">
+<h4 class="text-on-surface font-headline-md">Product Return Leaderboard</h4>
+<button class="text-primary text-sm font-bold flex items-center gap-1">
+                            Full Inventory Analysis <span class="material-symbols-outlined text-base">arrow_right_alt</span>
+</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead>
+<tr class="text-outline text-label-caps border-b border-outline-variant">
+<th class="px-6 py-4 font-bold">Product</th>
+<th class="px-6 py-4 font-bold">Returns</th>
+<th class="px-6 py-4 font-bold">Return Rate</th>
+<th class="px-6 py-4 font-bold">Avg Days to Return</th>
+<th class="px-6 py-4 font-bold">Loss Value</th>
+</tr>
+</thead>
+<tbody class="text-on-surface font-body-sm">
+<tr class="table-row-hover border-b border-outline-variant/30 transition-all">
+<td class="px-6 py-4 font-medium flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">smartphone</span>
+</div>
+                                        iPhone 15 Pro Max
+                                    </td>
+<td class="px-6 py-4 font-label-mono">06</td>
+<td class="px-6 py-4 text-error">4.2%</td>
+<td class="px-6 py-4 font-label-mono">12 Days</td>
+<td class="px-6 py-4 font-label-mono text-primary font-bold">₨18,400</td>
+</tr>
+<tr class="table-row-hover border-b border-outline-variant/30 transition-all">
+<td class="px-6 py-4 font-medium flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">laptop</span>
+</div>
+                                        MacBook Air M3
+                                    </td>
+<td class="px-6 py-4 font-label-mono">04</td>
+<td class="px-6 py-4 text-tertiary">1.8%</td>
+<td class="px-6 py-4 font-label-mono">5 Days</td>
+<td class="px-6 py-4 font-label-mono text-primary font-bold">₨12,200</td>
+</tr>
+<tr class="table-row-hover border-b border-outline-variant/30 transition-all">
+<td class="px-6 py-4 font-medium flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">headphones</span>
+</div>
+                                        Sony WH-1000XM5
+                                    </td>
+<td class="px-6 py-4 font-label-mono">05</td>
+<td class="px-6 py-4 text-error">3.5%</td>
+<td class="px-6 py-4 font-label-mono">8 Days</td>
+<td class="px-6 py-4 font-label-mono text-primary font-bold">₨6,500</td>
+</tr>
+<tr class="table-row-hover border-b border-outline-variant/30 transition-all">
+<td class="px-6 py-4 font-medium flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">watch</span>
+</div>
+                                        Galaxy Watch 6
+                                    </td>
+<td class="px-6 py-4 font-label-mono">03</td>
+<td class="px-6 py-4 text-tertiary">1.2%</td>
+<td class="px-6 py-4 font-label-mono">14 Days</td>
+<td class="px-6 py-4 font-label-mono text-primary font-bold">₨4,100</td>
+</tr>
+<tr class="table-row-hover transition-all">
+<td class="px-6 py-4 font-medium flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">tablet</span>
+</div>
+                                        iPad Pro 11"
+                                    </td>
+<td class="px-6 py-4 font-label-mono">05</td>
+<td class="px-6 py-4 text-error">2.9%</td>
+<td class="px-6 py-4 font-label-mono">3 Days</td>
+<td class="px-6 py-4 font-label-mono text-primary font-bold">₨6,000</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Bottom Row: Staff and AI Alert -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+<!-- Staff Return Handling -->
+<div class="lg:col-span-2 glass-card rounded-xl flex flex-col reveal">
+<div class="p-6 border-b border-outline-variant">
+<h4 class="text-on-surface font-headline-md">Staff Return Handling</h4>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="text-outline text-label-caps border-b border-outline-variant">
+<tr>
+<th class="px-6 py-4 font-bold">Staff Name</th>
+<th class="px-6 py-4 font-bold">Approved</th>
+<th class="px-6 py-4 font-bold">Rejected</th>
+<th class="px-6 py-4 font-bold">Avg Processing Time</th>
+</tr>
+</thead>
+<tbody class="text-on-surface font-body-sm">
+<tr class="table-row-hover border-b border-outline-variant/30">
+<td class="px-6 py-4 font-medium">Asad Ali</td>
+<td class="px-6 py-4 font-label-mono">12</td>
+<td class="px-6 py-4 font-label-mono text-error">03</td>
+<td class="px-6 py-4 font-label-mono">14m</td>
+</tr>
+<tr class="table-row-hover border-b border-outline-variant/30">
+<td class="px-6 py-4 font-medium">Zainab Khan</td>
+<td class="px-6 py-4 font-label-mono">08</td>
+<td class="px-6 py-4 font-label-mono text-error">01</td>
+<td class="px-6 py-4 font-label-mono">09m</td>
+</tr>
+<tr class="table-row-hover">
+<td class="px-6 py-4 font-medium">Omar Siddiqui</td>
+<td class="px-6 py-4 font-label-mono">15</td>
+<td class="px-6 py-4 font-label-mono text-error">05</td>
+<td class="px-6 py-4 font-label-mono">11m</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- AI Fraud Patterns Card -->
+<div class="glass-card rounded-xl p-6 fraud-alert-glow bg-error-container/10 flex flex-col justify-between reveal">
+<div class="flex flex-col gap-4">
+<div class="flex items-center gap-2 text-error">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">warning</span>
+<p class="text-label-caps font-bold tracking-widest">AI FRAUD DETECTION</p>
+</div>
+<p class="text-on-surface font-body-md leading-relaxed">
+<span class="font-bold text-error">CRITICAL ALERT:</span> Customer <span class="font-label-mono text-error bg-error/10 px-1 rounded">0300-XXXXXXX</span> has highest return rate (<span class="font-bold">42%</span>). Phone pattern matches <span class="underline underline-offset-4 decoration-error/50">2 other fraud accounts</span> in the shared database.
+                            </p>
+</div>
+<div class="mt-8 flex flex-col gap-2">
+<button class="w-full bg-error text-on-error py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-red-500 transition-colors">
+<span class="material-symbols-outlined text-sm">block</span>
+                                Blacklist Customer
+                            </button>
+<button class="w-full bg-transparent border border-outline-variant text-outline py-2.5 rounded-lg font-bold text-sm hover:bg-surface-container-high transition-colors">
+                                Review Details
+                            </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // GSAP Animations
+            gsap.registerPlugin();
+
+            // Entrance animations for cards and content
+            gsap.from(".reveal", {
+                y: 30,
+                opacity: 0,
+                duration: 0.8,
+                stagger: 0.2,
+                ease: "power2.out"
+            });
+
+            gsap.from(".reveal-stagger", {
+                scale: 0.9,
+                opacity: 0,
+                duration: 0.6,
+                stagger: 0.1,
+                ease: "back.out(1.7)"
+            });
+
+            // Animate bar chart
+            gsap.to(".bar-anim", {
+                width: function(i, target) { return target.getAttribute('data-width'); },
+                duration: 1.5,
+                delay: 0.5,
+                ease: "power3.out"
+            });
+
+            // Animate Line Chart Path
+            const path = document.querySelector("#trendLine");
+            const length = path.getTotalLength();
+            path.style.strokeDasharray = length;
+            path.style.strokeDashoffset = length;
+            gsap.to(path, {
+                strokeDashoffset: 0,
+                duration: 2.5,
+                ease: "power2.inOut",
+                delay: 0.8
+            });
+
+            // Count Up Numbers
+            const countUps = document.querySelectorAll('.count-up');
+            countUps.forEach(counter => {
+                const target = parseInt(counter.getAttribute('data-value'));
+                const obj = { value: 0 };
+                gsap.to(obj, {
+                    value: target,
+                    duration: 2,
+                    ease: "power3.out",
+                    delay: 0.5,
+                    onUpdate: () => {
+                        if (counter.parentElement.innerText.includes('₨')) {
+                            counter.innerText = Math.floor(obj.value).toLocaleString();
+                        } else {
+                            counter.innerText = Math.floor(obj.value);
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body></html>

@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Warranty Checker | ElectroTrack POS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary": "#3c0091",
+                    "surface-tint": "#c0c1ff",
+                    "surface-container-low": "#161b2b",
+                    "tertiary-fixed": "#a2eeff",
+                    "on-tertiary-fixed-variant": "#004e5a",
+                    "surface-container": "#1a1f2f",
+                    "on-secondary-fixed": "#23005c",
+                    "background": "#0e1322",
+                    "surface-dim": "#0e1322",
+                    "on-primary-container": "#0d0096",
+                    "surface-container-highest": "#2f3445",
+                    "primary-container": "#8083ff",
+                    "secondary-container": "#571bc1",
+                    "primary-fixed": "#e1e0ff",
+                    "on-error-container": "#ffdad6",
+                    "primary-fixed-dim": "#c0c1ff",
+                    "tertiary-fixed-dim": "#2fd9f4",
+                    "on-primary-fixed": "#07006c",
+                    "on-tertiary-container": "#000608",
+                    "on-tertiary": "#00363e",
+                    "on-surface": "#dee1f7",
+                    "on-primary-fixed-variant": "#2f2ebe",
+                    "on-secondary-fixed-variant": "#5516be",
+                    "surface-bright": "#343949",
+                    "secondary-fixed-dim": "#d0bcff",
+                    "on-error": "#690005",
+                    "surface-container-high": "#25293a",
+                    "outline-variant": "#464554",
+                    "tertiary": "#2fd9f4",
+                    "outline": "#908fa0",
+                    "on-surface-variant": "#c7c4d7",
+                    "on-background": "#dee1f7",
+                    "on-primary": "#1000a9",
+                    "surface-variant": "#2f3445",
+                    "secondary": "#d0bcff",
+                    "primary": "#c0c1ff",
+                    "surface": "#0e1322",
+                    "inverse-on-surface": "#2b3040",
+                    "on-secondary-container": "#c4abff",
+                    "surface-container-lowest": "#090e1c",
+                    "inverse-primary": "#494bd6",
+                    "error": "#ffb4ab",
+                    "inverse-surface": "#dee1f7",
+                    "tertiary-container": "#008395",
+                    "on-tertiary-fixed": "#001f25",
+                    "error-container": "#93000a",
+                    "secondary-fixed": "#e9ddff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "4px",
+                    "gutter": "24px",
+                    "container-max": "1440px",
+                    "stack-xs": "4px",
+                    "stack-md": "16px",
+                    "stack-sm": "8px",
+                    "stack-lg": "32px",
+                    "margin": "32px"
+            },
+            "fontFamily": {
+                    "label-mono": ["JetBrains Mono"],
+                    "headline-md": ["Space Grotesk"],
+                    "label-caps": ["DM Sans"],
+                    "body-md": ["DM Sans"],
+                    "body-lg": ["DM Sans"],
+                    "headline-lg": ["Space Grotesk"],
+                    "body-sm": ["DM Sans"],
+                    "headline-lg-mobile": ["Space Grotesk"],
+                    "headline-xl": ["Space Grotesk"]
+            },
+            "fontSize": {
+                    "label-mono": ["13px", {"lineHeight": "1.0", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "headline-md": ["20px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                    "label-caps": ["12px", {"lineHeight": "1.0", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                    "headline-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #0A0F1E;
+            color: #dee1f7;
+            overflow-x: hidden;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(24px);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: scale(1.02);
+        }
+        .indigo-glow {
+            box-shadow: 0 0 20px rgba(128, 131, 255, 0.15);
+            border: 1px solid rgba(128, 131, 255, 0.3);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .status-glow-success {
+            background: rgba(16, 169, 100, 0.1);
+            color: #4ade80;
+            border-left: 2px solid #4ade80;
+        }
+        .status-glow-error {
+            background: rgba(147, 0, 10, 0.1);
+            color: #ffb4ab;
+            border-left: 2px solid #ffb4ab;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+    </style>
+</head>
+<body class="font-body-md">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-full flex flex-col p-stack-md z-50 bg-surface-container-low border-r border-white/5 shadow-xl w-64">
+<div class="mb-stack-lg px-4 flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+<div>
+<h1 class="font-headline-md text-surface-tint leading-none">ElectroTrack</h1>
+<p class="text-[10px] text-on-surface-variant font-label-caps opacity-60">POS Terminal v2.4</p>
+</div>
+</div>
+<div class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-white/5 transition-all duration-200 hover:scale-102 active:scale-98" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-caps">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-white/5 transition-all duration-200 hover:scale-102 active:scale-98" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-caps">Inventory</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-white/5 transition-all duration-200 hover:scale-102 active:scale-98" href="#">
+<span class="material-symbols-outlined" data-icon="assignment_return">assignment_return</span>
+<span class="font-label-caps">Returns</span>
+</a>
+<!-- Active Tab: Warranty -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-secondary-container text-on-secondary-container font-bold shadow-lg shadow-secondary-container/20" href="#">
+<span class="material-symbols-outlined" data-icon="verified_user" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<span class="font-label-caps">Warranty</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-white/5 transition-all duration-200 hover:scale-102 active:scale-98" href="#">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+<span class="font-label-caps">Suppliers</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-white/5 transition-all duration-200 hover:scale-102 active:scale-98" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-label-caps">Sales</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-white/5 transition-all duration-200 hover:scale-102 active:scale-98" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-label-caps">Analytics</span>
+</a>
+</div>
+<div class="mt-auto space-y-1 pt-stack-md border-t border-white/5">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-white/5 transition-all duration-200 hover:scale-102 active:scale-98" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-caps">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-error hover:bg-error-container/20 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-label-caps">Logout</span>
+</a>
+</div>
+</nav>
+<!-- TopNavBar -->
+<header class="flex justify-between items-center px-margin h-16 w-[calc(100%-256px)] ml-64 sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-white/10 shadow-sm">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative w-64 group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-sm">search</span>
+<input class="w-full bg-surface-container-highest/30 border-none rounded-full pl-10 pr-4 py-1.5 text-body-sm focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Global search..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-stack-md">
+<button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/5 transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/5 transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<div class="h-8 w-[1px] bg-white/10 mx-2"></div>
+<div class="flex items-center gap-3 group cursor-pointer">
+<div class="text-right">
+<p class="text-body-sm font-bold leading-none">Alex Rivera</p>
+<p class="text-[10px] text-primary">Admin Access</p>
+</div>
+<img alt="User Profile Avatar" class="w-8 h-8 rounded-full border border-white/10 group-hover:border-primary transition-all" data-alt="A professional headshot of a middle-aged male software administrator with a clean-cut appearance. He is wearing a dark navy blazer over a light blue shirt. The background is a soft-focus modern office with cool-toned LED lighting. The style is sharp and high-fidelity, matching the premium tech aesthetic of a modern UI dashboard." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCXhei14V8wRmNCxV40gC6toE29XaE8QmxzpiJxu46LkR2GoMR4snrUi8a4uk-Poh51mnMoXr954t6YlcRTeceH_8o0imYSRXD4qAB0as1C-Zda5xbetxBAWsyiYZTt9v0HIt8wNLzDBHqOiDIGf_PTIRoR_USQJBvnqPo6qclbPtWVEjT1VfvyKaJJs8bj-LYzOFr-9fjNuZGrSwGukw54V-o_MfRb0aKRKz1B2SwbuO0xk-EGJHDc3Ew27UjyiHkrAMcCG40YfPXZ"/>
+</div>
+</div>
+</header>
+<!-- Content Area -->
+<main class="ml-64 p-margin space-y-stack-lg max-w-container-max mx-auto">
+<!-- Header Section -->
+<section class="stagger-item">
+<h2 class="font-headline-lg text-primary tracking-tight">Warranty Checker</h2>
+<p class="text-on-surface-variant opacity-70">Verify warranty status by serial number</p>
+</section>
+<!-- Search Hero Section -->
+<section class="stagger-item flex justify-center py-stack-lg">
+<div class="glass-card indigo-glow w-full max-w-3xl rounded-xl p-stack-lg space-y-stack-md">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary" data-icon="search">search</span>
+<h3 class="font-headline-md text-on-surface">Enter Serial Number</h3>
+</div>
+<div class="relative flex flex-col md:flex-row gap-4">
+<div class="relative flex-1">
+<input class="w-full bg-surface-container-lowest/50 border-0 border-b-2 border-primary/30 text-headline-md font-label-mono py-4 px-4 focus:ring-0 focus:border-primary placeholder:text-on-surface-variant/30 transition-all rounded-t-lg" placeholder="e.g. SN-HP14-00423 or scan barcode" type="text"/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-primary/70 hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="barcode_scanner">barcode_scanner</span>
+</button>
+</div>
+<button class="bg-primary hover:bg-primary-container text-on-primary font-bold px-stack-lg py-4 rounded-lg transition-all scale-95 active:scale-90 flex items-center justify-center gap-2 whitespace-nowrap">
+                        Check Warranty
+                    </button>
+</div>
+<div class="flex justify-center pt-2">
+<a class="text-body-sm text-on-surface-variant/60 hover:text-primary flex items-center gap-1.5 transition-colors" href="#">
+<span class="material-symbols-outlined text-base">photo_camera</span>
+                        or scan with camera
+                    </a>
+</div>
+</div>
+</section>
+<!-- Result Cards Grid -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-stack-lg stagger-item">
+<!-- In-Warranty Card -->
+<div class="glass-card rounded-xl p-stack-lg overflow-hidden relative group">
+<div class="absolute -right-12 -top-12 w-32 h-32 bg-green-500/10 rounded-full blur-3xl group-hover:bg-green-500/20 transition-all"></div>
+<div class="flex justify-between items-start mb-stack-md">
+<div class="px-3 py-1 rounded-full status-glow-success text-[10px] font-label-caps">
+                        ✅ IN WARRANTY
+                    </div>
+<p class="font-label-mono text-xs text-on-surface-variant">SN: <span class="text-primary">SN-HP14-00423</span></p>
+</div>
+<div class="mb-stack-md">
+<h4 class="text-body-sm text-on-surface-variant font-label-caps">Status</h4>
+<p class="font-headline-xl text-on-surface"><span class="counter" data-target="234">0</span> days <span class="text-body-md font-normal opacity-60">remaining</span></p>
+</div>
+<div class="space-y-2 mb-stack-lg">
+<div class="flex justify-between text-[10px] font-label-caps text-on-surface-variant">
+<span>Usage Timeline</span>
+<span>64% Complete</span>
+</div>
+<div class="h-2 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-green-500 to-green-300 transition-all duration-1000" style="width: 64%"></div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
+<div>
+<p class="text-[10px] font-label-caps text-on-surface-variant">Purchase Date</p>
+<p class="text-body-sm font-medium">Oct 12, 2023</p>
+</div>
+<div>
+<p class="text-[10px] font-label-caps text-on-surface-variant">Warranty Period</p>
+<p class="text-body-sm font-medium">12 Months (STD)</p>
+</div>
+<div>
+<p class="text-[10px] font-label-caps text-on-surface-variant">Expiry Date</p>
+<p class="text-body-sm font-medium">Oct 11, 2024</p>
+</div>
+<div>
+<p class="text-[10px] font-label-caps text-on-surface-variant">Sold By</p>
+<p class="text-body-sm font-medium">ElectroTrack Central</p>
+</div>
+</div>
+</div>
+<!-- Expired Card -->
+<div class="glass-card rounded-xl p-stack-lg overflow-hidden relative group">
+<div class="absolute -right-12 -top-12 w-32 h-32 bg-error/10 rounded-full blur-3xl group-hover:bg-error/20 transition-all"></div>
+<div class="flex justify-between items-start mb-stack-md">
+<div class="px-3 py-1 rounded-full status-glow-error text-[10px] font-label-caps">
+                        ❌ WARRANTY EXPIRED
+                    </div>
+<p class="font-label-mono text-xs text-on-surface-variant">SN: <span class="text-error">SN-MAC-99812</span></p>
+</div>
+<div class="mb-stack-md">
+<h4 class="text-body-sm text-on-surface-variant font-label-caps">Status</h4>
+<p class="font-headline-xl text-on-surface">Expired <span class="counter" data-target="45">0</span> days <span class="text-body-md font-normal opacity-60">ago</span></p>
+</div>
+<div class="space-y-2 mb-stack-lg">
+<div class="flex justify-between text-[10px] font-label-caps text-on-surface-variant">
+<span>Usage Timeline</span>
+<span>100% Expired</span>
+</div>
+<div class="h-2 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-error/40 w-full"></div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
+<div>
+<p class="text-[10px] font-label-caps text-on-surface-variant">Purchase Date</p>
+<p class="text-body-sm font-medium">May 04, 2022</p>
+</div>
+<div>
+<p class="text-[10px] font-label-caps text-on-surface-variant">Warranty Period</p>
+<p class="text-body-sm font-medium">24 Months (CARE+)</p>
+</div>
+<div>
+<p class="text-[10px] font-label-caps text-on-surface-variant">Expiry Date</p>
+<p class="text-body-sm font-medium text-error">May 03, 2024</p>
+</div>
+<div>
+<p class="text-[10px] font-label-caps text-on-surface-variant">Contact</p>
+<p class="text-body-sm font-medium underline cursor-pointer hover:text-primary">Renew Warranty</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Recent Checks Table -->
+<section class="stagger-item pt-stack-lg">
+<div class="flex items-center justify-between mb-stack-md px-1">
+<h3 class="font-headline-md text-on-surface">Recent Checks</h3>
+<button class="text-body-sm text-primary hover:underline">View full history</button>
+</div>
+<div class="glass-card rounded-xl overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-high/50 border-b border-white/5">
+<th class="px-6 py-4 font-label-caps text-on-surface-variant/60 text-[10px]">Serial</th>
+<th class="px-6 py-4 font-label-caps text-on-surface-variant/60 text-[10px]">Product</th>
+<th class="px-6 py-4 font-label-caps text-on-surface-variant/60 text-[10px]">Status</th>
+<th class="px-6 py-4 font-label-caps text-on-surface-variant/60 text-[10px]">Days Left</th>
+<th class="px-6 py-4 font-label-caps text-on-surface-variant/60 text-[10px]">Checked Time</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5">
+<tr class="hover:bg-white/5 transition-colors cursor-pointer group">
+<td class="px-6 py-4 font-label-mono text-sm text-on-surface group-hover:text-primary">SN-HP14-00423</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded bg-white/5 flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">laptop</span>
+</div>
+<span class="text-body-sm font-medium">HP Spectre x360</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 text-[11px] font-bold text-green-400">
+<span class="w-1.5 h-1.5 rounded-full bg-green-400"></span> ACTIVE
+                                </span>
+</td>
+<td class="px-6 py-4 text-body-sm font-label-mono">234</td>
+<td class="px-6 py-4 text-body-sm text-on-surface-variant">Just now</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors cursor-pointer group">
+<td class="px-6 py-4 font-label-mono text-sm text-on-surface">SN-MAC-99812</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded bg-white/5 flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">laptop_mac</span>
+</div>
+<span class="text-body-sm font-medium">MacBook Pro 16"</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 text-[11px] font-bold text-error">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span> EXPIRED
+                                </span>
+</td>
+<td class="px-6 py-4 text-body-sm font-label-mono text-error">-45</td>
+<td class="px-6 py-4 text-body-sm text-on-surface-variant">12 mins ago</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors cursor-pointer group">
+<td class="px-6 py-4 font-label-mono text-sm text-on-surface">SN-SAM-G24-01</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded bg-white/5 flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">smartphone</span>
+</div>
+<span class="text-body-sm font-medium">Samsung S24 Ultra</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 text-[11px] font-bold text-green-400">
+<span class="w-1.5 h-1.5 rounded-full bg-green-400"></span> ACTIVE
+                                </span>
+</td>
+<td class="px-6 py-4 text-body-sm font-label-mono">312</td>
+<td class="px-6 py-4 text-body-sm text-on-surface-variant">1 hour ago</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</main>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // GSAP Entry Animation
+            gsap.from(".stagger-item", {
+                opacity: 0,
+                y: 20,
+                duration: 0.8,
+                stagger: 0.15,
+                ease: "power2.out"
+            });
+
+            // Counter Animation
+            const counters = document.querySelectorAll('.counter');
+            counters.forEach(counter => {
+                const target = +counter.getAttribute('data-target');
+                const updateCounter = () => {
+                    const count = +counter.innerText;
+                    const increment = target / 50;
+
+                    if (count < target) {
+                        counter.innerText = Math.ceil(count + increment);
+                        setTimeout(updateCounter, 20);
+                    } else {
+                        counter.innerText = target;
+                    }
+                };
+                updateCounter();
+            });
+
+            // Interactive Input Glow
+            const mainInput = document.querySelector('input[type="text"]');
+            mainInput.addEventListener('focus', () => {
+                gsap.to('.indigo-glow', {
+                    boxShadow: "0 0 35px rgba(128, 131, 255, 0.25)",
+                    duration: 0.4
+                });
+            });
+            mainInput.addEventListener('blur', () => {
+                gsap.to('.indigo-glow', {
+                    boxShadow: "0 0 20px rgba(128, 131, 255, 0.15)",
+                    duration: 0.4
+                });
+            });
+        });
+    </script>
+</body></html>

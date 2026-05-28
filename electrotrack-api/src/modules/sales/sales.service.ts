@@ -118,9 +118,17 @@ export class SalesService {
         },
         include: {
           items: {
-            include: { inventoryUnit: { select: { serialNumber: true } } },
+            include: {
+              inventoryUnit: {
+                select: {
+                  serialNumber: true,
+                  product: { select: { name: true, brand: true } },
+                },
+              },
+            },
           },
-          customer: true,
+          customer: { select: { id: true, name: true, phone: true } },
+          soldBy: { select: { id: true, name: true } },
         },
       });
 
@@ -168,6 +176,7 @@ export class SalesService {
 
   async listSales(filter: FilterSalesDto, tenantId: string) {
     const {
+      search,
       status,
       soldById,
       customerId,
@@ -189,6 +198,24 @@ export class SalesService {
               ...(from && { gte: new Date(from) }),
               ...(to && { lte: new Date(to + 'T23:59:59.999Z') }),
             },
+          }
+        : {}),
+      ...(search
+        ? {
+            OR: [
+              {
+                invoiceNumber: {
+                  contains: search,
+                  mode: 'insensitive' as const,
+                },
+              },
+              {
+                customer: {
+                  name: { contains: search, mode: 'insensitive' as const },
+                },
+              },
+              { customer: { phone: { contains: search } } },
+            ],
           }
         : {}),
     };
@@ -221,7 +248,7 @@ export class SalesService {
               select: {
                 serialNumber: true,
                 condition: true,
-                product: { select: { name: true, brand: true } },
+                product: { select: { name: true, brand: true, warrantyMonths: true } },
               },
             },
           },
@@ -234,7 +261,36 @@ export class SalesService {
     return sale;
   }
 
-  async voidSale(id: string, dto: VoidSaleDto, userId: string, tenantId: string) {
+  async lookupByInvoice(invoiceNumber: string, tenantId: string) {
+    const sale = await this.prisma.sale.findFirst({
+      where: { invoiceNumber, tenantId },
+      include: {
+        items: {
+          include: {
+            inventoryUnit: {
+              select: {
+                id: true,
+                serialNumber: true,
+                status: true,
+                product: { select: { id: true, name: true, brand: true } },
+              },
+            },
+          },
+        },
+        customer: { select: { id: true, name: true, phone: true } },
+      },
+    });
+    if (!sale)
+      throw new NotFoundException(`Invoice "${invoiceNumber}" not found`);
+    return sale;
+  }
+
+  async voidSale(
+    id: string,
+    dto: VoidSaleDto,
+    userId: string,
+    tenantId: string,
+  ) {
     const sale = await this.prisma.sale.findFirst({
       where: { id, tenantId },
       include: { items: true },
@@ -300,8 +356,14 @@ export class SalesService {
             }
           : {}),
       },
+      include: {
+        sales: {
+          where: { tenantId, status: { not: 'voided' as const } },
+          select: { id: true, totalAmount: true, createdAt: true },
+        },
+      },
       orderBy: { name: 'asc' },
-      take: 20,
+      take: search ? 20 : 100,
     });
   }
 

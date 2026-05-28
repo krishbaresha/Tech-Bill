@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Users &amp; Access | ElectroTrack</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&amp;family=JetBrains+Mono:wght@400;500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@100..900&amp;family=JetBrains+Mono:wght@100..900&amp;family=Space+Grotesk:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+        body {
+            background-color: #0A0F1E;
+            color: #dee1f7;
+            overflow-x: hidden;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+        }
+        .glass-card:hover {
+            backdrop-filter: blur(24px);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .role-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .active-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #4ade80;
+            box-shadow: 0 0 8px #4ade80;
+        }
+        .suspended-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #fb7185;
+            box-shadow: 0 0 8px #fb7185;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "inverse-primary": "#494bd6",
+                      "surface-container-high": "#25293a",
+                      "background": "#0e1322",
+                      "on-primary-fixed": "#07006c",
+                      "tertiary-fixed-dim": "#2fd9f4",
+                      "error-container": "#93000a",
+                      "outline-variant": "#464554",
+                      "surface-container-low": "#161b2b",
+                      "on-tertiary": "#00363e",
+                      "on-secondary-fixed-variant": "#5516be",
+                      "on-surface": "#dee1f7",
+                      "secondary-fixed": "#e9ddff",
+                      "tertiary-container": "#008395",
+                      "surface-dim": "#0e1322",
+                      "on-background": "#dee1f7",
+                      "inverse-surface": "#dee1f7",
+                      "secondary-fixed-dim": "#d0bcff",
+                      "on-secondary-fixed": "#23005c",
+                      "surface-container": "#1a1f2f",
+                      "on-primary-fixed-variant": "#2f2ebe",
+                      "surface-variant": "#2f3445",
+                      "surface": "#0e1322",
+                      "secondary": "#d0bcff",
+                      "on-primary": "#1000a9",
+                      "tertiary": "#2fd9f4",
+                      "surface-container-lowest": "#090e1c",
+                      "on-secondary": "#3c0091",
+                      "error": "#ffb4ab",
+                      "primary-fixed": "#e1e0ff",
+                      "on-tertiary-fixed": "#001f25",
+                      "surface-bright": "#343949",
+                      "primary": "#c0c1ff",
+                      "on-tertiary-container": "#000608",
+                      "outline": "#908fa0",
+                      "on-error": "#690005",
+                      "surface-container-highest": "#2f3445",
+                      "surface-tint": "#c0c1ff",
+                      "inverse-on-surface": "#2b3040",
+                      "secondary-container": "#571bc1",
+                      "on-primary-container": "#0d0096",
+                      "primary-fixed-dim": "#c0c1ff",
+                      "on-secondary-container": "#c4abff",
+                      "primary-container": "#8083ff",
+                      "on-error-container": "#ffdad6",
+                      "tertiary-fixed": "#a2eeff",
+                      "on-tertiary-fixed-variant": "#004e5a"
+              },
+              "spacing": {
+                      "stack-xs": "4px",
+                      "stack-sm": "8px",
+                      "stack-md": "16px",
+                      "container-max": "1440px",
+                      "stack-lg": "32px",
+                      "margin": "32px",
+                      "gutter": "24px",
+                      "unit": "4px"
+              },
+              "fontFamily": {
+                      "body-sm": ["DM Sans"],
+                      "label-mono": ["JetBrains Mono"],
+                      "body-md": ["DM Sans"],
+                      "label-caps": ["DM Sans"],
+                      "body-lg": ["DM Sans"],
+                      "headline-xl": ["Space Grotesk"],
+                      "headline-lg": ["Space Grotesk"],
+                      "headline-md": ["Space Grotesk"]
+              }
+            }
+          }
+        }
+    </script>
+</head>
+<body class="font-body-md text-body-md antialiased">
+<!-- Sidebar -->
+<aside class="fixed left-0 top-0 h-full flex flex-col p-stack-md bg-surface border-r border-outline-variant/10 shadow-xl w-64 z-50 transition-all duration-200" id="sidebar">
+<div class="flex items-center gap-stack-sm mb-stack-lg">
+<div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary leading-none">ElectroTrack</h1>
+<p class="text-[10px] uppercase tracking-widest text-outline">V2.0.4 - Premium POS</p>
+</div>
+</div>
+<nav class="flex-1 space-y-2 overflow-y-auto custom-scrollbar pr-2">
+<!-- Dashboards -->
+<a class="flex items-center gap-3 px-4 py-2.5 text-on-surface-variant hover:bg-surface-variant/20 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<!-- Staff - Active Section -->
+<div class="space-y-1">
+<button class="w-full flex items-center justify-between px-4 py-2.5 bg-secondary-container text-on-secondary-container rounded-lg font-semibold transition-all">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined">badge</span>
+<span>Staff</span>
+</div>
+<span class="material-symbols-outlined text-sm">expand_more</span>
+</button>
+<div class="pl-11 space-y-1">
+<a class="block py-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors" href="#">Staff List</a>
+<a class="block py-2 text-sm text-primary font-bold transition-colors" href="#">Access Control</a>
+<a class="block py-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors" href="#">Attendance</a>
+</div>
+</div>
+<a class="flex items-center gap-3 px-4 py-2.5 text-on-surface-variant hover:bg-surface-variant/20 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span>Inventory</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 text-on-surface-variant hover:bg-surface-variant/20 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">point_of_sale</span>
+<span>Sales</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 text-on-surface-variant hover:bg-surface-variant/20 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span>Reports</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 text-on-surface-variant hover:bg-surface-variant/20 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">local_shipping</span>
+<span>Suppliers</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 text-on-surface-variant hover:bg-surface-variant/20 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">history_edu</span>
+<span>Audit Log</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 text-on-surface-variant hover:bg-surface-variant/20 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+<button class="mt-stack-lg w-full bg-primary text-on-primary font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:scale-102 active:scale-98 transition-transform shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined">add</span>
+<span>New Transaction</span>
+</button>
+<div class="mt-stack-lg pt-stack-md border-t border-outline-variant/10 space-y-1">
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined">help_outline</span>
+<span class="text-sm">Help Center</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-error hover:text-error/80 transition-colors" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="text-sm">Log Out</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Container -->
+<main class="ml-64 min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="sticky top-0 z-40 flex justify-between items-center w-full px-margin h-16 bg-surface-container/80 backdrop-blur-md border-b border-outline-variant/20 shadow-sm">
+<div class="flex items-center gap-stack-md flex-1">
+<div class="relative w-full max-w-md">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline">search</span>
+<input class="w-full bg-surface-variant/30 border-none rounded-full pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 transition-all font-body-sm" placeholder="Search staff, permissions, or activity..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-stack-md">
+<button class="p-2 rounded-full hover:bg-surface-variant/30 transition-colors text-on-surface-variant relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full"></span>
+</button>
+<button class="p-2 rounded-full hover:bg-surface-variant/30 transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined">sync</span>
+</button>
+<div class="h-8 w-[1px] bg-outline-variant/20 mx-2"></div>
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block">
+<p class="text-sm font-bold text-on-surface">Zahid Ahmed</p>
+<p class="text-[10px] text-outline">System Admin</p>
+</div>
+<img alt="User Profile Avatar" class="w-10 h-10 rounded-full border-2 border-primary/20 object-cover" data-alt="A close-up portrait of a professional man in his 30s with a modern haircut, wearing a crisp dark blazer. He is standing against a soft-focus office background with blue and violet ambient lighting. The shot is high-definition, featuring realistic skin textures and a confident, welcoming expression, matching a premium dark-themed UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBh1YAsOPPNMHvTzP-g0RjSTE0eOeB-K61mXLQj1jo_uIJDMnenBZHtV8WMZbbzByMvdlzouPd4SJsQr-Rq762tlEzifysNYByUOfTaxytF4k2DIl-metTBZouMzLBEY6KtSSysx1Q_z6MbvDS4H7R2xebCBFCkVd3sdlOl7qpsWU1Syln3FkZq1D0Bym1ip5OTDCtW29ttjGXC5b4r1DUYMTAlBmetaHYhldp4oVsZfZUkGS7OlNMmtvEY9fNCd4oJFKyEofdOowX2"/>
+</div>
+</div>
+</header>
+<!-- Main Content Scrollable Area -->
+<div class="p-margin flex-1 space-y-stack-lg max-w-[1400px] mx-auto w-full">
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-stack-md animate-entry">
+<div>
+<h2 class="font-headline-lg text-headline-lg font-bold text-on-surface mb-1">Users &amp; Access</h2>
+<p class="text-on-surface-variant">Manage staff accounts, assign roles, and define granular system permissions.</p>
+</div>
+<button class="px-6 py-3 bg-primary-container text-on-primary-container rounded-xl font-bold flex items-center gap-2 hover:scale-102 active:scale-98 transition-transform shadow-lg shadow-primary-container/10">
+<span class="material-symbols-outlined">person_add</span>
+<span>Add User</span>
+</button>
+</div>
+<!-- Role Filter Tabs -->
+<div class="flex items-center gap-stack-sm overflow-x-auto pb-2 custom-scrollbar animate-entry" style="animation-delay: 0.1s">
+<button class="px-5 py-2.5 rounded-full bg-primary text-on-primary font-bold text-sm whitespace-nowrap">All (8)</button>
+<button class="px-5 py-2.5 rounded-full bg-surface-container-high text-on-surface-variant hover:bg-surface-variant/50 transition-all font-medium text-sm whitespace-nowrap">Owner (1)</button>
+<button class="px-5 py-2.5 rounded-full bg-surface-container-high text-on-surface-variant hover:bg-surface-variant/50 transition-all font-medium text-sm whitespace-nowrap">Cashier (3)</button>
+<button class="px-5 py-2.5 rounded-full bg-surface-container-high text-on-surface-variant hover:bg-surface-variant/50 transition-all font-medium text-sm whitespace-nowrap">Inventory (2)</button>
+<button class="px-5 py-2.5 rounded-full bg-surface-container-high text-on-surface-variant hover:bg-surface-variant/50 transition-all font-medium text-sm whitespace-nowrap">Accountant (1)</button>
+<button class="px-5 py-2.5 rounded-full bg-surface-container-high text-on-surface-variant hover:bg-surface-variant/50 transition-all font-medium text-sm whitespace-nowrap">Technician (1)</button>
+</div>
+<!-- Users Table Card -->
+<div class="glass-card rounded-2xl overflow-hidden animate-entry" style="animation-delay: 0.2s">
+<div class="p-6 border-b border-outline-variant/10 flex justify-between items-center bg-white/5">
+<h3 class="font-headline-md text-headline-md font-bold">Staff Directory</h3>
+<div class="flex items-center gap-stack-sm">
+<button class="p-2 rounded-lg hover:bg-surface-variant/30 text-on-surface-variant">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+<button class="p-2 rounded-lg hover:bg-surface-variant/30 text-on-surface-variant">
+<span class="material-symbols-outlined">download</span>
+</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="text-outline text-xs uppercase tracking-wider border-b border-outline-variant/10">
+<th class="px-6 py-4 font-semibold">User</th>
+<th class="px-6 py-4 font-semibold">Email</th>
+<th class="px-6 py-4 font-semibold">Role</th>
+<th class="px-6 py-4 font-semibold">Status</th>
+<th class="px-6 py-4 font-semibold">Last Login</th>
+<th class="px-6 py-4 font-semibold">Permissions</th>
+<th class="px-6 py-4 font-semibold text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/5">
+<!-- Row 1: Owner -->
+<tr class="group hover:bg-white/[0.02] transition-colors cursor-pointer" onclick="toggleSheet()">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<img alt="Zahid Ahmed" class="w-10 h-10 rounded-full object-cover grayscale group-hover:grayscale-0 transition-all" data-alt="A portrait of a male business executive with a sharp beard and professional hairstyle. He is wearing a minimalist dark turtleneck in a modern, architecturally clean studio setting with cool-toned studio lighting. The image emphasizes a professional, authoritative persona suitable for an app's 'Owner' profile." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYb-YL38xejXfs0D8ozkaQ4Sts8mdI8ozGBHzeKfxbZtBqffrKs3DNdQTKtGnONLSzTR34rAJjLxXQYvk-iIATV5dsRfrL0Ek7R17MiKNKf0gVxAkc7hbvdj3J7n9auRBdpszWKSElfBbsdLb4RVJLeLyw4rlFqV_pyGCEm8BFUuZQV6tmZ0gpjfg_LRx_aSaQYsne5yrowTiDPYcBxVzDyUp38_yRoIQ2YlZKHnJmBdu-hMT4D57oXUViEb9BhRIbZYxxfvoY8RWp"/>
+<span class="font-bold text-on-surface">Zahid Ahmed</span>
+</div>
+</td>
+<td class="px-6 py-4 font-label-mono text-sm text-primary">zahid.a@electrotrack.com</td>
+<td class="px-6 py-4">
+<span class="role-badge bg-secondary-container/30 text-secondary border border-secondary/20">
+<span class="material-symbols-outlined text-xs">stars</span>
+                                        Owner
+                                    </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="active-dot"></span>
+<span class="text-xs font-medium">Active</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-on-surface-variant">2 mins ago</td>
+<td class="px-6 py-4">
+<div class="flex gap-1 flex-wrap">
+<span class="text-[10px] bg-surface-variant px-1.5 py-0.5 rounded text-outline uppercase font-bold">FULL_ACCESS</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2 text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 hover:text-primary"><span class="material-symbols-outlined text-xl">edit</span></button>
+<button class="p-1.5 hover:text-error"><span class="material-symbols-outlined text-xl">block</span></button>
+<button class="p-1.5 hover:text-on-surface"><span class="material-symbols-outlined text-xl">key</span></button>
+</div>
+</td>
+</tr>
+<!-- Row 2: Ali Hassan -->
+<tr class="group hover:bg-white/[0.02] transition-colors cursor-pointer">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<img alt="Ali Hassan" class="w-10 h-10 rounded-full object-cover grayscale group-hover:grayscale-0 transition-all" data-alt="A high-quality portrait of a young South Asian man with a friendly and reliable expression. He's wearing a casual but neat uniform polo shirt. The lighting is bright and modern, suggesting a retail environment. The aesthetic is clean and high-fidelity, perfectly integrated with a dark-mode electronics store dashboard." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDmg2-C32bwr5xUL7qepglm0HUnIeg3zoVSJXMT1O0eYuqXJfKpjSrLOqJFp89WJfQlcX3V3nKOaXz0qSPunzZudm9axgZHjOZA9Ih_vP_p33-ski41gMXagRpW3lAIZDGJFmDaGYOhBSuvz7n7XbYTTT73OKP2y1wgm5emPLvVnQ48c4zaujynezF8iOcjIALTYOPB3rVUImd7QVupBsuRb0mU3szQ3IUveIyV2aF36-_qbIpcQiqjlckXmaJBbjevCdlK71kis4Aw"/>
+<span class="font-bold text-on-surface">Ali Hassan</span>
+</div>
+</td>
+<td class="px-6 py-4 font-label-mono text-sm text-primary">ali.h@electrotrack.com</td>
+<td class="px-6 py-4">
+<span class="role-badge bg-primary-container/20 text-primary border border-primary/20">
+<span class="material-symbols-outlined text-xs">payments</span>
+                                        Cashier
+                                    </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="active-dot"></span>
+<span class="text-xs font-medium">Active</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-on-surface-variant">Today, 09:12 AM</td>
+<td class="px-6 py-4">
+<div class="flex gap-1 flex-wrap">
+<span class="text-[10px] bg-surface-variant px-1.5 py-0.5 rounded text-outline uppercase font-bold">POS</span>
+<span class="text-[10px] bg-surface-variant px-1.5 py-0.5 rounded text-outline uppercase font-bold">REFUNDS</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2 text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 hover:text-primary"><span class="material-symbols-outlined text-xl">edit</span></button>
+<button class="p-1.5 hover:text-error"><span class="material-symbols-outlined text-xl">block</span></button>
+<button class="p-1.5 hover:text-on-surface"><span class="material-symbols-outlined text-xl">key</span></button>
+</div>
+</td>
+</tr>
+<!-- Row 3: Fatima Malik -->
+<tr class="group hover:bg-white/[0.02] transition-colors cursor-pointer">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<img alt="Fatima Malik" class="w-10 h-10 rounded-full object-cover grayscale group-hover:grayscale-0 transition-all" data-alt="A professional headshot of a young woman with a focused and intelligent look, wearing a sleek professional outfit. The background is a sophisticated office setting with soft indigo lighting and subtle technological motifs. Her skin tone is warm and the overall image quality is sharp and cinematic, matching a premium POS system design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCp2Y5b_LKY3eTWsHp2qNPm56_IxyWIfVlFRJyN76tQoLIduiFLfcA9u0f9oEuGOnUsPXaNtszeXS_UhnrQxzimKleFBoKdX7ahBgSYB6wdz_Oc2ZInDZzcRMbsgQ96WbkrgkUojMDrdnrtYahZblD9-s245KimTyLIrssRqPhXfYZ4bK2ES2A8UXGri2SjyQF_4eCaU6xsLelb5uduUgLDGFDiJNPDIuw550apF203mxWv8JgzAbFSuzyTdJNtUWr-0HdRd4DeqAgR"/>
+<span class="font-bold text-on-surface">Fatima Malik</span>
+</div>
+</td>
+<td class="px-6 py-4 font-label-mono text-sm text-primary">fatima.m@electrotrack.com</td>
+<td class="px-6 py-4">
+<span class="role-badge bg-tertiary-container/20 text-tertiary border border-tertiary/20">
+<span class="material-symbols-outlined text-xs">inventory_2</span>
+                                        Inventory
+                                    </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="active-dot"></span>
+<span class="text-xs font-medium">Active</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-on-surface-variant">Yesterday, 06:45 PM</td>
+<td class="px-6 py-4">
+<div class="flex gap-1 flex-wrap">
+<span class="text-[10px] bg-surface-variant px-1.5 py-0.5 rounded text-outline uppercase font-bold">STOCKS</span>
+<span class="text-[10px] bg-surface-variant px-1.5 py-0.5 rounded text-outline uppercase font-bold">AUDIT</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2 text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 hover:text-primary"><span class="material-symbols-outlined text-xl">edit</span></button>
+<button class="p-1.5 hover:text-error"><span class="material-symbols-outlined text-xl">block</span></button>
+<button class="p-1.5 hover:text-on-surface"><span class="material-symbols-outlined text-xl">key</span></button>
+</div>
+</td>
+</tr>
+<!-- Row 4: Sana Khan -->
+<tr class="group hover:bg-white/[0.02] transition-colors cursor-pointer">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<img alt="Sana Khan" class="w-10 h-10 rounded-full object-cover grayscale group-hover:grayscale-0 transition-all" data-alt="A portrait of a young woman with a pleasant and professional smile, wearing a stylish hijab and a smart blazer. The setting is a bright, modern workplace with high-end glass partitions and soft warm-to-cool lighting transitions. The image has a deep depth of field and captures a high-end, corporate professional aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5_66wqeKI9MDVFI_TsZ2_qh820XOk69uu1YM-LH6uoXw2MR3xgSvzfZt8kO27s41o7mSxga3JH8VPybfyBOYY3frcSY67UXmQAiv0-Pxl9j3-tr564-lzoGuCdmMnOWQV9HNOHE7x0pE3JFfU0zntzhVegBGGZNhlKoACaxnSvCYDMosP1YFOiwLjzu7hYE88f35FprnMEKwhanscluX_ZgkJ-H5mPTGVJK2bSSLhY9pGwOSJacj9HQ7_LO6HTmMYTLC_PR6on-ym"/>
+<span class="font-bold text-on-surface">Sana Khan</span>
+</div>
+</td>
+<td class="px-6 py-4 font-label-mono text-sm text-primary">sana.k@electrotrack.com</td>
+<td class="px-6 py-4">
+<span class="role-badge bg-primary-container/20 text-primary border border-primary/20">
+<span class="material-symbols-outlined text-xs">payments</span>
+                                        Cashier
+                                    </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="active-dot"></span>
+<span class="text-xs font-medium">Active</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-on-surface-variant">Today, 11:30 AM</td>
+<td class="px-6 py-4">
+<div class="flex gap-1 flex-wrap">
+<span class="text-[10px] bg-surface-variant px-1.5 py-0.5 rounded text-outline uppercase font-bold">POS</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2 text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 hover:text-primary"><span class="material-symbols-outlined text-xl">edit</span></button>
+<button class="p-1.5 hover:text-error"><span class="material-symbols-outlined text-xl">block</span></button>
+<button class="p-1.5 hover:text-on-surface"><span class="material-symbols-outlined text-xl">key</span></button>
+</div>
+</td>
+</tr>
+<!-- Row 5: Hamza Mirza (Suspended) -->
+<tr class="group hover:bg-white/[0.02] transition-colors cursor-pointer bg-error/5">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<img alt="Hamza Mirza" class="w-10 h-10 rounded-full object-cover grayscale opacity-50" data-alt="A sharp portrait of a young man with glasses and a professional demeanor. He's wearing a clean-cut button-down shirt. The lighting is dramatic with cool blue highlights and deep shadows, giving a futuristic tech-office feel. High-resolution shot that fits a dark mode POS interface perfectly." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA099mNqpUDaitGnomBgKcQQHbeWQ7dnPz1S0qRjqmHHuhHPxolD7dgorqC_ay9ub_wyktgKlfiXXJOF-cLMfxO9lAvIYrqlm85X6XGhMNWdGZyRSG18vVd7VDniL2vLnI7yx2JFUbXXuOq9DSJSr-7ybVSRclK5VKb9CzoUwz6JoBCdw8FMDgdyPvIkhYNWy_Ih-7FPgDiqDJKTYVqAsh0b73BY1SLm9Gi_7w6jfpXuni0O528G3Aru7UPhsGH_dvpch3kFGsjCPgg"/>
+<span class="font-bold text-on-surface-variant line-through">Hamza Mirza</span>
+</div>
+</td>
+<td class="px-6 py-4 font-label-mono text-sm text-outline">hamza.m@electrotrack.com</td>
+<td class="px-6 py-4">
+<span class="role-badge bg-green-500/10 text-green-400 border border-green-500/20">
+<span class="material-symbols-outlined text-xs">account_balance</span>
+                                        Accountant
+                                    </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="suspended-dot"></span>
+<span class="text-xs font-medium text-error">Suspended</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-outline">2 weeks ago</td>
+<td class="px-6 py-4">
+<div class="flex gap-1 flex-wrap opacity-50">
+<span class="text-[10px] bg-surface-variant px-1.5 py-0.5 rounded text-outline uppercase font-bold">REPORTS</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2 text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 hover:text-primary"><span class="material-symbols-outlined text-xl">edit</span></button>
+<button class="p-1.5 text-error"><span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">check_circle</span></button>
+<button class="p-1.5 hover:text-on-surface"><span class="material-symbols-outlined text-xl">key</span></button>
+</div>
+</td>
+</tr>
+<!-- Row 6: Zoya Butt -->
+<tr class="group hover:bg-white/[0.02] transition-colors cursor-pointer">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<img alt="Zoya Butt" class="w-10 h-10 rounded-full object-cover grayscale group-hover:grayscale-0 transition-all" data-alt="A portrait of a young woman with a confident and highly skilled look, wearing a casual tech-focused hoodie. She is standing in a laboratory-like environment with glowing blue and amber light panels. The visual style is sharp and modern, emphasizing technical expertise for a 'Technician' role profile." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCMrfKuUbVUEmZ-yPZav15lwQb-b0oYPdhOHaOTT-DiJrg0NipasAe8_X-hI7NZoEoNqXOrwKwOPg98mekTCK4u-LFTFAFupqmQS7ANXuhMm4Wdf2-SWNfzx9glrgczrnPCRs4tNJp1u6wGlzcAvM3QTBWsRGTJYPZJIs7-z_My87tksfnNELVnH5GVQ-s2X7sxtGik0Ebx33abL4bg07cmzi7o4JphVXHucfhXto4bkGjz_k1IkfWWzLY9DEEYPITeKrh9mZRclcRH"/>
+<span class="font-bold text-on-surface">Zoya Butt</span>
+</div>
+</td>
+<td class="px-6 py-4 font-label-mono text-sm text-primary">zoya.b@electrotrack.com</td>
+<td class="px-6 py-4">
+<span class="role-badge bg-amber-500/10 text-amber-400 border border-amber-500/20">
+<span class="material-symbols-outlined text-xs">build</span>
+                                        Technician
+                                    </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="active-dot"></span>
+<span class="text-xs font-medium">Active</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-on-surface-variant">3 hours ago</td>
+<td class="px-6 py-4">
+<div class="flex gap-1 flex-wrap">
+<span class="text-[10px] bg-surface-variant px-1.5 py-0.5 rounded text-outline uppercase font-bold">REPAIR</span>
+<span class="text-[10px] bg-surface-variant px-1.5 py-0.5 rounded text-outline uppercase font-bold">DIAGNOSTICS</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2 text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 hover:text-primary"><span class="material-symbols-outlined text-xl">edit</span></button>
+<button class="p-1.5 hover:text-error"><span class="material-symbols-outlined text-xl">block</span></button>
+<button class="p-1.5 hover:text-on-surface"><span class="material-symbols-outlined text-xl">key</span></button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 border-t border-outline-variant/10 flex justify-between items-center text-sm text-outline">
+<p>Showing 1-8 of 8 users</p>
+<div class="flex items-center gap-2">
+<button class="p-1 disabled:opacity-30" disabled=""><span class="material-symbols-outlined">chevron_left</span></button>
+<span class="bg-primary/20 text-primary px-2 rounded font-bold">1</span>
+<button class="p-1 disabled:opacity-30" disabled=""><span class="material-symbols-outlined">chevron_right</span></button>
+</div>
+</div>
+</div>
+<!-- Bottom Section: Recent Activity -->
+<div class="glass-card rounded-2xl p-6 animate-entry" style="animation-delay: 0.3s">
+<div class="flex items-center justify-between mb-stack-md">
+<h3 class="font-headline-md text-headline-md font-bold">Recent Login Activity</h3>
+<button class="text-primary text-sm font-bold hover:underline">View All Logs</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-stack-md">
+<!-- Activity Item 1 -->
+<div class="p-4 rounded-xl bg-white/[0.03] border border-white/[0.05] flex items-center gap-3">
+<img class="w-8 h-8 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDg3ds8yhVjzkpJGJDQqd6vNwYAE93ZVfXt5DWxmcqGMlwjsa5ZyRES0Qlv-2ykNtSH7FXuFWgCEYtIFInRMBXTV-Toi7J30AhrvFBtNLgrDkBydqVqgIaL0SONIyyeNEzfNBvr6g7eHPBPuSLMyxWmj6azPGLyvd0S3jAQhFmDNl8x-jZvh3dtwBsNObnKaET-vK0-7Fj89yH29to3Fh4-LKWp4LyTX3qDE-XQlS9EV18DLq4UBmWYSqIoKYujCAIIu__YFr5oXYEG"/>
+<div>
+<p class="text-xs font-bold text-on-surface">Zahid Ahmed</p>
+<p class="text-[10px] text-outline font-label-mono">192.168.1.1</p>
+<p class="text-[10px] text-primary mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">desktop_windows</span> Chrome / MacOS
+                            </p>
+</div>
+</div>
+<!-- Activity Item 2 -->
+<div class="p-4 rounded-xl bg-white/[0.03] border border-white/[0.05] flex items-center gap-3">
+<img class="w-8 h-8 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAM6F_XlSG3DKFtMAozo4WBMR6rhrVDZ6SYRSxiwvn1-ab9ve3QID8qHaRgM-KaGnrM0ln-Ncc0Ol258t1eGvNbBjiIhxnFA3RL8Bxs0-5FwB48DBLgDIi0LztkURmXO0ftKfB-6ZRsPRhb0nSaHUmU4svt2Um2qjIXEWLLjR25h8lAcWb76OV77HsUKiKpHSvNHdr326Ek_Y3LU-YQ6S0Ce5mFkurW9JE8sXqigZ3GICbhI8zGpyKWK_HKUIh8YzIcCdExZokePYc8"/>
+<div>
+<p class="text-xs font-bold text-on-surface">Ali Hassan</p>
+<p class="text-[10px] text-outline font-label-mono">192.168.1.42</p>
+<p class="text-[10px] text-primary mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">tablet_android</span> POS Terminal A
+                            </p>
+</div>
+</div>
+<!-- Activity Item 3 -->
+<div class="p-4 rounded-xl bg-white/[0.03] border border-white/[0.05] flex items-center gap-3">
+<img class="w-8 h-8 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3Fa-TTGnhdybZhLlR_g7ofy2fjS3eAHt6fPFUkD5Uh9uY8cVMIU3TWvNBlpIPQyNrhe3jbAykZen23YyS5JCEz6GwmSfGjDdk4rkf4K-hP8ASvJ-HxZJDI-OWtCTMpsMlggxlwCtocvQkqHfjlFIXWPcqyQwz0vT9RJUfZ1BTeQnpX9ferbFm1Uo4efndZoZ7wQ92E72C_VQuuqmctH1AKkFzQmmJgPkzjs-9wO5XGA_lbuEnfzK0RBerKc8UE_XGz0Xl-KH3QHu0"/>
+<div>
+<p class="text-xs font-bold text-on-surface">Sana Khan</p>
+<p class="text-[10px] text-outline font-label-mono">192.168.1.45</p>
+<p class="text-[10px] text-primary mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">tablet_android</span> POS Terminal B
+                            </p>
+</div>
+</div>
+<!-- Activity Item 4 -->
+<div class="p-4 rounded-xl bg-white/[0.03] border border-white/[0.05] flex items-center gap-3">
+<img class="w-8 h-8 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCeys0w1cuUeSTwBN9KLbMKZ-LPqQVNMpEFpffjG-nj-guZtc-K8Vh2fyOTtIJbs0Sb_uMMsezVj7bQkogP3ot2os-XvymgEia8Or2oVEx1taDfRdgY0q61sG0Hn0EazxKlzis_s1UEvqb_At7KbnjAMO8PH-LfF0N7mUSa65JypKcnWlLPAVzL9Ji6NJkFVXsuhSXkA14QYdEqNwgXeauyjufeIP-SGxc_onYcKn_xW3MlPHm42scZbHsGskthFaVqLovAu1B2n7YI"/>
+<div>
+<p class="text-xs font-bold text-on-surface">Zoya Butt</p>
+<p class="text-[10px] text-outline font-label-mono">192.168.1.88</p>
+<p class="text-[10px] text-primary mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">laptop_mac</span> Tech Workbench
+                            </p>
+</div>
+</div>
+<!-- Activity Item 5 -->
+<div class="p-4 rounded-xl bg-white/[0.03] border border-white/[0.05] flex items-center gap-3">
+<img class="w-8 h-8 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0AOw2iedyuP46S-U6to6IFvtrcJApUafSBKTEmIFhIkUL6dsnPL7rNBtjxF40yB8Sk26u_QxFSRXOoR0cb8u14vsMoAXWivvDa2PfvE-bzj8BT0RHOIovLIK44o6alEDe4WlNOZgBZAHb99Zbz138FPLvoQFV-j6C1NUHq-St96TfYnTi8hazdsEd5TlfzNoCh91Qb8DquXlPBeEsjExNZ9L1TZVAqHtowyknGgyXCZEQQ4_hScBPdpfo3iPma_H5HGRcBOa4MjVo"/>
+<div>
+<p class="text-xs font-bold text-on-surface">Fatima Malik</p>
+<p class="text-[10px] text-outline font-label-mono">10.0.4.122</p>
+<p class="text-[10px] text-primary mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">smartphone</span> Stock App
+                            </p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Side Panel Overlay (Edit Staff) -->
+<div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] opacity-0 pointer-events-none transition-opacity duration-300" id="edit-panel-overlay" onclick="toggleSheet()"></div>
+<div class="fixed top-0 right-0 h-full w-full max-w-md bg-surface-container-high border-l border-outline-variant/20 z-[101] shadow-2xl translate-x-full transition-transform duration-500 ease-out flex flex-col" id="edit-panel">
+<div class="p-6 border-b border-outline-variant/10 flex justify-between items-center bg-white/5">
+<div>
+<h3 class="font-headline-md text-headline-md font-bold">Edit Staff Account</h3>
+<p class="text-sm text-outline">User ID: #USR-88219</p>
+</div>
+<button class="p-2 rounded-full hover:bg-white/10 transition-colors" onclick="toggleSheet()">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-6 space-y-stack-lg custom-scrollbar">
+<!-- Basic Info -->
+<div class="space-y-stack-md">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img class="w-20 h-20 rounded-2xl object-cover border-2 border-primary/30" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7UdEST4M6jVuT1MyDabaI1-x14hwIUpaVwn9Nxgtqy3adgnr_14Axb1fxZ0ZOvU6khdomPDQaTMgCCZQ43f0UBATMOmz3ZTIfv2iLc8nBLccxQArUcwjyLhdQAXYtx_ROoGQwC0iRVaYAFYbLyVq-ammnvi_pum8bYF7XNYzSpkqmK6LyNzeHcS87cMGh-GFD57zai24gV69ezedmi75Q7-UFscXmuj4X6AOY7qYRyFrPUEVE0RIuIJvl_2Mp_xPOrmy9cZ-nXAhg"/>
+<button class="absolute -bottom-2 -right-2 p-2 bg-primary text-on-primary rounded-full shadow-lg">
+<span class="material-symbols-outlined text-sm">photo_camera</span>
+</button>
+</div>
+<div class="flex-1">
+<label class="block text-[10px] uppercase tracking-widest text-outline font-bold mb-1">Full Name</label>
+<input class="w-full bg-white/5 border-b-2 border-primary text-on-surface px-0 py-2 focus:ring-0 focus:outline-none font-headline-md" type="text" value="Zahid Ahmed"/>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block text-[10px] uppercase tracking-widest text-outline font-bold mb-2">Role</label>
+<select class="w-full bg-white/5 border border-outline-variant/30 rounded-lg py-2 px-3 text-sm focus:ring-primary focus:border-primary">
+<option selected="">Owner</option>
+<option>Cashier</option>
+<option>Inventory Manager</option>
+<option>Accountant</option>
+<option>Technician</option>
+</select>
+</div>
+<div>
+<label class="block text-[10px] uppercase tracking-widest text-outline font-bold mb-2">Branch</label>
+<select class="w-full bg-white/5 border border-outline-variant/30 rounded-lg py-2 px-3 text-sm focus:ring-primary focus:border-primary">
+<option selected="">Main HQ</option>
+<option>North Plaza</option>
+<option>South Hub</option>
+</select>
+</div>
+</div>
+</div>
+<!-- Permissions -->
+<div class="space-y-stack-md">
+<h4 class="text-sm font-bold text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">verified_user</span>
+                    Module Access
+                </h4>
+<div class="grid grid-cols-1 gap-3">
+<label class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-outline-variant/10 cursor-pointer hover:bg-white/10 transition-all">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-outline">analytics</span>
+<span class="text-sm">Financial Reporting</span>
+</div>
+<input checked="" class="rounded bg-surface-variant border-none text-primary focus:ring-offset-0 focus:ring-primary" type="checkbox"/>
+</label>
+<label class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-outline-variant/10 cursor-pointer hover:bg-white/10 transition-all">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-outline">inventory_2</span>
+<span class="text-sm">Stock Management</span>
+</div>
+<input checked="" class="rounded bg-surface-variant border-none text-primary focus:ring-offset-0 focus:ring-primary" type="checkbox"/>
+</label>
+<label class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-outline-variant/10 cursor-pointer hover:bg-white/10 transition-all">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-outline">group</span>
+<span class="text-sm">User Management</span>
+</div>
+<input checked="" class="rounded bg-surface-variant border-none text-primary focus:ring-offset-0 focus:ring-primary" type="checkbox"/>
+</label>
+<label class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-outline-variant/10 cursor-pointer hover:bg-white/10 transition-all opacity-50">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-outline">terminal</span>
+<span class="text-sm">System Backend</span>
+</div>
+<input class="rounded bg-surface-variant border-none text-primary focus:ring-offset-0 focus:ring-primary" type="checkbox"/>
+</label>
+</div>
+</div>
+<!-- Account Security -->
+<div class="space-y-stack-md pt-stack-md border-t border-outline-variant/10">
+<h4 class="text-sm font-bold text-error flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">security</span>
+                    Security &amp; Controls
+                </h4>
+<div class="flex flex-col gap-2">
+<button class="flex items-center gap-3 w-full p-3 text-left text-sm text-on-surface-variant hover:bg-white/5 rounded-lg transition-all">
+<span class="material-symbols-outlined">key</span>
+                        Force Password Reset
+                    </button>
+<button class="flex items-center gap-3 w-full p-3 text-left text-sm text-on-surface-variant hover:bg-white/5 rounded-lg transition-all">
+<span class="material-symbols-outlined">devices_other</span>
+                        Log out of all devices
+                    </button>
+<button class="flex items-center gap-3 w-full p-3 text-left text-sm text-error hover:bg-error/10 rounded-lg transition-all">
+<span class="material-symbols-outlined">block</span>
+                        Suspend Account
+                    </button>
+</div>
+</div>
+</div>
+<div class="p-6 border-t border-outline-variant/10 bg-white/5 flex gap-4">
+<button class="flex-1 py-3 px-4 border border-outline-variant/30 rounded-xl font-bold hover:bg-white/10 transition-all" onclick="toggleSheet()">Cancel</button>
+<button class="flex-1 py-3 px-4 bg-primary text-on-primary rounded-xl font-bold hover:scale-102 active:scale-98 transition-transform shadow-lg shadow-primary/20">Save Changes</button>
+</div>
+</div>
+<script>
+        // Entrance Animations
+        document.addEventListener('DOMContentLoaded', () => {
+            gsap.from('.animate-entry', {
+                y: 30,
+                opacity: 0,
+                duration: 0.8,
+                stagger: 0.15,
+                ease: 'power3.out'
+            });
+
+            // Logo Glow Pulse
+            gsap.to('.bg-primary-container', {
+                boxShadow: '0 0 15px rgba(192, 193, 255, 0.4)',
+                repeat: -1,
+                yoyo: true,
+                duration: 2,
+                ease: 'sine.inOut'
+            });
+        });
+
+        // Toggle Right Panel Sheet
+        function toggleSheet() {
+            const panel = document.getElementById('edit-panel');
+            const overlay = document.getElementById('edit-panel-overlay');
+            
+            if (panel.classList.contains('translate-x-full')) {
+                panel.classList.remove('translate-x-full');
+                overlay.classList.remove('opacity-0', 'pointer-events-none');
+                gsap.from('#edit-panel > div', {
+                    x: 50,
+                    opacity: 0,
+                    stagger: 0.1,
+                    duration: 0.5,
+                    ease: 'power2.out',
+                    delay: 0.2
+                });
+            } else {
+                panel.classList.add('translate-x-full');
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+            }
+        }
+
+        // Row Hover Micro-interactions
+        const rows = document.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            row.addEventListener('mouseenter', () => {
+                gsap.to(row, { scale: 1.005, backgroundColor: 'rgba(255,255,255,0.03)', duration: 0.2 });
+            });
+            row.addEventListener('mouseleave', () => {
+                gsap.to(row, { scale: 1, backgroundColor: 'rgba(255,255,255,0)', duration: 0.2 });
+            });
+        });
+    </script>
+</body></html>

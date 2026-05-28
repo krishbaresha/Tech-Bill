@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ElectroTrack Universal - Goods Received Notes</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            background-color: #0A0F1E;
+            color: #dee1f7;
+            font-family: 'DM Sans', sans-serif;
+            overflow-x: hidden;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            border: 1px border-white/10;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            backdrop-filter: blur(24px);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+        .glow-primary {
+            box-shadow: 0 0 20px rgba(192, 193, 255, 0.15);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090e1c;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2f3445;
+            border-radius: 10px;
+        }
+        .stagger-entry {
+            animation: fadeInScale 0.4s ease-out forwards;
+            opacity: 0;
+        }
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-variant": "#2f3445",
+                      "secondary-fixed-dim": "#d0bcff",
+                      "surface-dim": "#0e1322",
+                      "outline": "#908fa0",
+                      "on-error": "#690005",
+                      "inverse-primary": "#494bd6",
+                      "surface": "#0e1322",
+                      "secondary": "#d0bcff",
+                      "surface-tint": "#c0c1ff",
+                      "surface-container-low": "#161b2b",
+                      "on-secondary": "#3c0091",
+                      "secondary-container": "#571bc1",
+                      "error-container": "#93000a",
+                      "tertiary-fixed-dim": "#2fd9f4",
+                      "primary-fixed": "#e1e0ff",
+                      "on-tertiary-fixed": "#001f25",
+                      "on-secondary-container": "#c4abff",
+                      "secondary-fixed": "#e9ddff",
+                      "on-tertiary": "#00363e",
+                      "inverse-on-surface": "#2b3040",
+                      "error": "#ffb4ab",
+                      "inverse-surface": "#dee1f7",
+                      "on-error-container": "#ffdad6",
+                      "tertiary-container": "#008395",
+                      "primary-container": "#8083ff",
+                      "background": "#0e1322",
+                      "surface-container": "#1a1f2f",
+                      "on-primary-container": "#0d0096",
+                      "primary": "#c0c1ff",
+                      "surface-container-high": "#25293a",
+                      "on-surface-variant": "#c7c4d7",
+                      "on-primary": "#1000a9",
+                      "on-tertiary-fixed-variant": "#004e5a",
+                      "on-primary-fixed": "#07006c",
+                      "primary-fixed-dim": "#c0c1ff",
+                      "on-background": "#dee1f7",
+                      "surface-container-highest": "#2f3445",
+                      "on-secondary-fixed": "#23005c",
+                      "tertiary-fixed": "#a2eeff",
+                      "on-surface": "#dee1f7",
+                      "on-primary-fixed-variant": "#2f2ebe",
+                      "surface-container-lowest": "#090e1c",
+                      "tertiary": "#2fd9f4",
+                      "surface-bright": "#343949",
+                      "outline-variant": "#464554",
+                      "on-tertiary-container": "#000608",
+                      "on-secondary-fixed-variant": "#5516be"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "unit": "4px",
+                      "stack-lg": "32px",
+                      "stack-md": "16px",
+                      "container-max": "1440px",
+                      "stack-xs": "4px",
+                      "stack-sm": "8px",
+                      "margin": "32px",
+                      "gutter": "24px"
+              },
+              "fontFamily": {
+                      "body-sm": ["DM Sans"],
+                      "headline-md": ["Space Grotesk"],
+                      "headline-lg": ["Space Grotesk"],
+                      "body-lg": ["DM Sans"],
+                      "body-md": ["DM Sans"],
+                      "label-caps": ["DM Sans"],
+                      "label-mono": ["JetBrains Mono"],
+                      "headline-xl": ["Space Grotesk"],
+                      "headline-lg-mobile": ["Space Grotesk"]
+              }
+            }
+          }
+        }
+    </script>
+</head>
+<body class="bg-surface-dim selection:bg-primary/30">
+<!-- TopNavBar -->
+<header class="w-full sticky top-0 z-40 bg-surface-dim/80 backdrop-blur-xl border-b border-white/10 shadow-sm">
+<div class="flex justify-between items-center h-16 px-margin w-full max-w-container-max mx-auto">
+<div class="flex items-center gap-6">
+<span class="font-headline-md text-headline-md font-bold text-primary">ElectroTrack Universal</span>
+<div class="hidden md:flex bg-white/5 rounded-full px-4 py-2 items-center gap-2 border border-white/10">
+<span class="material-symbols-outlined text-on-surface-variant text-body-md">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-sm w-64 placeholder:text-on-surface-variant/50" placeholder="Search orders, serials..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-stack-md">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">settings</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">help</button>
+<div class="h-8 w-8 rounded-full bg-primary-container/30 border border-primary/20 flex items-center justify-center">
+<img alt="User profile avatar" class="rounded-full h-full w-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4hz3caaqIJQIptRsfyCc9leItFj8nv--WFhGeV9-kjapzqqdi5DkD8HC0jK0am4w94Lsr1mgt3Cqa6IbkX-ESEEOy-v50gfCJ8738490jZT-cBcMbD8Yx97W2Q2BX-dNrEuLWz2YC76IBMTW2XgDmOhsMSmM2Y_flailduSYi4vfsQmn4_jUOf4gz9BBIvVqL76YIKYlPgTArCV4cmbJemJN6vq7ukuJCtq9-1Koyg7HwqQHX7ZkpicfKA0-aDwgD3H_S4VO5TSm-"/>
+</div>
+</div>
+</div>
+</header>
+<div class="flex min-h-[calc(100vh-64px)]">
+<!-- SideNavBar -->
+<aside class="w-64 border-r border-white/5 bg-surface-container-lowest flex flex-col py-stack-md">
+<nav class="flex-1 px-stack-sm space-y-1">
+<a class="text-on-surface-variant hover:text-on-surface px-4 py-3 flex items-center gap-3 hover:bg-white/5 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface px-4 py-3 flex items-center gap-3 hover:bg-white/5 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-body-md">Inventory</span>
+</a>
+<!-- Expanded Suppliers Section -->
+<div>
+<button class="w-full text-on-surface-variant px-4 py-3 flex items-center justify-between hover:bg-white/5 transition-all duration-200">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined">local_shipping</span>
+<span class="font-body-md">Suppliers</span>
+</div>
+<span class="material-symbols-outlined text-sm">expand_more</span>
+</button>
+<div class="mt-1 space-y-1">
+<a class="bg-primary-container/20 text-primary border-l-4 border-primary px-4 py-3 flex items-center gap-3 pl-12 transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[18px]">receipt_long</span>
+<span class="font-body-md">GRN</span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface px-4 py-3 flex items-center gap-3 pl-12 hover:bg-white/5 transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[18px]">shopping_cart_checkout</span>
+<span class="font-body-md">Purchase Orders</span>
+</a>
+</div>
+</div>
+<a class="text-on-surface-variant hover:text-on-surface px-4 py-3 flex items-center gap-3 hover:bg-white/5 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined">point_of_sale</span>
+<span class="font-body-md">Sales</span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface px-4 py-3 flex items-center gap-3 hover:bg-white/5 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-body-md">Reports</span>
+</a>
+</nav>
+<div class="mt-auto px-4 space-y-4">
+<button class="w-full bg-primary text-on-primary py-3 rounded-lg font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform glow-primary">
+<span class="material-symbols-outlined">add</span>
+                    New Transaction
+                </button>
+<a class="text-on-surface-variant hover:text-on-surface px-4 py-3 flex items-center gap-3 hover:bg-white/5 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-body-md">Log Out</span>
+</a>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 p-margin space-y-stack-lg max-w-[1200px] mx-auto overflow-y-auto">
+<!-- Header Section -->
+<div class="flex justify-between items-end stagger-entry" style="animation-delay: 0.1s;">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Goods Received Notes</h1>
+<p class="text-on-surface-variant font-body-md mt-1">Manage and verify inbound inventory shipments.</p>
+</div>
+<button class="bg-primary text-on-primary px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 hover:brightness-110 active:scale-95 transition-all">
+<span class="material-symbols-outlined">add</span>
+                    + New GRN
+                </button>
+</div>
+<!-- Stats Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter stagger-entry" style="animation-delay: 0.2s;">
+<div class="glass-card p-stack-md rounded-xl flex flex-col">
+<span class="text-on-surface-variant font-label-caps text-label-caps uppercase tracking-widest">Total GRNs</span>
+<span class="text-headline-lg font-headline-lg mt-2 font-bold" id="stat-total">18</span>
+</div>
+<div class="glass-card p-stack-md rounded-xl flex flex-col border-l-4 border-tertiary">
+<span class="text-on-surface-variant font-label-caps text-label-caps uppercase tracking-widest">Pending Verification</span>
+<span class="text-headline-lg font-headline-lg mt-2 font-bold text-tertiary" id="stat-pending">4</span>
+</div>
+<div class="glass-card p-stack-md rounded-xl flex flex-col border-l-4 border-error">
+<span class="text-on-surface-variant font-label-caps text-label-caps uppercase tracking-widest">Discrepancies</span>
+<span class="text-headline-lg font-headline-lg mt-2 font-bold text-error" id="stat-discrepancy">2</span>
+</div>
+<div class="glass-card p-stack-md rounded-xl flex flex-col border-l-4 border-primary">
+<span class="text-on-surface-variant font-label-caps text-label-caps uppercase tracking-widest">Units Today</span>
+<span class="text-headline-lg font-headline-lg mt-2 font-bold text-primary" id="stat-units">47</span>
+</div>
+</div>
+<!-- Active GRN Panel -->
+<section class="stagger-entry" style="animation-delay: 0.3s;">
+<div class="glass-card rounded-xl overflow-hidden border-t-4 border-primary shadow-2xl">
+<div class="p-stack-md border-b border-white/5 bg-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface flex items-center gap-2">
+<span class="font-label-mono text-primary">GRN-0018</span>
+<span class="text-on-surface-variant opacity-50">/</span> 
+                                Receiving against PO-2045 (TechHub Karachi)
+                            </h2>
+<div class="flex items-center gap-4 mt-2">
+<span class="bg-tertiary-container/30 text-tertiary px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">factory</span> TechHub Inc.
+                                </span>
+<span class="text-on-surface-variant text-body-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">calendar_today</span> Oct 24, 2023
+                                </span>
+<span class="text-on-surface-variant text-body-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">inventory</span> 12 Items Expected
+                                </span>
+</div>
+</div>
+<div class="flex items-center gap-stack-sm">
+<button class="px-5 py-2 rounded-lg border border-white/10 hover:bg-white/5 text-on-surface-variant transition-colors font-bold text-body-sm">Save Draft</button>
+<button class="px-5 py-2 rounded-lg bg-primary text-on-primary font-bold text-body-sm flex items-center gap-2 hover:brightness-110 glow-primary transition-all active:scale-95">
+                                Confirm Receipt <span class="material-symbols-outlined text-sm">check_circle</span>
+</button>
+</div>
+</div>
+<!-- Discrepancy Warning -->
+<div class="bg-error-container/20 border-y border-error/20 px-stack-md py-3 flex items-center gap-3">
+<span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">warning</span>
+<p class="text-error font-body-md"><strong>Samsung A55:</strong> Quantity mismatch. Expected 4, received 3.</p>
+</div>
+<!-- Items Table -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="text-on-surface-variant font-label-caps text-label-caps border-b border-white/5">
+<th class="p-4 px-margin">Item Details</th>
+<th class="p-4">Expected</th>
+<th class="p-4">Received</th>
+<th class="p-4">SN / Barcode Scanning</th>
+<th class="p-4 pr-margin text-right">Status</th>
+</tr>
+</thead>
+<tbody class="font-body-md">
+<tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+<td class="p-4 px-margin">
+<div class="font-bold text-on-surface">HP Laptop 14s</div>
+<div class="text-xs text-on-surface-variant/70 font-label-mono">SKU-7721-HP</div>
+</td>
+<td class="p-4 font-label-mono">5</td>
+<td class="p-4">
+<input class="w-20 bg-surface-container border-none focus:ring-1 focus:ring-primary rounded-md text-on-surface text-center font-label-mono" type="number" value="5"/>
+</td>
+<td class="p-4">
+<div class="flex items-center gap-2 bg-surface-container px-3 py-1.5 rounded-md border border-white/10">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">barcode_scanner</span>
+<span class="text-xs text-on-surface-variant/50">A23X...991 (5 scanned)</span>
+</div>
+</td>
+<td class="p-4 pr-margin text-right">
+<span class="material-symbols-outlined text-tertiary">check_circle</span>
+</td>
+</tr>
+<tr class="border-b border-white/5 bg-error-container/5 hover:bg-error-container/10 transition-colors">
+<td class="p-4 px-margin">
+<div class="font-bold text-on-surface">Samsung A55</div>
+<div class="text-xs text-on-surface-variant/70 font-label-mono">SKU-9902-SM</div>
+</td>
+<td class="p-4 font-label-mono">4</td>
+<td class="p-4">
+<input class="w-20 bg-error-container/20 border border-error/50 focus:ring-1 focus:ring-error rounded-md text-error text-center font-label-mono" type="number" value="3"/>
+</td>
+<td class="p-4">
+<div class="flex items-center gap-2 bg-surface-container px-3 py-1.5 rounded-md border border-white/10">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">barcode_scanner</span>
+<span class="text-xs text-on-surface-variant/50">SM-A55...X01 (3 scanned)</span>
+</div>
+</td>
+<td class="p-4 pr-margin text-right">
+<span class="material-symbols-outlined text-error">warning</span>
+</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors">
+<td class="p-4 px-margin">
+<div class="font-bold text-on-surface">Logitech MK235</div>
+<div class="text-xs text-on-surface-variant/70 font-label-mono">SKU-KB-1120</div>
+</td>
+<td class="p-4 font-label-mono">3</td>
+<td class="p-4">
+<input class="w-20 bg-surface-container border-none focus:ring-1 focus:ring-primary rounded-md text-on-surface text-center font-label-mono" type="number" value="3"/>
+</td>
+<td class="p-4">
+<div class="flex items-center gap-2 bg-surface-container px-3 py-1.5 rounded-md border border-white/10">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">barcode_scanner</span>
+<span class="text-xs text-on-surface-variant/50">Not required (Pack)</span>
+</div>
+</td>
+<td class="p-4 pr-margin text-right">
+<span class="material-symbols-outlined text-tertiary">check_circle</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<!-- Past GRNs Table -->
+<section class="stagger-entry" style="animation-delay: 0.4s;">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-gutter">Recent History</h3>
+<div class="glass-card rounded-xl overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-white/5">
+<tr class="text-on-surface-variant font-label-caps text-label-caps border-b border-white/5">
+<th class="p-4 px-margin">GRN #</th>
+<th class="p-4">PO #</th>
+<th class="p-4">Supplier</th>
+<th class="p-4">Units</th>
+<th class="p-4">Date</th>
+<th class="p-4 pr-margin text-right">Status</th>
+</tr>
+</thead>
+<tbody class="font-body-md">
+<tr class="border-b border-white/5 hover:bg-white/5 transition-all">
+<td class="p-4 px-margin font-label-mono text-tertiary">GRN-0017</td>
+<td class="p-4 font-label-mono">PO-2011</td>
+<td class="p-4">Logitech Global</td>
+<td class="p-4">42</td>
+<td class="p-4 text-on-surface-variant">Oct 22, 2023</td>
+<td class="p-4 pr-margin text-right">
+<span class="bg-tertiary/10 text-tertiary px-2 py-0.5 rounded text-xs font-bold border border-tertiary/20">VERIFIED</span>
+</td>
+</tr>
+<tr class="border-b border-white/5 hover:bg-white/5 transition-all">
+<td class="p-4 px-margin font-label-mono text-tertiary">GRN-0016</td>
+<td class="p-4 font-label-mono">PO-1998</td>
+<td class="p-4">Intel Systems</td>
+<td class="p-4">150</td>
+<td class="p-4 text-on-surface-variant">Oct 21, 2023</td>
+<td class="p-4 pr-margin text-right">
+<span class="bg-tertiary/10 text-tertiary px-2 py-0.5 rounded text-xs font-bold border border-tertiary/20">VERIFIED</span>
+</td>
+</tr>
+<tr class="border-b border-white/5 hover:bg-white/5 transition-all">
+<td class="p-4 px-margin font-label-mono text-tertiary">GRN-0015</td>
+<td class="p-4 font-label-mono">PO-2004</td>
+<td class="p-4">Samsung Electro</td>
+<td class="p-4">12</td>
+<td class="p-4 text-on-surface-variant">Oct 20, 2023</td>
+<td class="p-4 pr-margin text-right">
+<span class="bg-error/10 text-error px-2 py-0.5 rounded text-xs font-bold border border-error/20">DISCREPANCY</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</main>
+</div>
+<script>
+        // Count-up animation logic
+        function animateValue(obj, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start);
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const stats = [
+                { id: 'stat-total', val: 18 },
+                { id: 'stat-pending', val: 4 },
+                { id: 'stat-discrepancy', val: 2 },
+                { id: 'stat-units', val: 47 }
+            ];
+
+            stats.forEach(s => {
+                const el = document.getElementById(s.id);
+                if(el) animateValue(el, 0, s.val, 1500);
+            });
+        });
+    </script>
+</body></html>

@@ -41,6 +41,12 @@ export class InventoryController {
 
   // ─── Products ─────────────────────────────────────────────────────────────
 
+  @Get('categories')
+  @Permissions('inventory.read')
+  listCategories(@Req() req: RequestWithUser) {
+    return this.inventoryService.listCategories(req.user.tenantId);
+  }
+
   @Get('products')
   @Permissions('inventory.read')
   listProducts(@Req() req: RequestWithUser) {
@@ -56,7 +62,11 @@ export class InventoryController {
   @Post('products')
   @Permissions('inventory.write')
   createProduct(@Body() dto: CreateProductDto, @Req() req: RequestWithUser) {
-    return this.inventoryService.createProduct(dto, req.user.id, req.user.tenantId);
+    return this.inventoryService.createProduct(
+      dto,
+      req.user.id,
+      req.user.tenantId,
+    );
   }
 
   @Patch('products/:id')
@@ -91,7 +101,10 @@ export class InventoryController {
 
   @Post('units/bulk')
   @Permissions('inventory.write')
-  bulkCreateUnits(@Body() dto: BulkCreateUnitsDto, @Req() req: RequestWithUser) {
+  bulkCreateUnits(
+    @Body() dto: BulkCreateUnitsDto,
+    @Req() req: RequestWithUser,
+  ) {
     return this.inventoryService.bulkCreateUnits(dto, req.user.tenantId);
   }
 
@@ -123,7 +136,10 @@ export class InventoryController {
   @Post('suppliers')
   @Permissions('suppliers.write')
   @HttpCode(HttpStatus.CREATED)
-  createSupplier(@Body() body: Record<string, string>, @Req() req: RequestWithUser) {
+  createSupplier(
+    @Body() body: Record<string, string>,
+    @Req() req: RequestWithUser,
+  ) {
     return this.inventoryService.createSupplier(body as any, req.user.tenantId);
   }
 
@@ -142,7 +158,11 @@ export class InventoryController {
     @Body() body: Record<string, unknown>,
     @Req() req: RequestWithUser,
   ) {
-    return this.inventoryService.createPurchaseOrder(body as any, req.user.id, req.user.tenantId);
+    return this.inventoryService.createPurchaseOrder(
+      body as any,
+      req.user.id,
+      req.user.tenantId,
+    );
   }
 
   // ─── GRN ─────────────────────────────────────────────────────────────────
@@ -156,7 +176,14 @@ export class InventoryController {
   @Post('grn')
   @Permissions('suppliers.write')
   @HttpCode(HttpStatus.CREATED)
-  createGrn(@Body() body: Record<string, unknown>, @Req() req: RequestWithUser) {
-    return this.inventoryService.createGrn(body as any, req.user.id, req.user.tenantId);
+  createGrn(
+    @Body() body: Record<string, unknown>,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.inventoryService.createGrn(
+      body as any,
+      req.user.id,
+      req.user.tenantId,
+    );
   }
 }

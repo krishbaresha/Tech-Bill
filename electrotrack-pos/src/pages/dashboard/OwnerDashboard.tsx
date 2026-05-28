@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { TrendingUp, ShoppingCart, Package, Tag } from 'lucide-react';
 import { api } from '../../api/client';
+
 import SalesChart from '../../components/dashboard/SalesChart';
 import SalesFeed from '../../components/dashboard/SalesFeed';
 import StockAlerts from '../../components/dashboard/StockAlerts';
+import AiInsights from '../../components/dashboard/AiInsights';
 import type { SalesSummary } from '../../types';
 import gsap from 'gsap';
 
@@ -23,9 +25,13 @@ export default function OwnerDashboard() {
 
   useEffect(() => {
     if (containerRef.current) {
-      gsap.from(containerRef.current.querySelectorAll('.glass-card'), {
-        opacity: 0, y: 20, duration: 0.6, stagger: 0.08, ease: 'power2.out',
-      });
+      const els = containerRef.current.querySelectorAll('.glass-card');
+      gsap.killTweensOf(els);
+      const tw = gsap.fromTo(els,
+        { opacity: 0, y: 6 },
+        { opacity: 1, y: 0, duration: 0.25, stagger: 0.03, ease: 'power3.out', overwrite: true, clearProps: 'transform,opacity' },
+      );
+      return () => { tw.kill(); };
     }
   }, [summary]);
 
@@ -40,18 +46,7 @@ export default function OwnerDashboard() {
 
   return (
     <div ref={containerRef} className="p-6 space-y-6">
-      <div className="glass-card rounded-xl p-4 flex items-center gap-3"
-        style={{ borderLeft: '3px solid rgba(192,193,255,0.5)' }}>
-        <span className="text-lg shrink-0">🤖</span>
-        <div>
-          <p className="text-sm font-semibold text-stitch-on-surface font-space">
-            AI Sales Insight — {format(new Date(), 'EEEE, dd MMM yyyy')}
-          </p>
-          <p className="text-xs text-stitch-on-surface-variant">
-            Real-time performance analysis. Check low-stock alerts and review pending returns.
-          </p>
-        </div>
-      </div>
+      <AiInsights />
 
       {summary ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -79,8 +74,8 @@ export default function OwnerDashboard() {
           <SalesChart />
         </div>
         <div className="space-y-4">
-          <div className="glass-card rounded-xl p-4"><StockAlerts /></div>
-          <div className="glass-card rounded-xl p-4"><SalesFeed /></div>
+          <StockAlerts />
+          <SalesFeed />
         </div>
       </div>
     </div>

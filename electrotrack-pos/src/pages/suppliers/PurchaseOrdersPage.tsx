@@ -69,11 +69,13 @@ export default function PurchaseOrdersPage() {
 
   useEffect(() => {
     if (containerRef.current && orders.length > 0) {
-      gsap.fromTo(
-        containerRef.current.querySelectorAll('.po-row'),
-        { opacity: 0, y: 10 },
-        { opacity: 1, y: 0, duration: 0.35, stagger: 0.04, ease: 'power2.out' },
+      const els = containerRef.current.querySelectorAll('.po-row');
+      gsap.killTweensOf(els);
+      const tw = gsap.fromTo(els,
+        { opacity: 0, y: 6 },
+        { opacity: 1, y: 0, duration: 0.25, stagger: 0.03, ease: 'power3.out', overwrite: true, clearProps: 'transform,opacity' },
       );
+      return () => { tw.kill(); };
     }
   }, [orders]);
 

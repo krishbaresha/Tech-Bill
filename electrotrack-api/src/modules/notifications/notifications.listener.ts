@@ -11,19 +11,31 @@ export class NotificationsListener {
     private prisma: PrismaService,
   ) {}
 
-  private async notifyOwners(type: string, message: string, actionUrl?: string) {
+  private async notifyOwners(
+    tenantId: string,
+    type: string,
+    message: string,
+    actionUrl?: string,
+  ) {
     const owners = await this.prisma.user.findMany({
-      where: { role: Role.owner, isActive: true },
+      where: { role: Role.owner, isActive: true, tenantId },
       select: { id: true },
     });
     await Promise.all(
-      owners.map((u) => this.notifications.create(u.id, type, message, actionUrl)),
+      owners.map((u) =>
+        this.notifications.create(u.id, type, message, actionUrl),
+      ),
     );
   }
 
   @OnEvent('stock.low')
-  async onStockLow(payload: { productName: string; stockCount: number }) {
+  async onStockLow(payload: {
+    productName: string;
+    stockCount: number;
+    tenantId: string;
+  }) {
     await this.notifyOwners(
+      payload.tenantId,
       'stock_low',
       `Low stock: "${payload.productName}" has only ${payload.stockCount} unit(s) left`,
       '/inventory',
@@ -31,8 +43,14 @@ export class NotificationsListener {
   }
 
   @OnEvent('return.requested')
-  async onReturnRequested(payload: { returnId: string; productName: string; requestedByName?: string }) {
+  async onReturnRequested(payload: {
+    returnId: string;
+    productName: string;
+    requestedByName?: string;
+    tenantId: string;
+  }) {
     await this.notifyOwners(
+      payload.tenantId,
       'return_requested',
       `Return request for "${payload.productName}"${payload.requestedByName ? ` by ${payload.requestedByName}` : ''} needs your review`,
       '/returns',
@@ -40,8 +58,13 @@ export class NotificationsListener {
   }
 
   @OnEvent('sale.created')
-  async onSaleCreated(payload: { invoiceNumber: string; totalAmount: number }) {
+  async onSaleCreated(payload: {
+    invoiceNumber: string;
+    totalAmount: number;
+    tenantId: string;
+  }) {
     await this.notifyOwners(
+      payload.tenantId,
       'sale_created',
       `Sale ${payload.invoiceNumber} completed — Rs ${Number(payload.totalAmount).toLocaleString()}`,
       '/dashboard',

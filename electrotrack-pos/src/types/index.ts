@@ -160,18 +160,18 @@ export interface CartItem {
 
 export interface SaleItem {
   id: string;
-  serialNumber: string;
   sellingPrice: number;
   inventoryUnit: {
-    product: { id: string; name: string };
+    serialNumber: string;
+    product: { id?: string; name: string; brand: string | null };
   };
 }
 
 export interface Sale {
   id: string;
   invoiceNumber: string;
-  customerName: string | null;
-  customerPhone: string | null;
+  customer: { id: string; name: string; phone: string } | null;
+  soldBy: { id: string; name: string } | null;
   totalAmount: number;
   discountAmount: number;
   paymentMethod: string;

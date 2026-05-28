@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ElectroTrack | Scanner Modal</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=DM+Sans:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<!-- Material Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- GSAP for Animations -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container-low": "#161b2b",
+                        "outline-variant": "#464554",
+                        "on-background": "#dee1f7",
+                        "surface-dim": "#0e1322",
+                        "on-primary": "#1000a9",
+                        "on-tertiary": "#00363e",
+                        "surface-bright": "#343949",
+                        "tertiary-fixed-dim": "#2fd9f4",
+                        "surface": "#0e1322",
+                        "primary-container": "#8083ff",
+                        "secondary": "#d0bcff",
+                        "on-surface": "#dee1f7",
+                        "on-primary-container": "#0d0096",
+                        "surface-container": "#1a1f2f",
+                        "primary-fixed": "#e1e0ff",
+                        "on-primary-fixed-variant": "#2f2ebe",
+                        "tertiary": "#2fd9f4",
+                        "tertiary-fixed": "#a2eeff",
+                        "on-surface-variant": "#c7c4d7",
+                        "on-primary-fixed": "#07006c",
+                        "primary-fixed-dim": "#c0c1ff",
+                        "primary": "#c0c1ff",
+                        "on-error-container": "#ffdad6",
+                        "error": "#ffb4ab",
+                        "surface-variant": "#2f3445",
+                        "tertiary-container": "#008395",
+                        "on-error": "#690005",
+                        "inverse-primary": "#494bd6",
+                        "surface-container-highest": "#2f3445",
+                        "on-secondary-fixed-variant": "#5516be",
+                        "on-secondary-container": "#c4abff",
+                        "on-tertiary-container": "#000608",
+                        "secondary-fixed-dim": "#d0bcff",
+                        "secondary-container": "#571bc1",
+                        "outline": "#908fa0",
+                        "surface-container-lowest": "#090e1c",
+                        "on-tertiary-fixed-variant": "#004e5a",
+                        "surface-container-high": "#25293a",
+                        "error-container": "#93000a",
+                        "on-secondary": "#3c0091",
+                        "background": "#0e1322",
+                        "surface-tint": "#c0c1ff",
+                        "inverse-surface": "#dee1f7",
+                        "on-secondary-fixed": "#23005c",
+                        "on-tertiary-fixed": "#001f25",
+                        "inverse-on-surface": "#2b3040",
+                        "secondary-fixed": "#e9ddff"
+                    },
+                    fontFamily: {
+                        "headline-xl": ["Space Grotesk", "sans-serif"],
+                        "headline-lg": ["Space Grotesk", "sans-serif"],
+                        "headline-md": ["Space Grotesk", "sans-serif"],
+                        "body-lg": ["DM Sans", "sans-serif"],
+                        "body-md": ["DM Sans", "sans-serif"],
+                        "body-sm": ["DM Sans", "sans-serif"],
+                        "label-mono": ["JetBrains Mono", "monospace"],
+                        "label-caps": ["DM Sans", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(26, 31, 47, 0.65);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+        }
+        .viewfinder-corner {
+            width: 24px;
+            height: 24px;
+            border-color: #c0c1ff; /* Primary */
+            position: absolute;
+        }
+        .scan-line {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #2fd9f4, transparent);
+            box-shadow: 0 0 15px #2fd9f4;
+            width: 100%;
+            position: absolute;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="bg-[#0A0F1E] flex items-center justify-center min-h-screen p-6 overflow-hidden">
+<!-- Modal Backdrop -->
+<div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"></div>
+<!-- Main Scanner Modal -->
+<div class="glass-panel z-50 w-full max-w-[400px] rounded-xl overflow-hidden flex flex-col opacity-0 scale-95" id="scannerModal">
+<!-- Header -->
+<header class="flex items-center justify-between px-6 py-5 border-b border-outline-variant/30">
+<h2 class="font-headline-md text-on-surface">Scan Barcode / Serial QR</h2>
+<button aria-label="Close" class="text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">close</span>
+</button>
+</header>
+<!-- Body Content -->
+<div class="p-6 flex flex-col gap-6 items-center">
+<!-- Viewfinder Area -->
+<div class="relative w-[280px] h-[200px] bg-surface-container-lowest rounded-lg overflow-hidden border border-outline-variant/20">
+<!-- GSAP Scan Line -->
+<div class="scan-line top-0" id="scanLine"></div>
+<!-- Viewfinder Brackets -->
+<div class="viewfinder-corner top-4 left-4 border-t-2 border-l-2 rounded-tl-sm"></div>
+<div class="viewfinder-corner top-4 right-4 border-t-2 border-r-2 rounded-tr-sm"></div>
+<div class="viewfinder-corner bottom-4 left-4 border-b-2 border-l-2 rounded-bl-sm"></div>
+<div class="viewfinder-corner bottom-4 right-4 border-b-2 border-r-2 rounded-br-sm"></div>
+<!-- Simulation Video Placeholder -->
+<div class="w-full h-full bg-center bg-cover opacity-40 grayscale" data-alt="A focused high-technology retail environment view through a camera lens showing a metallic electronics box with a complex barcode. The scene is dark with deep indigo shadows and cinematic low-key lighting reflecting off brushed metal surfaces. Minimalist digital overlays and corner brackets frame the subject in a futuristic point of sale interface aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBC7QKfx8mYqY4piUXXl4WNNQnPPPjnRoeVWHhGsTLNdw2s1k_Uxoa20jARGodBw3dIxXsBTHTP8x3bFNMAJKO_C9ftSz5IqYWGkWW8KkI8Fm_jW6KMcLyIKIZ7hBm1-X5Zp8EOolq5eatxR7sP_I6BBm5Kv2vunQYQE_8UWR4Oxh3d_XBgXvMpXWd0__s7DHwJ-PKG4I0z8lnQcuJHINLazCFrtsVIKXjy9jEm19RGIVrzv5cjATKDF-JxBgPz0lp0orrq9ZsTbGch')">
+</div>
+</div>
+<!-- Instruction -->
+<p class="font-body-sm text-on-surface-variant text-center max-w-[240px]">
+                Point camera at barcode or serial number
+            </p>
+<!-- OR Divider -->
+<div class="flex items-center w-full gap-4">
+<div class="h-[1px] bg-outline-variant/30 flex-1"></div>
+<span class="font-label-caps text-outline-variant">OR</span>
+<div class="h-[1px] bg-outline-variant/30 flex-1"></div>
+</div>
+<!-- Manual Entry -->
+<div class="w-full">
+<div class="flex gap-2 p-1 bg-surface-container-low rounded-lg border border-outline-variant/30 focus-within:border-primary/50 transition-all">
+<input class="bg-transparent border-none focus:ring-0 text-on-surface font-label-mono text-sm flex-1 pl-3 py-2 placeholder:text-outline-variant" placeholder="Type serial number manually..." type="text"/>
+<button class="bg-surface-container-highest hover:bg-surface-bright text-primary font-headline-md text-xs px-4 rounded-md transition-colors font-medium">
+                        Lookup
+                    </button>
+</div>
+</div>
+<!-- Recent Scans -->
+<div class="w-full flex flex-col gap-2">
+<p class="font-label-caps text-outline-variant text-[10px]">Recent Scans</p>
+<div class="space-y-2">
+<div class="flex items-center justify-between py-2 px-3 bg-white/5 rounded-md border border-white/5 hover:bg-white/10 transition-all cursor-default">
+<div class="flex flex-col">
+<span class="font-label-mono text-[11px] text-tertiary">SN-HP14-00423</span>
+<span class="font-body-sm text-on-surface text-[12px]">HP Laptop 14s</span>
+</div>
+<div class="text-right">
+<span class="text-on-tertiary-container text-[11px] font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> found
+                            </span>
+<p class="text-[10px] text-outline-variant">2 mins ago</p>
+</div>
+</div>
+<div class="flex items-center justify-between py-2 px-3 bg-white/5 rounded-md border border-white/5 opacity-70">
+<div class="flex flex-col">
+<span class="font-label-mono text-[11px] text-tertiary">LX-992-B8</span>
+<span class="font-body-sm text-on-surface text-[12px]">Logitech MX Master 3S</span>
+</div>
+<div class="text-right">
+<span class="text-on-tertiary-container text-[11px] font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> found
+                            </span>
+<p class="text-[10px] text-outline-variant">12 mins ago</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Tips Row -->
+<div class="flex items-center gap-2 text-outline-variant py-2">
+<span class="material-symbols-outlined text-[16px]">info</span>
+<p class="text-[11px] font-body-sm tracking-wide">Works with: USB scanners | Phone camera | QR codes | Barcodes</p>
+</div>
+</div>
+<!-- Footer -->
+<footer class="p-4 border-t border-outline-variant/20 flex justify-center bg-surface-container-low/50">
+<button class="font-label-caps text-on-surface-variant hover:text-on-surface py-2 px-6 transition-colors">
+                Cancel
+            </button>
+</footer>
+</div>
+<!-- Background Decoration for Atmosphere -->
+<div class="absolute top-1/4 -left-20 w-80 h-80 bg-primary/10 blur-[120px] rounded-full pointer-events-none"></div>
+<div class="absolute bottom-1/4 -right-20 w-80 h-80 bg-tertiary/10 blur-[120px] rounded-full pointer-events-none"></div>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initial Modal Fade-in
+            gsap.to("#scannerModal", {
+                duration: 0.6,
+                opacity: 1,
+                scale: 1,
+                ease: "power4.out"
+            });
+
+            // Loop for Scan Line
+            gsap.to("#scanLine", {
+                top: "100%",
+                duration: 2,
+                repeat: -1,
+                yoyo: true,
+                ease: "power1.inOut"
+            });
+
+            // Add staggered entry to the list items
+            gsap.from(".space-y-2 > div", {
+                duration: 0.4,
+                x: 20,
+                opacity: 0,
+                stagger: 0.1,
+                ease: "power2.out",
+                delay: 0.4
+            });
+
+            // Micro-interaction for buttons
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(btn => {
+                btn.addEventListener('mousedown', () => {
+                    gsap.to(btn, { scale: 0.96, duration: 0.1 });
+                });
+                btn.addEventListener('mouseup', () => {
+                    gsap.to(btn, { scale: 1, duration: 0.1 });
+                });
+            });
+        });
+    </script>
+</body></html>

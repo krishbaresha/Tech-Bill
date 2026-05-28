@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ElectroTrack | Admin Login</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=DM+Sans:wght@400;500;700&amp;family=JetBrains+Mono:wght@500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@100..900&amp;family=JetBrains+Mono:wght@100..900&amp;family=Space+Grotesk:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<!-- Scripts -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-high": "#25293a",
+                    "on-secondary-fixed": "#23005c",
+                    "primary-fixed": "#e1e0ff",
+                    "error": "#ffb4ab",
+                    "surface-container-highest": "#2f3445",
+                    "tertiary": "#2fd9f4",
+                    "surface-dim": "#0e1322",
+                    "surface-container-lowest": "#090e1c",
+                    "surface-container": "#1a1f2f",
+                    "on-primary": "#1000a9",
+                    "error-container": "#93000a",
+                    "tertiary-container": "#008395",
+                    "background": "#0e1322",
+                    "on-background": "#dee1f7",
+                    "surface-bright": "#343949",
+                    "on-tertiary-fixed": "#001f25",
+                    "on-primary-container": "#0d0096",
+                    "surface-container-low": "#161b2b",
+                    "on-surface": "#dee1f7",
+                    "on-secondary": "#3c0091",
+                    "secondary-fixed": "#e9ddff",
+                    "surface-tint": "#c0c1ff",
+                    "secondary-fixed-dim": "#d0bcff",
+                    "on-tertiary-fixed-variant": "#004e5a",
+                    "on-primary-fixed": "#07006c",
+                    "tertiary-fixed-dim": "#2fd9f4",
+                    "secondary-container": "#571bc1",
+                    "on-surface-variant": "#c7c4d7",
+                    "surface-variant": "#2f3445",
+                    "inverse-primary": "#494bd6",
+                    "on-error-container": "#ffdad6",
+                    "primary-container": "#8083ff",
+                    "primary": "#c0c1ff",
+                    "outline": "#908fa0",
+                    "on-tertiary": "#00363e",
+                    "surface": "#0e1322",
+                    "primary-fixed-dim": "#c0c1ff",
+                    "on-error": "#690005",
+                    "on-secondary-fixed-variant": "#5516be",
+                    "on-secondary-container": "#c4abff",
+                    "secondary": "#d0bcff",
+                    "inverse-surface": "#dee1f7",
+                    "on-primary-fixed-variant": "#2f2ebe",
+                    "inverse-on-surface": "#2b3040",
+                    "outline-variant": "#464554",
+                    "on-tertiary-container": "#000608",
+                    "tertiary-fixed": "#a2eeff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin": "32px",
+                    "stack-sm": "8px",
+                    "stack-xs": "4px",
+                    "gutter": "24px",
+                    "stack-lg": "32px",
+                    "container-max": "1440px",
+                    "unit": "4px",
+                    "stack-md": "16px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Space Grotesk"],
+                    "headline-xl": ["Space Grotesk"],
+                    "body-lg": ["DM Sans"],
+                    "headline-md": ["Space Grotesk"],
+                    "body-md": ["DM Sans"],
+                    "label-mono": ["JetBrains Mono"],
+                    "label-caps": ["DM Sans"],
+                    "body-sm": ["DM Sans"]
+            },
+            "fontSize": {
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "headline-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-md": ["20px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "label-mono": ["13px", {"lineHeight": "1.0", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "label-caps": ["12px", {"lineHeight": "1.0", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                    "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #0A0F1E;
+            overflow: hidden;
+        }
+        .bg-glow-1 {
+            background: radial-gradient(circle at center, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+        }
+        .bg-glow-2 {
+            background: radial-gradient(circle at center, rgba(34, 211, 238, 0.1) 0%, transparent 70%);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .input-glow:focus {
+            border-bottom-color: #c0c1ff;
+            box-shadow: 0 4px 12px -2px rgba(192, 193, 255, 0.2);
+        }
+        .btn-primary-glow {
+            box-shadow: 0 0 20px rgba(128, 131, 255, 0.3);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface min-h-screen flex items-center justify-center relative">
+<!-- Atmospheric Background Elements -->
+<div class="absolute top-0 right-0 w-[800px] h-[800px] bg-glow-1 -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
+<div class="absolute bottom-0 left-0 w-[600px] h-[600px] bg-glow-2 translate-y-1/4 -translate-x-1/4 pointer-events-none"></div>
+<!-- Top Bar Actions -->
+<div class="fixed top-gutter right-gutter z-50">
+<button class="p-stack-sm rounded-full hover:bg-surface-variant/50 transition-colors flex items-center justify-center text-on-surface-variant hover:text-primary" onclick="toggleTheme()">
+<span class="material-symbols-outlined" id="theme-icon">dark_mode</span>
+</button>
+</div>
+<!-- Main Container -->
+<main class="relative z-10 w-full max-w-[480px] px-gutter flex flex-col items-center">
+<!-- Login Card -->
+<div class="glass-card w-full rounded-xl p-stack-lg flex flex-col gap-stack-lg opacity-0 translate-y-8" id="login-card">
+<!-- Header Section -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-stack-md">
+<div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-on-primary" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md text-primary leading-tight">ElectroTrack</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Universal POS</p>
+</div>
+</div>
+</div>
+<!-- Separator -->
+<div class="h-px w-full bg-white/10"></div>
+<!-- Title Section -->
+<div class="flex flex-col gap-stack-xs">
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Welcome back</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Sign in to continue to your store</p>
+</div>
+<!-- Form -->
+<form class="flex flex-col gap-stack-md" onsubmit="return false;">
+<!-- Email Field -->
+<div class="flex flex-col gap-stack-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant ml-1">Email Address</label>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors text-[20px]">mail</span>
+<input class="w-full bg-white/5 border-0 border-b-2 border-white/10 rounded-t-lg pt-3 pb-3 pl-10 pr-4 font-label-mono text-label-mono text-on-surface placeholder:text-outline focus:ring-0 input-glow transition-all" placeholder="owner@electrohub.pk" type="email"/>
+</div>
+</div>
+<!-- Password Field -->
+<div class="flex flex-col gap-stack-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant ml-1">Access Password</label>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors text-[20px]">lock</span>
+<input class="w-full bg-white/5 border-0 border-b-2 border-white/10 rounded-t-lg pt-3 pb-3 pl-10 pr-12 font-label-mono text-label-mono text-on-surface placeholder:text-outline focus:ring-0 input-glow transition-all" placeholder="••••••••" type="password"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</div>
+</div>
+<!-- Form Row -->
+<div class="flex items-center justify-between">
+<label class="flex items-center gap-stack-sm cursor-pointer group">
+<div class="relative flex items-center">
+<input class="peer appearance-none w-4 h-4 rounded border border-white/20 bg-white/5 checked:bg-primary checked:border-primary transition-all" type="checkbox"/>
+<span class="material-symbols-outlined absolute text-[12px] text-on-primary opacity-0 peer-checked:opacity-100 left-0.5 pointer-events-none">check</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors">Remember me</span>
+</label>
+<a class="font-body-sm text-body-sm text-primary hover:underline underline-offset-4" href="#">Forgot Password?</a>
+</div>
+<!-- CTA -->
+<button class="mt-stack-sm w-full bg-primary hover:bg-primary-container text-on-primary font-headline-md text-headline-md py-stack-md rounded-lg btn-primary-glow transition-all flex items-center justify-center gap-stack-sm" id="signin-btn" type="submit">
+<span>Sign In</span>
+<span class="material-symbols-outlined">login</span>
+</button>
+</form>
+<!-- Footer Text -->
+<div class="flex items-center justify-center gap-stack-xs text-on-surface-variant/50">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<p class="font-body-sm text-[12px] uppercase tracking-wider">Protected by OTP verification • Rate limited</p>
+</div>
+</div>
+<!-- Outside Card Helper -->
+<p class="mt-stack-lg font-body-sm text-body-sm text-on-surface-variant opacity-0" id="outside-text">
+            First time? <a class="text-primary hover:underline font-medium" href="#">Contact your admin</a> to get access.
+        </p>
+</main>
+<script>
+        // GSAP Animations
+        window.addEventListener('DOMContentLoaded', () => {
+            const tl = gsap.timeline();
+            
+            tl.to("#login-card", {
+                opacity: 1,
+                y: 0,
+                duration: 1.2,
+                ease: "power4.out"
+            })
+            .to("#outside-text", {
+                opacity: 1,
+                duration: 0.8,
+                ease: "power2.out"
+            }, "-=0.6");
+
+            // Button interaction
+            const btn = document.getElementById('signin-btn');
+            btn.addEventListener('mousedown', () => {
+                gsap.to(btn, { scale: 0.98, duration: 0.1 });
+            });
+            btn.addEventListener('mouseup', () => {
+                gsap.to(btn, { scale: 1, duration: 0.2, ease: "elastic.out(1, 0.3)" });
+            });
+            btn.addEventListener('mouseleave', () => {
+                gsap.to(btn, { scale: 1, duration: 0.2 });
+            });
+        });
+
+        // Simple Theme Toggle (Visual only for demonstration)
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                html.style.backgroundColor = '#F8FAFC';
+                icon.innerText = 'light_mode';
+                // Adjust glass cards for light mode visibility
+                gsap.to(".glass-card", { backgroundColor: "rgba(255, 255, 255, 0.8)", duration: 0.3 });
+            } else {
+                html.classList.add('dark');
+                html.style.backgroundColor = '#0A0F1E';
+                icon.innerText = 'dark_mode';
+                gsap.to(".glass-card", { backgroundColor: "rgba(255, 255, 255, 0.05)", duration: 0.3 });
+            }
+        }
+
+        // Particle background logic for high-end feel
+        const createParticle = () => {
+            const particle = document.createElement('div');
+            particle.className = 'absolute bg-primary/20 rounded-full pointer-events-none';
+            const size = Math.random() * 4 + 2;
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            particle.style.left = `${Math.random() * 100}%`;
+            particle.style.top = `${Math.random() * 100}%`;
+            document.body.appendChild(particle);
+
+            gsap.to(particle, {
+                y: '-=100',
+                opacity: 0,
+                duration: Math.random() * 3 + 2,
+                ease: 'none',
+                onComplete: () => {
+                    particle.remove();
+                    createParticle();
+                }
+            });
+        }
+
+        for(let i=0; i<15; i++) {
+            setTimeout(createParticle, i * 300);
+        }
+    </script>
+</body></html>

@@ -18,6 +18,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { AiModule } from './modules/ai/ai.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { SettingsModule } from './modules/settings/settings.module';
     SuppliersModule,
     TenantsModule,
     SettingsModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

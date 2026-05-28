@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Plus, Package, AlertTriangle, CheckCircle, X, Tag, Search } from 'lucide-react';
+import { Plus, Package, AlertTriangle, CheckCircle, X, Tag, Search, Layers, Trash2, Wand2 } from 'lucide-react';
 import { api } from '../../api/client';
 import { useCan } from '../../lib/permissions';
 import type { Product, InventoryUnit } from '../../types';
@@ -8,7 +8,7 @@ import gsap from 'gsap';
 const formatPKR = (n: number) => `₨ ${n.toLocaleString('en-PK')}`;
 
 interface ProductWithStock extends Product {
-  inStockCount?: number;
+  stockCount?: number;
 }
 
 interface AddProductForm {
@@ -25,17 +25,26 @@ interface AddUnitForm {
   purchasePrice: string;
 }
 
+interface StockModal {
+  productId: string;
+  productName: string;
+}
+
 export default function InventoryPage() {
   const canWrite = useCan('inventory.write');
+  const canDelete = useCan('inventory.delete');
   const [products, setProducts] = useState<ProductWithStock[]>([]);
   const [units, setUnits] = useState<InventoryUnit[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [tab, setTab] = useState<'products' | 'units'>('products');
   const [search, setSearch] = useState('');
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showAddUnit, setShowAddUnit] = useState(false);
+  const [stockModal, setStockModal] = useState<StockModal | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState<ProductWithStock | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [productForm, setProductForm] = useState<AddProductForm>({
@@ -44,6 +53,12 @@ export default function InventoryPage() {
   const [unitForm, setUnitForm] = useState<AddUnitForm>({
     serialNumber: '', productId: '', purchasePrice: '',
   });
+  const [stockSerials, setStockSerials] = useState('');
+  const [stockPurchasePrice, setStockPurchasePrice] = useState('');
+  // Auto-serial generation state
+  const [stockMode, setStockMode] = useState<'manual' | 'auto'>('manual');
+  const [stockQty, setStockQty] = useState('');
+  const [stockPrefix, setStockPrefix] = useState('');
 
   const loadProducts = () => {
     api.get<ProductWithStock[]>('/inventory/products')
@@ -57,18 +72,63 @@ export default function InventoryPage() {
       .catch(() => setError('Failed to load units'));
   };
 
+  const loadCategories = () => {
+    api.get<string[]>('/inventory/categories')
+      .then((r) => setCategories(r.data))
+      .catch(() => undefined);
+  };
+
   useEffect(() => {
     loadProducts();
     loadUnits();
+    loadCategories();
   }, []);
 
   useEffect(() => {
     if (containerRef.current) {
-      gsap.from(containerRef.current.querySelectorAll('.glass-card'), {
-        opacity: 0, y: 20, duration: 0.5, stagger: 0.06, ease: 'power2.out',
-      });
+      const els = containerRef.current.querySelectorAll('.glass-card');
+      gsap.killTweensOf(els);
+      const tw = gsap.fromTo(els,
+        { opacity: 0, y: 6 },
+        { opacity: 1, y: 0, duration: 0.25, stagger: 0.03, ease: 'power3.out', overwrite: true, clearProps: 'transform,opacity' },
+      );
+      return () => { tw.kill(); };
     }
   }, []);
+
+  const showSuccess = (msg: string) => {
+    setSuccessMsg(msg);
+    setTimeout(() => setSuccessMsg(''), 3000);
+  };
+
+  const handleDeleteProduct = async (product: ProductWithStock) => {
+    setLoading(true);
+    setError('');
+    try {
+      await api.delete(`/inventory/products/${product.id}`);
+      showSuccess(`"${product.name}" deactivated — historical sales preserved`);
+      setDeleteConfirm(null);
+      loadProducts();
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setError(e.response?.data?.message ?? 'Failed to delete product');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateSerials = (): string[] => {
+    const qty = parseInt(stockQty);
+    if (!stockModal || isNaN(qty) || qty < 1) return [];
+    const product = products.find((p) => p.id === stockModal.productId);
+    const brandPart = (product?.brand?.slice(0, 3) ?? 'PRD').toUpperCase().replace(/\s+/g, '');
+    const catPart = (product?.category?.slice(0, 3) ?? 'CAT').toUpperCase().replace(/\s+/g, '');
+    const prefix = stockPrefix.trim() || `${brandPart}-${catPart}`;
+    const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    return Array.from({ length: qty }, (_, i) =>
+      `${prefix}-${date}-${String(i + 1).padStart(4, '0')}`,
+    );
+  };
 
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,11 +142,11 @@ export default function InventoryPage() {
         sellingPrice: parseFloat(productForm.sellingPrice),
         warrantyMonths: parseInt(productForm.warrantyMonths),
       });
-      setSuccessMsg('Product added successfully');
+      showSuccess('Product added successfully');
       setShowAddProduct(false);
-      setProductForm({ name: '', brand: '', category: '', sellingPrice: '', warrantyMonths: '0' });
+      setProductForm({ name: '', brand: '', category: productForm.category, sellingPrice: '', warrantyMonths: '0' });
       loadProducts();
-      setTimeout(() => setSuccessMsg(''), 3000);
+      loadCategories();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
       setError(e.response?.data?.message ?? 'Failed to add product');
@@ -105,14 +165,52 @@ export default function InventoryPage() {
         productId: unitForm.productId,
         purchasePrice: unitForm.purchasePrice ? parseFloat(unitForm.purchasePrice) : undefined,
       });
-      setSuccessMsg('Unit added successfully');
+      showSuccess('Unit added successfully');
       setShowAddUnit(false);
       setUnitForm({ serialNumber: '', productId: '', purchasePrice: '' });
       loadUnits();
-      setTimeout(() => setSuccessMsg(''), 3000);
+      loadProducts();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
       setError(e.response?.data?.message ?? 'Failed to add unit');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddStock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stockModal) return;
+    let serials: string[];
+    if (stockMode === 'auto') {
+      serials = generateSerials();
+      if (serials.length === 0) { setError('Enter a valid quantity'); return; }
+    } else {
+      serials = stockSerials.split(/[\n,]+/).map((s) => s.trim()).filter(Boolean);
+      if (serials.length === 0) { setError('Enter at least one serial number'); return; }
+    }
+    setLoading(true);
+    setError('');
+    try {
+      await api.post('/inventory/units/bulk', {
+        units: serials.map((sn) => ({
+          serialNumber: sn,
+          productId: stockModal.productId,
+          purchasePrice: stockPurchasePrice ? parseFloat(stockPurchasePrice) : undefined,
+        })),
+      });
+      showSuccess(`${serials.length} unit(s) added to ${stockModal.productName}`);
+      setStockModal(null);
+      setStockSerials('');
+      setStockPurchasePrice('');
+      setStockQty('');
+      setStockPrefix('');
+      setStockMode('manual');
+      loadProducts();
+      loadUnits();
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setError(e.response?.data?.message ?? 'Failed to add stock');
     } finally {
       setLoading(false);
     }
@@ -144,13 +242,13 @@ export default function InventoryPage() {
         {canWrite && (
           <div className="flex gap-2 flex-wrap">
             <button
-              onClick={() => { setShowAddProduct(true); setShowAddUnit(false); }}
+              onClick={() => { setShowAddProduct(true); setShowAddUnit(false); setStockModal(null); }}
               className="flex items-center gap-1.5 px-4 py-2 bg-stitch-primary text-stitch-on-primary text-sm font-bold rounded-lg hover:bg-stitch-primary/90 transition-all active:scale-95"
             >
               <Plus size={14} /> Add Product
             </button>
             <button
-              onClick={() => { setShowAddUnit(true); setShowAddProduct(false); }}
+              onClick={() => { setShowAddUnit(true); setShowAddProduct(false); setStockModal(null); }}
               className="flex items-center gap-1.5 px-4 py-2 bg-stitch-tertiary/20 text-stitch-tertiary text-sm font-bold rounded-lg border border-stitch-tertiary/30 hover:bg-stitch-tertiary/30 transition-all active:scale-95"
             >
               <Plus size={14} /> Add Unit
@@ -159,7 +257,6 @@ export default function InventoryPage() {
         )}
       </div>
 
-      {/* Search */}
       <div className="relative max-w-xs">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stitch-on-surface-variant pointer-events-none" />
         <input
@@ -208,7 +305,16 @@ export default function InventoryPage() {
             </div>
             <div>
               <label className={labelCls}>Category</label>
-              <input value={productForm.category} onChange={(e) => setProductForm({ ...productForm, category: e.target.value })} className={inputCls} />
+              <input
+                list="cat-list"
+                value={productForm.category}
+                onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
+                placeholder="Type or pick existing…"
+                className={inputCls}
+              />
+              <datalist id="cat-list">
+                {categories.map((c) => <option key={c} value={c} />)}
+              </datalist>
             </div>
             <div>
               <label className={labelCls}>Selling Price (₨) *</label>
@@ -277,6 +383,112 @@ export default function InventoryPage() {
         </div>
       )}
 
+      {stockModal && (
+        <div className="glass-card rounded-xl p-5 space-y-4">
+          <div className="flex items-center justify-between border-b border-white/5 pb-3">
+            <h2 className="text-base font-semibold text-stitch-on-surface font-space"
+              style={{ borderLeft: '3px solid rgba(74,222,128,0.5)', paddingLeft: '10px' }}>
+              Add Stock — {stockModal.productName}
+            </h2>
+            <button onClick={() => setStockModal(null)} className="text-stitch-on-surface-variant hover:text-white transition-colors">
+              <X size={16} />
+            </button>
+          </div>
+          <form onSubmit={handleAddStock} className="space-y-4">
+            {/* Mode toggle */}
+            <div className="flex gap-1 p-1 bg-white/[0.03] rounded-lg border border-white/5 w-fit">
+              {(['manual', 'auto'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => { setStockMode(m); setError(''); }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                    stockMode === m
+                      ? 'bg-stitch-primary/20 text-stitch-primary border border-stitch-primary/30'
+                      : 'text-stitch-on-surface-variant hover:text-white'
+                  }`}
+                >
+                  {m === 'auto' && <Wand2 size={11} />}
+                  {m === 'manual' ? 'Manual Entry' : 'Auto-Generate'}
+                </button>
+              ))}
+            </div>
+
+            {stockMode === 'manual' ? (
+              <div>
+                <label className={labelCls}>Serial Numbers * (one per line or comma-separated)</label>
+                <textarea
+                  value={stockSerials}
+                  onChange={(e) => setStockSerials(e.target.value)}
+                  rows={4}
+                  required
+                  placeholder={'SN-001\nSN-002\nSN-003'}
+                  className={`${inputCls} font-mono resize-none`}
+                />
+                <p className="text-[10px] text-stitch-on-surface-variant mt-1">
+                  {stockSerials.split(/[\n,]+/).filter((s) => s.trim()).length} serial(s) entered
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}>Quantity *</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="100000"
+                      value={stockQty}
+                      onChange={(e) => setStockQty(e.target.value)}
+                      required={stockMode === 'auto'}
+                      placeholder="e.g. 500"
+                      className={inputCls}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Prefix (optional)</label>
+                    <input
+                      value={stockPrefix}
+                      onChange={(e) => setStockPrefix(e.target.value)}
+                      placeholder="e.g. SAM-LAP (auto-filled)"
+                      className={`${inputCls} font-mono`}
+                    />
+                  </div>
+                </div>
+                {stockQty && parseInt(stockQty) > 0 && (
+                  <div className="p-3 bg-white/[0.03] rounded-lg border border-white/5 text-[10px] font-mono text-stitch-on-surface-variant space-y-0.5">
+                    <p className="font-bold text-stitch-on-surface text-xs mb-1">Preview (first 3 serials)</p>
+                    {generateSerials().slice(0, 3).map((s) => (
+                      <p key={s}>{s}</p>
+                    ))}
+                    {parseInt(stockQty) > 3 && (
+                      <p className="text-stitch-primary">…and {parseInt(stockQty) - 3} more</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="max-w-xs">
+              <label className={labelCls}>Purchase Price per Unit (₨)</label>
+              <input type="number" min="0" step="0.01" value={stockPurchasePrice}
+                onChange={(e) => setStockPurchasePrice(e.target.value)} className={inputCls} />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button type="button" onClick={() => { setStockModal(null); setStockMode('manual'); setStockQty(''); setStockPrefix(''); }}
+                className="px-4 py-2 text-sm text-stitch-on-surface-variant hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                Cancel
+              </button>
+              <button type="submit" disabled={loading}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 disabled:opacity-50 active:scale-95 transition-all">
+                <Layers size={14} />
+                {loading ? 'Adding…' : `Add ${stockMode === 'auto' && stockQty ? parseInt(stockQty).toLocaleString() + ' ' : ''}Stock`}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       <div className="glass-card rounded-xl overflow-hidden">
         <div className="flex border-b border-white/5 px-4 gap-1 bg-white/[0.01]">
           {([
@@ -302,7 +514,7 @@ export default function InventoryPage() {
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-stitch-surface-container-high/50 border-b border-white/5">
-                  {['Product', 'Brand', 'Category', 'Price', 'Warranty', 'Stock', 'Status'].map((h) => (
+                  {['Product', 'Brand', 'Category', 'Price', 'Warranty', 'Stock', 'Status', ...((canWrite || canDelete) ? ['Actions'] : [])].map((h) => (
                     <th key={h} className="px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -310,7 +522,7 @@ export default function InventoryPage() {
               <tbody className="divide-y divide-white/5">
                 {filteredProducts.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-16 text-center">
+                    <td colSpan={(canWrite || canDelete) ? 8 : 7} className="py-16 text-center">
                       <Package size={32} className="mx-auto mb-2 text-stitch-on-surface-variant/30" />
                       <p className="text-sm text-stitch-on-surface-variant">{search ? 'No products match your search' : 'No products yet'}</p>
                     </td>
@@ -329,14 +541,39 @@ export default function InventoryPage() {
                       </td>
                       <td className="px-4 py-3 text-sm font-bold font-mono text-stitch-on-surface tabular-nums">{formatPKR(Number(p.sellingPrice))}</td>
                       <td className="px-4 py-3 text-sm text-stitch-on-surface-variant">{p.warrantyMonths ? `${p.warrantyMonths}m` : '—'}</td>
-                      <td className="px-4 py-3 text-sm font-mono text-stitch-tertiary font-bold">
-                        {p.inStockCount !== undefined ? p.inStockCount : '—'}
+                      <td className="px-4 py-3 text-sm font-mono font-bold tabular-nums">
+                        <span className={p.stockCount !== undefined && p.stockCount <= 2 ? 'text-amber-400' : 'text-stitch-tertiary'}>
+                          {p.stockCount ?? '—'}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${
                           p.isActive ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-stitch-error/10 text-stitch-error border border-stitch-error/20'
                         }`}>{p.isActive ? 'Active' : 'Inactive'}</span>
                       </td>
+                      {(canWrite || canDelete) && (
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1.5">
+                            {canWrite && (
+                              <button
+                                onClick={() => { setStockModal({ productId: p.id, productName: p.name }); setShowAddProduct(false); setShowAddUnit(false); }}
+                                className="flex items-center gap-1 text-[11px] font-bold text-green-400 hover:text-green-300 bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 px-2 py-1 rounded-lg transition-colors"
+                              >
+                                <Plus size={11} /> Stock
+                              </button>
+                            )}
+                            {canDelete && p.isActive && (
+                              <button
+                                onClick={() => setDeleteConfirm(p)}
+                                title="Deactivate product"
+                                className="flex items-center justify-center w-7 h-7 text-stitch-on-surface-variant hover:text-stitch-error hover:bg-stitch-error/10 border border-white/5 hover:border-stitch-error/20 rounded-lg transition-colors"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))
                 )}
@@ -385,6 +622,50 @@ export default function InventoryPage() {
           </div>
         )}
       </div>
+
+      {/* Delete confirmation modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="glass-modal rounded-xl p-6 w-full max-w-sm border border-white/10 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-stitch-error/10 flex items-center justify-center shrink-0">
+                <Trash2 size={18} className="text-stitch-error" />
+              </div>
+              <div>
+                <p className="font-bold text-stitch-on-surface font-space">Deactivate Product?</p>
+                <p className="text-xs text-stitch-on-surface-variant mt-0.5">Historical sales and serial records are preserved.</p>
+              </div>
+            </div>
+            <div className="p-3 bg-white/5 rounded-lg border border-white/5">
+              <p className="text-sm font-semibold text-stitch-on-surface">{deleteConfirm.name}</p>
+              {deleteConfirm.brand && (
+                <p className="text-xs text-stitch-on-surface-variant mt-0.5">{deleteConfirm.brand}</p>
+              )}
+              {(deleteConfirm.stockCount ?? 0) > 0 && (
+                <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
+                  <AlertTriangle size={11} />
+                  {deleteConfirm.stockCount} unit(s) still in stock
+                </p>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="flex-1 py-2 text-sm text-stitch-on-surface-variant border border-white/10 rounded-lg hover:bg-white/5 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => void handleDeleteProduct(deleteConfirm)}
+                disabled={loading}
+                className="flex-1 py-2 text-sm bg-stitch-error text-stitch-on-error font-bold rounded-lg hover:bg-stitch-error/80 disabled:opacity-50 active:scale-95 transition-all"
+              >
+                {loading ? 'Deactivating…' : 'Deactivate'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

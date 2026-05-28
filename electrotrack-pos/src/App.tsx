@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth.store';
+import { api } from './api/client';
 import Login from './pages/Login';
 import PosScreen from './pages/pos/PosScreen';
 import OwnerDashboard from './pages/dashboard/OwnerDashboard';
@@ -31,7 +33,14 @@ function RequireAuth({
   roles?: Role[];
   permission?: Permission;
 }) {
-  const { user, accessToken } = useAuthStore();
+  const { user, accessToken, isHydrating } = useAuthStore();
+  if (isHydrating) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <span className="w-8 h-8 border-2 border-stitch-primary/30 border-t-stitch-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
   if (!accessToken || !user) return <Navigate to="/login" replace />;
 
   // Broad roles bypass / check
@@ -60,7 +69,18 @@ function RequireAuth({
 }
 
 export default function App() {
-  const { user } = useAuthStore();
+  const { user, accessToken, setToken, clearAuth, setHydrating } = useAuthStore();
+
+  useEffect(() => {
+    if (user && !accessToken) {
+      setHydrating(true);
+      api
+        .post<{ access_token: string }>('/auth/refresh')
+        .then(({ data }) => setToken(data.access_token))
+        .catch(() => clearAuth());
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Root redirect logic
   const getRootRedirect = () => {

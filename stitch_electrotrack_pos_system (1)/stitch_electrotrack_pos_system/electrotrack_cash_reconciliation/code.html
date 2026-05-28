@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Cash Reconciliation | ElectroTrack</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&amp;family=JetBrains+Mono:wght@400;500;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@100..900&amp;family=JetBrains+Mono:wght@100..900&amp;family=Space+Grotesk:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-blur: 16px;
+        }
+        body {
+            background-color: #0A0F1E;
+            color: #dee1f7;
+            font-family: 'DM Sans', sans-serif;
+            overflow-x: hidden;
+        }
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            backdrop-filter: blur(24px);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        .indigo-glow-border {
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.1);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .scale-interaction:active {
+            transform: scale(0.98);
+        }
+        .stagger-in {
+            animation: fadeInTranslate 0.5s ease forwards;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        @keyframes fadeInTranslate {
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#1000a9",
+                        "secondary-fixed": "#e9ddff",
+                        "tertiary-container": "#008395",
+                        "surface-container-low": "#161b2b",
+                        "surface": "#0e1322",
+                        "on-secondary": "#3c0091",
+                        "on-primary-fixed": "#07006c",
+                        "surface-dim": "#0e1322",
+                        "surface-container": "#1a1f2f",
+                        "on-primary-fixed-variant": "#2f2ebe",
+                        "surface-variant": "#2f3445",
+                        "on-primary-container": "#0d0096",
+                        "outline": "#908fa0",
+                        "on-tertiary-container": "#000608",
+                        "on-secondary-fixed": "#23005c",
+                        "on-error": "#690005",
+                        "primary-container": "#8083ff",
+                        "primary-fixed-dim": "#c0c1ff",
+                        "error-container": "#93000a",
+                        "surface-container-lowest": "#090e1c",
+                        "on-surface": "#dee1f7",
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#001f25",
+                        "tertiary-fixed-dim": "#2fd9f4",
+                        "on-tertiary-fixed-variant": "#004e5a",
+                        "surface-tint": "#c0c1ff",
+                        "tertiary-fixed": "#a2eeff",
+                        "on-secondary-fixed-variant": "#5516be",
+                        "on-secondary-container": "#c4abff",
+                        "tertiary": "#2fd9f4",
+                        "surface-bright": "#343949",
+                        "secondary-fixed-dim": "#d0bcff",
+                        "on-tertiary": "#00363e",
+                        "error": "#ffb4ab",
+                        "surface-container-highest": "#2f3445",
+                        "inverse-on-surface": "#2b3040",
+                        "primary": "#c0c1ff",
+                        "primary-fixed": "#e1e0ff",
+                        "inverse-surface": "#dee1f7",
+                        "inverse-primary": "#494bd6",
+                        "surface-container-high": "#25293a",
+                        "background": "#0e1322",
+                        "secondary-container": "#571bc1",
+                        "on-background": "#dee1f7",
+                        "on-surface-variant": "#c7c4d7",
+                        "secondary": "#d0bcff",
+                        "outline-variant": "#464554"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-xs": "4px",
+                        "stack-lg": "32px",
+                        "gutter": "24px",
+                        "unit": "4px",
+                        "container-max": "1440px",
+                        "margin": "32px",
+                        "stack-sm": "8px",
+                        "stack-md": "16px"
+                    },
+                    "fontFamily": {
+                        "label-mono": ["JetBrains Mono"],
+                        "headline-md": ["Space Grotesk"],
+                        "headline-xl": ["Space Grotesk"],
+                        "body-md": ["DM Sans"],
+                        "label-caps": ["DM Sans"],
+                        "body-sm": ["DM Sans"],
+                        "headline-lg": ["Space Grotesk"],
+                        "body-lg": ["DM Sans"],
+                        "headline-lg-mobile": ["Space Grotesk"]
+                    },
+                    "fontSize": {
+                        "label-mono": ["13px", {"lineHeight": "1.0", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "headline-md": ["20px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                        "headline-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "1.0", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="flex min-h-screen">
+<!-- SideNavBar (Mandatory Shell) -->
+<aside class="fixed left-0 top-0 h-full flex flex-col p-4 gap-stack-md z-40 bg-surface-container border-r border-white/5 w-64">
+<div class="flex items-center gap-3 px-2 mb-6">
+<div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-black text-primary">ElectroTrack</h1>
+<p class="text-label-caps font-label-caps text-on-surface-variant opacity-60">Premium POS</p>
+</div>
+</div>
+<nav class="flex-1 flex flex-col gap-1">
+<div class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-all duration-200 cursor-pointer">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-caps">Dashboard</span>
+</div>
+<div class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-all duration-200 cursor-pointer">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-caps">Inventory</span>
+</div>
+<div class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-all duration-200 cursor-pointer">
+<span class="material-symbols-outlined">point_of_sale</span>
+<span class="font-label-caps">Sales</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-3 p-3 rounded-lg bg-secondary-container text-on-secondary-container font-bold shadow-lg">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-caps">Reports</span>
+</div>
+<!-- Sub-items for Reports -->
+<div class="ml-9 flex flex-col gap-1 mt-1">
+<div class="p-2 text-body-sm text-on-surface-variant hover:text-on-surface cursor-pointer">Sales Summary</div>
+<div class="p-2 text-body-sm text-primary font-bold border-l-2 border-primary">Cash Reconciliation</div>
+<div class="p-2 text-body-sm text-on-surface-variant hover:text-on-surface cursor-pointer">Tax Logs</div>
+</div>
+</div>
+<div class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-all duration-200 cursor-pointer">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-caps">Settings</span>
+</div>
+</nav>
+<div class="mt-auto border-t border-white/5 pt-4">
+<div class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-all duration-200 cursor-pointer">
+<span class="material-symbols-outlined">contact_support</span>
+<span class="font-label-caps">Support</span>
+</div>
+<div class="flex items-center gap-3 p-3 rounded-lg text-error hover:bg-error-container/20 transition-all duration-200 cursor-pointer">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-caps">Logout</span>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="ml-64 flex-1 flex flex-col">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center w-full px-6 py-3 z-50 bg-surface-container-lowest backdrop-blur-md border-b border-white/10 sticky top-0">
+<div class="flex items-center gap-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="bg-surface-variant/20 border-none rounded-full pl-10 pr-4 py-2 text-body-sm w-64 focus:ring-1 focus:ring-primary" placeholder="Search transactions..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-variant/20 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-variant/20 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">help</span>
+</button>
+<div class="flex items-center gap-2 pl-4 border-l border-white/10">
+<div class="text-right">
+<p class="text-body-sm font-bold text-on-surface leading-none">Alex Rivera</p>
+<p class="text-label-caps text-on-surface-variant text-[10px]">Manager</p>
+</div>
+<img class="w-8 h-8 rounded-full border border-primary/20 object-cover" data-alt="A professional headshot of a confident Hispanic male manager in his late 30s, wearing a crisp dark navy blazer. The lighting is dramatic with cool blue rim lights, set against a blurred high-tech retail environment with glowing screens. The image captures a clean, professional, and sophisticated atmosphere suitable for a premium fintech dashboard." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgaUIsJgWqWAgUVnW5SipFdUOU6tVn66DEnLAXrwkB_aue3jFYCofwOBtOOUY6ZJRlTySHJd0BxC2Msj6OisSPydRluTpTNtzqWkmTlMSIzOlNe2gYwkdBQ2Xx9pIagE2eflziDAE98y2QseFJVWhseOdgCsWDwhsvgW2WsQvmoLvXuP5VW8MoSVLp9dDlQK5yHFvyvKOymUq6JGDqVvGlchy_QemQWHHYMd-jTdhvzbM_Zf8s9hFOGCLjoItA0F98JaLbDXoHl1bL"/>
+</div>
+</div>
+</header>
+<div class="p-8 max-w-7xl mx-auto w-full space-y-stack-lg">
+<!-- Header Section -->
+<div class="stagger-in" style="animation-delay: 0.1s">
+<h2 class="font-headline-lg text-headline-lg font-bold text-on-surface tracking-tight">Cash Reconciliation</h2>
+<p class="text-body-md text-on-surface-variant">Daily cash drawer verification and forensic variance reporting.</p>
+</div>
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-gutter items-start">
+<!-- Main Reconciliation Form -->
+<div class="xl:col-span-2 space-y-gutter">
+<div class="glass-card indigo-glow-border rounded-xl p-8 stagger-in" style="animation-delay: 0.2s">
+<div class="flex justify-between items-center mb-8">
+<h3 class="font-headline-md text-headline-md font-bold text-primary flex items-center gap-2">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+                                TODAY'S RECONCILIATION
+                            </h3>
+<button class="flex items-center gap-2 bg-surface-variant/30 hover:bg-surface-variant/50 px-4 py-2 rounded-lg transition-all scale-interaction">
+<span class="material-symbols-outlined text-body-md">calendar_month</span>
+<span class="text-body-sm font-medium">Wednesday, 27 May 2026</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+<div class="space-y-2">
+<label class="text-label-caps text-on-surface-variant opacity-70">Opening Balance</label>
+<div class="bg-surface-container-high p-4 rounded-lg border border-white/5">
+<span class="font-label-mono text-headline-md text-on-surface">₨ 15,000</span>
+</div>
+</div>
+<div class="space-y-2">
+<label class="text-label-caps text-on-surface-variant opacity-70">Expected Cash</label>
+<div class="bg-surface-container-high p-4 rounded-lg border border-white/5">
+<span class="font-label-mono text-headline-md text-on-surface">₨ 1,24,500</span>
+</div>
+</div>
+<div class="space-y-2">
+<label class="text-label-caps text-primary/80">Actual Cash</label>
+<div class="relative group">
+<input class="w-full bg-surface-container-highest/50 border-0 border-b-2 border-primary/30 focus:border-primary focus:ring-0 rounded-t-lg p-4 font-label-mono text-headline-md text-on-surface transition-all placeholder:text-on-surface-variant/30" id="actualCash" placeholder="Enter counted cash" type="number"/>
+</div>
+</div>
+</div>
+<!-- Variance Status Displays (Dynamic via JS) -->
+<div class="mb-8" id="varianceDisplay">
+<div class="flex items-center gap-4 p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-md font-bold">Variance: ₨ 0 — Cash balanced</span>
+</div>
+</div>
+<div class="space-y-2 mb-8">
+<label class="text-label-caps text-on-surface-variant opacity-70">Discrepancy Notes</label>
+<textarea class="w-full bg-surface-container-highest/30 border border-white/5 rounded-lg p-4 focus:ring-1 focus:ring-primary text-body-sm" placeholder="Any discrepancies or notes..." rows="3"></textarea>
+</div>
+<button class="w-full bg-primary py-4 rounded-xl font-headline-md text-on-primary font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all scale-interaction flex items-center justify-center gap-2">
+<span>Submit Reconciliation</span>
+<span class="material-symbols-outlined">send</span>
+</button>
+</div>
+<!-- History Table -->
+<div class="glass-card rounded-xl overflow-hidden stagger-in" style="animation-delay: 0.4s">
+<div class="px-8 py-6 border-b border-white/5 flex justify-between items-center">
+<h3 class="font-headline-md text-headline-md font-bold">Recent History</h3>
+<button class="text-primary text-body-sm hover:underline">Download CSV</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-white/5 text-label-caps text-on-surface-variant">
+<th class="px-8 py-4">Date</th>
+<th class="px-4 py-4">Shift</th>
+<th class="px-4 py-4">Expected</th>
+<th class="px-4 py-4">Actual</th>
+<th class="px-4 py-4">Variance</th>
+<th class="px-4 py-4">Status</th>
+<th class="px-8 py-4 text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="text-body-sm">
+<tr class="border-b border-white/5 hover:bg-white/[0.02] transition-colors group">
+<td class="px-8 py-4">26 May 2026</td>
+<td class="px-4 py-4">Closing</td>
+<td class="px-4 py-4 font-label-mono">₨ 98,400</td>
+<td class="px-4 py-4 font-label-mono">₨ 98,400</td>
+<td class="px-4 py-4 font-label-mono text-emerald-400">0</td>
+<td class="px-4 py-4">
+<span class="flex items-center gap-1.5 px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 text-[11px] font-bold uppercase tracking-wider border-l-2 border-emerald-500">
+                                                Balanced
+                                            </span>
+</td>
+<td class="px-8 py-4 text-right">
+<button class="w-8 h-8 rounded-full hover:bg-surface-variant/40 flex items-center justify-center">
+<span class="material-symbols-outlined text-body-md">visibility</span>
+</button>
+</td>
+</tr>
+<tr class="border-b border-white/5 hover:bg-white/[0.02] transition-colors group">
+<td class="px-8 py-4">25 May 2026</td>
+<td class="px-4 py-4">Closing</td>
+<td class="px-4 py-4 font-label-mono">₨ 1,12,000</td>
+<td class="px-4 py-4 font-label-mono text-error">₨ 1,11,500</td>
+<td class="px-4 py-4 font-label-mono text-error">-500</td>
+<td class="px-4 py-4">
+<span class="flex items-center gap-1.5 px-2 py-1 rounded bg-error-container/20 text-error text-[11px] font-bold uppercase tracking-wider border-l-2 border-error">
+                                                Discrepancy
+                                            </span>
+</td>
+<td class="px-8 py-4 text-right">
+<button class="w-8 h-8 rounded-full hover:bg-surface-variant/40 flex items-center justify-center">
+<span class="material-symbols-outlined text-body-md">visibility</span>
+</button>
+</td>
+</tr>
+<tr class="border-b border-white/5 hover:bg-white/[0.02] transition-colors group">
+<td class="px-8 py-4">24 May 2026</td>
+<td class="px-4 py-4">Morning</td>
+<td class="px-4 py-4 font-label-mono">₨ 45,200</td>
+<td class="px-4 py-4 font-label-mono">₨ 45,200</td>
+<td class="px-4 py-4 font-label-mono text-emerald-400">0</td>
+<td class="px-4 py-4">
+<span class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-500/10 text-amber-500 text-[11px] font-bold uppercase tracking-wider border-l-2 border-amber-500">
+                                                Pending Review
+                                            </span>
+</td>
+<td class="px-8 py-4 text-right">
+<button class="w-8 h-8 rounded-full hover:bg-surface-variant/40 flex items-center justify-center">
+<span class="material-symbols-outlined text-body-md">visibility</span>
+</button>
+</td>
+</tr>
+<tr class="border-b border-white/5 hover:bg-white/[0.02] transition-colors group">
+<td class="px-8 py-4">23 May 2026</td>
+<td class="px-4 py-4">Closing</td>
+<td class="px-4 py-4 font-label-mono">₨ 88,900</td>
+<td class="px-4 py-4 font-label-mono">₨ 88,900</td>
+<td class="px-4 py-4 font-label-mono text-emerald-400">0</td>
+<td class="px-4 py-4">
+<span class="flex items-center gap-1.5 px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 text-[11px] font-bold uppercase tracking-wider border-l-2 border-emerald-500">
+                                                Balanced
+                                            </span>
+</td>
+<td class="px-8 py-4 text-right">
+<button class="w-8 h-8 rounded-full hover:bg-surface-variant/40 flex items-center justify-center">
+<span class="material-symbols-outlined text-body-md">visibility</span>
+</button>
+</td>
+</tr>
+<tr class="border-b border-white/5 hover:bg-white/[0.02] transition-colors group">
+<td class="px-8 py-4">22 May 2026</td>
+<td class="px-4 py-4">Closing</td>
+<td class="px-4 py-4 font-label-mono">₨ 1,05,000</td>
+<td class="px-4 py-4 font-label-mono text-error">₨ 1,04,800</td>
+<td class="px-4 py-4 font-label-mono text-error">-200</td>
+<td class="px-4 py-4">
+<span class="flex items-center gap-1.5 px-2 py-1 rounded bg-error-container/20 text-error text-[11px] font-bold uppercase tracking-wider border-l-2 border-error">
+                                                Discrepancy
+                                            </span>
+</td>
+<td class="px-8 py-4 text-right">
+<button class="w-8 h-8 rounded-full hover:bg-surface-variant/40 flex items-center justify-center">
+<span class="material-symbols-outlined text-body-md">visibility</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- AI Sidebar Analysis -->
+<div class="space-y-gutter">
+<div class="glass-card bg-primary-container/10 border-primary/30 rounded-xl p-6 stagger-in" style="animation-delay: 0.3s">
+<div class="flex items-center gap-3 mb-4 text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<h4 class="font-headline-md font-bold">AI Analysis</h4>
+</div>
+<p class="text-body-md text-on-surface leading-relaxed italic mb-4">
+                            "Today's cash matches expected patterns. Payment mix: 52% cash, 27% card. No anomalies detected across terminal clusters."
+                        </p>
+<div class="flex items-center gap-2 text-label-caps text-on-surface-variant">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            System Health: 100%
+                        </div>
+</div>
+<div class="glass-card rounded-xl p-6 stagger-in" style="animation-delay: 0.5s">
+<h4 class="font-label-caps text-on-surface-variant mb-6">Payment Method Drift</h4>
+<div class="space-y-6">
+<div class="space-y-2">
+<div class="flex justify-between text-body-sm">
+<span>Cash</span>
+<span class="font-label-mono">52%</span>
+</div>
+<div class="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[52%]"></div>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-body-sm">
+<span>Card</span>
+<span class="font-label-mono">27%</span>
+</div>
+<div class="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+<div class="bg-secondary h-full w-[27%]"></div>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-body-sm">
+<span>UPI / Digital</span>
+<span class="font-label-mono">21%</span>
+</div>
+<div class="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+<div class="bg-tertiary h-full w-[21%]"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="relative overflow-hidden glass-card rounded-xl p-6 stagger-in" style="animation-delay: 0.6s">
+<img class="absolute inset-0 w-full h-full object-cover opacity-10 mix-blend-overlay" data-alt="A detailed macro shot of crisp global currency banknotes and a stack of coins resting on a high-tech glass surface. The image is captured with a shallow depth of field, focusing on the texture of the currency while the background shows glowing digital accounting charts in deep blue and purple hues. The lighting is precise, emphasizing a sense of financial accuracy and transparency." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDB5iOtkAGfzAhD0L4-Jw5X_1rxRvozyM9QgahEYKxoL7qpPpEqlCe-W89_6h4OXtGOQhhSdtcVGeu8EjGFYMl-3mbImX7FXN8uAgCosDnxGNrS_gI9JA3_M1oqxMvXpwOjsEeumKcdo_r2bwgMM78kWZY17QS3ruFwuNLx2N4K5h-1nHdrFtiM1yLgfpL-ETJ93WYmX5FeLluV4fCxQPXqs-BGDfaWtFDHW0zeVKyrcVA8wasSG73QG0WeKIYe0aIGZuwY_8aH2tHr"/>
+<h4 class="font-headline-md font-bold mb-2">Reconciliation Tips</h4>
+<p class="text-body-sm text-on-surface-variant">Always double-count the float before processing large withdrawal entries. Variance below ₨ 50 is automatically flagged for review.</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Micro-interaction for actual cash calculation
+        const expectedCash = 124500;
+        const actualInput = document.getElementById('actualCash');
+        const varianceBox = document.getElementById('varianceDisplay');
+
+        actualInput.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value) || 0;
+            const variance = val - expectedCash;
+
+            if (val === 0) {
+                varianceBox.innerHTML = `
+                    <div class="flex items-center gap-4 p-4 rounded-lg bg-surface-container-high border border-white/5 text-on-surface-variant">
+                        <span class="material-symbols-outlined">pending</span>
+                        <span class="font-body-md">Enter actual cash to calculate variance</span>
+                    </div>
+                `;
+            } else if (variance === 0) {
+                varianceBox.innerHTML = `
+                    <div class="flex items-center gap-4 p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 animate-pulse">
+                        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                        <span class="font-body-md font-bold">Variance: ₨ 0 — Cash balanced</span>
+                    </div>
+                `;
+            } else if (variance < 0) {
+                varianceBox.innerHTML = `
+                    <div class="flex items-center gap-4 p-4 rounded-lg bg-error-container/20 border border-error/30 text-error">
+                        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">warning</span>
+                        <span class="font-body-md font-bold">Variance: -₨ ${Math.abs(variance).toLocaleString()} — Cash short</span>
+                    </div>
+                `;
+            } else {
+                varianceBox.innerHTML = `
+                    <div class="flex items-center gap-4 p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+                        <span class="font-body-md font-bold">Variance: +₨ ${variance.toLocaleString()} — Cash overage</span>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body></html>

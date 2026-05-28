@@ -26,7 +26,9 @@ export class InventoryService {
       include: {
         _count: {
           select: {
-            inventoryUnits: { where: { status: UnitStatus.in_stock, tenantId } },
+            inventoryUnits: {
+              where: { status: UnitStatus.in_stock, tenantId },
+            },
           },
         },
       },
@@ -37,6 +39,16 @@ export class InventoryService {
       stockCount: p._count.inventoryUnits,
       _count: undefined,
     }));
+  }
+
+  async listCategories(tenantId: string): Promise<string[]> {
+    const rows = await this.prisma.product.findMany({
+      where: { tenantId, isActive: true, category: { not: null } },
+      select: { category: true },
+      distinct: ['category'],
+      orderBy: { category: 'asc' },
+    });
+    return rows.map((r) => r.category as string);
   }
 
   async createProduct(dto: CreateProductDto, userId: string, tenantId: string) {

@@ -30,7 +30,12 @@ export class ReportsService {
     return this.buildSummary(start, end, `${from} to ${to}`, tenantId);
   }
 
-  private async buildSummary(start: Date, end: Date, label: string, tenantId: string) {
+  private async buildSummary(
+    start: Date,
+    end: Date,
+    label: string,
+    tenantId: string,
+  ) {
     const where = {
       tenantId,
       status: SaleStatus.completed,
@@ -190,7 +195,9 @@ export class ReportsService {
         sellingPrice: true,
         _count: {
           select: {
-            inventoryUnits: { where: { status: UnitStatus.in_stock, tenantId } },
+            inventoryUnits: {
+              where: { status: UnitStatus.in_stock, tenantId },
+            },
           },
         },
       },
@@ -213,7 +220,11 @@ export class ReportsService {
 
   // ─── Cash Reconciliation ──────────────────────────────────────────────────────
 
-  async submitReconciliation(dto: ReconciliationDto, userId: string, tenantId: string) {
+  async submitReconciliation(
+    dto: ReconciliationDto,
+    userId: string,
+    tenantId: string,
+  ) {
     const start = new Date(dto.date + 'T00:00:00+05:00');
     const end = new Date(dto.date + 'T23:59:59+05:00');
 
@@ -364,7 +375,11 @@ export class ReportsService {
     cutoff.setDate(cutoff.getDate() - days);
 
     const units = await this.prisma.inventoryUnit.findMany({
-      where: { status: UnitStatus.in_stock, receivedAt: { lte: cutoff }, tenantId },
+      where: {
+        status: UnitStatus.in_stock,
+        receivedAt: { lte: cutoff },
+        tenantId,
+      },
       select: {
         id: true,
         serialNumber: true,

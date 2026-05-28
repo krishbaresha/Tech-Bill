@@ -37,13 +37,19 @@ export class ReportsController {
 
   @Get('sales-summary')
   @Permissions('reports.read')
-  salesSummary(@Query() query: SalesSummaryQueryDto, @Req() req: RequestWithUser) {
+  salesSummary(
+    @Query() query: SalesSummaryQueryDto,
+    @Req() req: RequestWithUser,
+  ) {
     return this.reportsService.salesSummary(query, req.user.tenantId);
   }
 
   @Get('sales-summary/range')
   @Permissions('reports.read')
-  salesSummaryRange(@Query() query: SalesSummaryQueryDto, @Req() req: RequestWithUser) {
+  salesSummaryRange(
+    @Query() query: SalesSummaryQueryDto,
+    @Req() req: RequestWithUser,
+  ) {
     return this.reportsService.salesSummaryRange(query, req.user.tenantId);
   }
 
@@ -87,8 +93,15 @@ export class ReportsController {
 
   @Get('dead-stock')
   @Permissions('reports.read')
-  deadStock(@Query('days') days: string | undefined, @Req() req: RequestWithUser) {
-    return this.reportsService.deadStock(days ? parseInt(days) : 60, req.user.tenantId);
+  deadStock(
+    @Query('days') days: string | undefined,
+    @Req() req: RequestWithUser,
+  ) {
+    const daysNum = days ? parseInt(days, 10) : 60;
+    return this.reportsService.deadStock(
+      Number.isNaN(daysNum) ? 60 : daysNum,
+      req.user.tenantId,
+    );
   }
 
   @Get('return-analytics')
@@ -104,19 +117,33 @@ export class ReportsController {
   @Post('cash-reconciliation')
   @Permissions('reports.cash_reconciliation')
   @HttpCode(HttpStatus.CREATED)
-  submitReconciliation(@Body() dto: ReconciliationDto, @Req() req: RequestWithUser) {
-    return this.reportsService.submitReconciliation(dto, req.user.id, req.user.tenantId);
+  submitReconciliation(
+    @Body() dto: ReconciliationDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.reportsService.submitReconciliation(
+      dto,
+      req.user.id,
+      req.user.tenantId,
+    );
   }
 
   @Get('cash-reconciliation')
   @Permissions('reports.read')
-  listReconciliations(@Query() filter: FilterReconciliationDto, @Req() req: RequestWithUser) {
+  listReconciliations(
+    @Query() filter: FilterReconciliationDto,
+    @Req() req: RequestWithUser,
+  ) {
     return this.reportsService.listReconciliations(filter, req.user.tenantId);
   }
 
   @Patch('cash-reconciliation/:id/review')
   @Permissions('reports.cash_reconciliation')
   reviewReconciliation(@Param('id') id: string, @Req() req: RequestWithUser) {
-    return this.reportsService.reviewReconciliation(id, req.user.id, req.user.tenantId);
+    return this.reportsService.reviewReconciliation(
+      id,
+      req.user.id,
+      req.user.tenantId,
+    );
   }
 }

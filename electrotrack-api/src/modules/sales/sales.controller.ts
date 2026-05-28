@@ -43,8 +43,20 @@ export class SalesController {
 
   @Get('customers')
   @Permissions('customers.read')
-  getCustomers(@Query('search') search: string | undefined, @Req() req: RequestWithUser) {
+  getCustomers(
+    @Query('search') search: string | undefined,
+    @Req() req: RequestWithUser,
+  ) {
     return this.salesService.getCustomers(search, req.user.tenantId);
+  }
+
+  @Get('by-invoice/:invoiceNumber')
+  @Permissions('pos.read')
+  lookupByInvoice(
+    @Param('invoiceNumber') invoiceNumber: string,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.salesService.lookupByInvoice(invoiceNumber, req.user.tenantId);
   }
 
   @Get(':id')

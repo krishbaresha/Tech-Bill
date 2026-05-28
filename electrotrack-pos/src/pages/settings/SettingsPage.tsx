@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Settings, CheckCircle, AlertTriangle } from 'lucide-react';
 import { api } from '../../api/client';
+import { useAuthStore } from '../../store/auth.store';
 import type { ShopSettings } from '../../types';
 import gsap from 'gsap';
 
@@ -31,6 +32,7 @@ function FieldGroup({ title, children }: FieldGroupProps) {
 }
 
 export default function SettingsPage() {
+  const { user, accessToken, setAuth } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -65,9 +67,13 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!loading && containerRef.current) {
-      gsap.from(containerRef.current.querySelectorAll('.glass-card'), {
-        opacity: 0, y: 16, duration: 0.45, stagger: 0.08, ease: 'power2.out',
-      });
+      const els = containerRef.current.querySelectorAll('.glass-card');
+      gsap.killTweensOf(els);
+      const tw = gsap.fromTo(els,
+        { opacity: 0, y: 6 },
+        { opacity: 1, y: 0, duration: 0.25, stagger: 0.03, ease: 'power3.out', overwrite: true, clearProps: 'transform,opacity' },
+      );
+      return () => { tw.kill(); };
     }
   }, [loading]);
 
@@ -89,6 +95,9 @@ export default function SettingsPage() {
       });
       setSuccessMsg('Settings saved successfully');
       setTimeout(() => setSuccessMsg(''), 3000);
+      if (form.shopName && user && accessToken) {
+        setAuth({ ...user, tenantName: form.shopName }, accessToken);
+      }
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
       setError(e.response?.data?.message ?? 'Failed to save settings');

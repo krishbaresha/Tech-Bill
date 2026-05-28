@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Security | OTP Verification</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&amp;family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&amp;family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface-variant": "#c7c4d7",
+                        "outline": "#908fa0",
+                        "on-background": "#dee1f7",
+                        "tertiary": "#2fd9f4",
+                        "surface-container-high": "#25293a",
+                        "outline-variant": "#464554",
+                        "surface-bright": "#343949",
+                        "on-error": "#690005",
+                        "secondary-fixed-dim": "#d0bcff",
+                        "on-primary-fixed-variant": "#2f2ebe",
+                        "on-secondary-fixed-variant": "#5516be",
+                        "on-primary-fixed": "#07006c",
+                        "on-surface": "#dee1f7",
+                        "on-tertiary": "#00363e",
+                        "on-tertiary-container": "#000608",
+                        "tertiary-fixed-dim": "#2fd9f4",
+                        "secondary-fixed": "#e9ddff",
+                        "inverse-surface": "#dee1f7",
+                        "error-container": "#93000a",
+                        "on-tertiary-fixed": "#001f25",
+                        "tertiary-container": "#008395",
+                        "error": "#ffb4ab",
+                        "on-secondary-container": "#c4abff",
+                        "surface-container-lowest": "#090e1c",
+                        "inverse-primary": "#494bd6",
+                        "surface": "#0e1322",
+                        "inverse-on-surface": "#2b3040",
+                        "secondary": "#d0bcff",
+                        "primary": "#c0c1ff",
+                        "on-primary": "#1000a9",
+                        "surface-variant": "#2f3445",
+                        "on-tertiary-fixed-variant": "#004e5a",
+                        "tertiary-fixed": "#a2eeff",
+                        "surface-container-low": "#161b2b",
+                        "surface-tint": "#c0c1ff",
+                        "on-secondary": "#3c0091",
+                        "primary-fixed-dim": "#c0c1ff",
+                        "primary-fixed": "#e1e0ff",
+                        "on-error-container": "#ffdad6",
+                        "secondary-container": "#571bc1",
+                        "primary-container": "#8083ff",
+                        "surface-dim": "#0e1322",
+                        "on-primary-container": "#0d0096",
+                        "surface-container-highest": "#2f3445",
+                        "surface-container": "#1a1f2f",
+                        "on-secondary-fixed": "#23005c",
+                        "background": "#0e1322",
+                        "light-bg": "#F8FAFC"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Space Grotesk", "sans-serif"],
+                        "body": ["DM Sans", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .light .glass-card {
+            background: rgba(15, 23, 42, 0.03);
+            border: 1px solid rgba(15, 23, 42, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        .light {
+            background-color: #F8FAFC !important;
+        }
+        .shield-pulse {
+            animation: pulse 2s infinite ease-in-out;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); filter: drop-shadow(0 0 0px rgba(192, 193, 255, 0)); }
+            50% { transform: scale(1.1); filter: drop-shadow(0 0 15px rgba(192, 193, 255, 0.4)); }
+            100% { transform: scale(1); filter: drop-shadow(0 0 0px rgba(192, 193, 255, 0)); }
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body min-h-screen overflow-x-hidden">
+<div class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden transition-colors duration-500" id="main-container">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Header -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-outline-variant/20 px-6 md:px-40 py-5">
+<div class="flex items-center gap-4 text-primary">
+<div class="size-8 shield-pulse text-primary" data-icon="shield">
+<span class="material-symbols-outlined text-3xl">shield</span>
+</div>
+<h2 class="text-on-surface text-xl font-headline font-bold leading-tight tracking-tight">ElectroTrack</h2>
+</div>
+<div class="flex items-center gap-4">
+<button class="flex items-center justify-center rounded-lg size-10 bg-surface-container-high dark:bg-surface-container text-on-surface hover:bg-primary/20 transition-all active:scale-95" id="theme-toggle">
+<span class="material-symbols-outlined" id="theme-icon">light_mode</span>
+</button>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border border-outline/30" data-alt="A professional profile portrait of a software security engineer in a high-tech environment. The lighting is moody with purple and cyan rim lights reflecting off digital screens in the background. The aesthetic is clean, sharp, and corporate-futuristic, matching the ElectroTrack brand's deep space blue and violet color palette." style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBDyduYR8hkvvWtyNEe1H8M6iZoEgzso4MGRBzg9I00WQp3K-FhZqCIvnV76nWltgmI_zfMxH6Iqg7DIA4is3pDfjmRzcaDXoWnItv6dL-PWuVfhIW6f5zK-8pVypR8jiWTNRhJpcKYZiT_myz_H76fHJwOSPVlvYDzHRrOsa21v_szhD6s_OesO7PqgfaJGVMGPLO1yU3zWwWiaorJfe2az8bac1HoXkYsU6svdodXkF4Vc6wNMTRioxhv5_rNxDQTeamvZQQS0KRb");'>
+</div>
+</div>
+</header>
+<main class="flex flex-1 justify-center items-center py-12 px-6">
+<div class="layout-content-container glass-card flex flex-col max-w-[520px] w-full rounded-xl p-8 opacity-0" id="otp-card">
+<!-- Hero Image Section -->
+<div class="w-full mb-8">
+<div class="w-full aspect-video rounded-lg overflow-hidden relative group">
+<div class="absolute inset-0 bg-gradient-to-t from-background to-transparent opacity-60 z-10"></div>
+<img alt="Security Verification Illustration" class="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-110" data-alt="A highly detailed close-up of a holographic 6-digit verification code floating above a sleek dark smartphone. The environment is a futuristic security command center with glowing neon data visualizations in deep indigo and bright cyan. The lighting is cinematic, highlighting the glassmorphism texture of the UI and the precision of the technical typography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxqEY3w1jsZKFJFlBrV7SMQjW7LDhLBzt3Mshmt0u2qLB4Dnto9zgzvM4EjG0ojO5xFFqHTfXgzSpMBJ4gaSuAyMktdwgJuubkShuvbJW3syuq19lScUAMgXiMYeSiGGELYXacOAbIMyPWKj-9Mqc0suQ5aJzW_HJyEX6hy1MEu0poOxapPqBKdZsi8Gq_UXpkDFO0JbeEW3UGsKmhsYkSgZslNr0tXhTS44Lb3F-78TLuyBTedblER4q-ZonQRBHK0REgSHV30lCP"/>
+</div>
+</div>
+<!-- Text Content -->
+<div class="flex flex-col gap-2 mb-8">
+<h1 class="text-on-surface font-headline text-3xl font-bold leading-tight">Verify Identity</h1>
+<p class="text-on-surface-variant text-base font-normal">We've sent a one-time 6-digit security code to your registered mobile device ending in <span class="font-mono text-primary font-bold">8824</span>.</p>
+</div>
+<!-- OTP Inputs -->
+<div class="flex justify-between gap-2 mb-10" id="otp-inputs-container">
+<input class="otp-field w-12 h-14 md:w-14 md:h-16 text-center text-2xl font-mono font-bold bg-surface-container-highest/30 border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 rounded-t-lg transition-all text-on-surface" maxlength="1" type="number"/>
+<input class="otp-field w-12 h-14 md:w-14 md:h-16 text-center text-2xl font-mono font-bold bg-surface-container-highest/30 border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 rounded-t-lg transition-all text-on-surface" maxlength="1" type="number"/>
+<input class="otp-field w-12 h-14 md:w-14 md:h-16 text-center text-2xl font-mono font-bold bg-surface-container-highest/30 border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 rounded-t-lg transition-all text-on-surface" maxlength="1" type="number"/>
+<input class="otp-field w-12 h-14 md:w-14 md:h-16 text-center text-2xl font-mono font-bold bg-surface-container-highest/30 border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 rounded-t-lg transition-all text-on-surface" maxlength="1" type="number"/>
+<input class="otp-field w-12 h-14 md:w-14 md:h-16 text-center text-2xl font-mono font-bold bg-surface-container-highest/30 border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 rounded-t-lg transition-all text-on-surface" maxlength="1" type="number"/>
+<input class="otp-field w-12 h-14 md:w-14 md:h-16 text-center text-2xl font-mono font-bold bg-surface-container-highest/30 border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 rounded-t-lg transition-all text-on-surface" maxlength="1" type="number"/>
+</div>
+<!-- Timer Section -->
+<div class="flex items-center justify-center gap-6 mb-8 py-4 bg-surface-container-low rounded-lg" id="timer-container">
+<div class="flex flex-col items-center">
+<span class="font-headline font-bold text-2xl text-primary" id="min-display">04</span>
+<span class="text-[10px] uppercase tracking-widest text-outline">Minutes</span>
+</div>
+<span class="text-2xl font-bold text-outline">:</span>
+<div class="flex flex-col items-center">
+<span class="font-headline font-bold text-2xl text-primary" id="sec-display">32</span>
+<span class="text-[10px] uppercase tracking-widest text-outline">Seconds</span>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex flex-col gap-4">
+<button class="w-full h-14 rounded-lg bg-gradient-to-r from-primary to-secondary text-on-primary font-headline font-bold text-lg tracking-wide hover:shadow-[0_0_20px_rgba(192,193,255,0.4)] transition-all" id="verify-btn">
+                        VERIFY &amp; CONTINUE
+                    </button>
+<button class="flex items-center justify-center gap-2 text-on-surface-variant hover:text-primary transition-colors py-2">
+<span class="material-symbols-outlined text-sm">arrow_back</span>
+<span class="text-sm font-bold tracking-tight">Return to Login</span>
+</button>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="p-8 text-center border-t border-outline-variant/10">
+<p class="text-on-surface-variant/60 text-xs font-mono uppercase tracking-[0.2em]">Secure Encryption Layer Active • v4.2.0-STABLE</p>
+</footer>
+</div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const otpCard = document.getElementById('otp-card');
+        const otpInputs = document.querySelectorAll('.otp-field');
+        const verifyBtn = document.getElementById('verify-btn');
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        const html = document.documentElement;
+
+        // 1. Entrance Animation
+        gsap.to(otpCard, {
+            y: 0,
+            opacity: 1,
+            duration: 1,
+            ease: "power4.out",
+            startAt: { y: 30, opacity: 0 }
+        });
+
+        // 4. Digits Entrance Stagger
+        gsap.from(otpInputs, {
+            y: 20,
+            opacity: 0,
+            duration: 0.8,
+            stagger: 0.08,
+            ease: "back.out(1.7)",
+            delay: 0.3
+        });
+
+        // 2. OTP Input Logic
+        otpInputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                if (e.target.value.length > 1) {
+                    e.target.value = e.target.value.slice(0, 1);
+                }
+
+                if (e.target.value !== '') {
+                    // GSAP Bounce effect on digit enter
+                    gsap.fromTo(input, 
+                        { scale: 0.9, backgroundColor: 'rgba(192, 193, 255, 0.2)' },
+                        { scale: 1, backgroundColor: 'rgba(192, 193, 255, 0.05)', duration: 0.4, ease: "elastic.out(1, 0.3)" }
+                    );
+
+                    // Move to next input
+                    if (index < otpInputs.length - 1) {
+                        otpInputs[index + 1].focus();
+                    }
+                }
+            });
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && e.target.value === '') {
+                    if (index > 0) {
+                        otpInputs[index - 1].focus();
+                        gsap.to(otpInputs[index - 1], { x: -2, duration: 0.1, yoyo: true, repeat: 1 });
+                    }
+                }
+            });
+
+            // Prevent scroll/spin
+            input.addEventListener('wheel', (e) => e.preventDefault());
+        });
+
+        // 3. Timer Logic
+        let totalSeconds = 4 * 60 + 32;
+        const minEl = document.getElementById('min-display');
+        const secEl = document.getElementById('sec-display');
+        const timerContainer = document.getElementById('timer-container');
+
+        const timerInterval = setInterval(() => {
+            totalSeconds--;
+            
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+
+            minEl.textContent = String(minutes).padStart(2, '0');
+            secEl.textContent = String(seconds).padStart(2, '0');
+
+            if (totalSeconds <= 0) {
+                clearInterval(timerInterval);
+                timerContainer.innerHTML = `
+                    <div class="w-full text-center py-2 animate-pulse">
+                        <a href="#" class="text-primary font-bold hover:underline tracking-tight transition-all">Didn't receive a code? Resend OTP</a>
+                    </div>
+                `;
+            }
+        }, 1000);
+
+        // 5. Mode Toggle
+        themeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            const isDark = html.classList.contains('dark');
+            themeIcon.textContent = isDark ? 'light_mode' : 'dark_mode';
+            
+            gsap.fromTo(themeIcon, 
+                { rotate: 0, scale: 0.5 }, 
+                { rotate: 360, scale: 1, duration: 0.5, ease: "back.out(1.7)" }
+            );
+        });
+
+        // 7. Verify Button press animation
+        verifyBtn.addEventListener('mousedown', () => {
+            gsap.to(verifyBtn, { scale: 0.95, duration: 0.1 });
+        });
+        
+        verifyBtn.addEventListener('mouseup', () => {
+            gsap.to(verifyBtn, { scale: 1, duration: 0.4, ease: "elastic.out(1, 0.3)" });
+            
+            // Simple validation feedback if empty
+            const isComplete = Array.from(otpInputs).every(i => i.value !== '');
+            if (!isComplete) {
+                gsap.to("#otp-inputs-container", { x: 10, duration: 0.1, repeat: 3, yoyo: true, ease: "power1.inOut" });
+            }
+        });
+
+        verifyBtn.addEventListener('mouseleave', () => {
+            gsap.to(verifyBtn, { scale: 1, duration: 0.2 });
+        });
+    });
+</script>
+</body></html>

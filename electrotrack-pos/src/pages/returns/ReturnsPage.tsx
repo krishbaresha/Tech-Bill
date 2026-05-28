@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { CheckCircle, XCircle, AlertTriangle, RefreshCw, RotateCcw } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, RefreshCw, RotateCcw, Plus, Search } from 'lucide-react';
 import { format } from 'date-fns';
 import { api } from '../../api/client';
 import { useAuthStore } from '../../store/auth.store';
@@ -14,6 +14,230 @@ const STATUS_STYLES: Record<string, string> = {
   rejected:  'bg-stitch-error/10 text-stitch-error border-stitch-error/20',
   completed: 'bg-stitch-primary/10 text-stitch-primary border-stitch-primary/20',
 };
+
+const RETURN_TYPES = [
+  { value: 'cash_refund', label: 'Cash Refund' },
+  { value: 'store_credit', label: 'Store Credit' },
+  { value: 'exchange', label: 'Exchange' },
+];
+
+interface SaleItem {
+  id: string;
+  inventoryUnit: {
+    id: string;
+    serialNumber: string;
+    status: string;
+    product: { id: string; name: string; brand: string | null };
+  };
+}
+
+interface SaleLookup {
+  id: string;
+  invoiceNumber: string;
+  status: string;
+  items: SaleItem[];
+  customer: { id: string; name: string } | null;
+}
+
+function CreateReturnModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [sale, setSale] = useState<SaleLookup | null>(null);
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupError, setLookupError] = useState('');
+  const [selectedSerials, setSelectedSerials] = useState<Set<string>>(new Set());
+  const [reason, setReason] = useState('');
+  const [returnType, setReturnType] = useState('cash_refund');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+
+  const inputCls = 'w-full bg-stitch-surface-container-high/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-stitch-on-surface outline-none focus:border-stitch-primary/50 transition-colors';
+  const labelCls = 'block text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider mb-1';
+
+  const lookupInvoice = async () => {
+    const num = invoiceNumber.trim();
+    if (!num) return;
+    setLookupLoading(true);
+    setLookupError('');
+    setSale(null);
+    setSelectedSerials(new Set());
+    try {
+      const res = await api.get<SaleLookup>(`/sales/by-invoice/${encodeURIComponent(num)}`);
+      setSale(res.data);
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setLookupError(e.response?.data?.message ?? `Invoice "${num}" not found`);
+    } finally {
+      setLookupLoading(false);
+    }
+  };
+
+  const toggleSerial = (serial: string) => {
+    setSelectedSerials((prev) => {
+      const next = new Set(prev);
+      if (next.has(serial)) next.delete(serial); else next.add(serial);
+      return next;
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sale || selectedSerials.size === 0) { setSubmitError('Select at least one item to return'); return; }
+    if (reason.trim().length < 5) { setSubmitError('Reason must be at least 5 characters'); return; }
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      await api.post('/returns', {
+        saleId: sale.id,
+        serialNumbers: [...selectedSerials],
+        reason: reason.trim(),
+        returnType,
+      });
+      onSuccess();
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setSubmitError(e.response?.data?.message ?? 'Failed to create return');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const returnableItems = sale?.items.filter((i) => i.inventoryUnit.status === 'sold') ?? [];
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+      <div className="glass-modal rounded-xl w-full max-w-lg border border-white/10 flex flex-col max-h-[90vh]">
+        <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between shrink-0">
+          <h2 className="font-bold text-stitch-on-surface font-space">New Return</h2>
+          <button onClick={onClose} className="text-stitch-on-surface-variant hover:text-white transition-colors">
+            <XCircle size={18} />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto p-5 space-y-5 flex-1">
+          <div>
+            <label className={labelCls}>Invoice Number</label>
+            <div className="flex gap-2">
+              <input
+                value={invoiceNumber}
+                onChange={(e) => setInvoiceNumber(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void lookupInvoice(); } }}
+                placeholder="INV-2024-001"
+                className={`${inputCls} font-mono`}
+              />
+              <button
+                type="button"
+                onClick={() => void lookupInvoice()}
+                disabled={lookupLoading || !invoiceNumber.trim()}
+                className="flex items-center gap-1.5 px-4 py-2 bg-stitch-primary text-stitch-on-primary text-sm font-bold rounded-lg hover:bg-stitch-primary/90 disabled:opacity-50 transition-all shrink-0"
+              >
+                {lookupLoading
+                  ? <span className="w-4 h-4 border-2 border-stitch-on-primary/30 border-t-stitch-on-primary rounded-full animate-spin" />
+                  : <Search size={14} />}
+                Find
+              </button>
+            </div>
+            {lookupError && (
+              <p className="text-xs text-stitch-error mt-1.5 flex items-center gap-1.5">
+                <AlertTriangle size={11} />{lookupError}
+              </p>
+            )}
+          </div>
+
+          {sale && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="p-3 bg-white/5 rounded-lg border border-white/5 text-sm">
+                <p className="font-mono text-stitch-primary font-bold">{sale.invoiceNumber}</p>
+                {sale.customer && (
+                  <p className="text-stitch-on-surface-variant text-xs mt-0.5">{sale.customer.name}</p>
+                )}
+              </div>
+
+              <div>
+                <label className={labelCls}>
+                  Select Items to Return ({selectedSerials.size} selected)
+                </label>
+                {returnableItems.length === 0 ? (
+                  <p className="text-sm text-stitch-on-surface-variant py-3">No returnable items on this invoice.</p>
+                ) : (
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                    {returnableItems.map((item) => {
+                      const checked = selectedSerials.has(item.inventoryUnit.serialNumber);
+                      return (
+                        <label
+                          key={item.id}
+                          className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                            checked
+                              ? 'bg-stitch-primary/10 border-stitch-primary/30'
+                              : 'bg-white/[0.03] border-white/5 hover:bg-white/[0.06]'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleSerial(item.inventoryUnit.serialNumber)}
+                            className="accent-stitch-primary"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-stitch-on-surface truncate">
+                              {item.inventoryUnit.product?.name ?? '—'}
+                            </p>
+                            <p className="text-xs font-mono text-stitch-tertiary">{item.inventoryUnit.serialNumber}</p>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className={labelCls}>Return Type</label>
+                <select value={returnType} onChange={(e) => setReturnType(e.target.value)} className={inputCls}>
+                  {RETURN_TYPES.map((t) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className={labelCls}>Reason *</label>
+                <textarea
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  rows={3}
+                  required
+                  minLength={5}
+                  placeholder="Describe the reason for return…"
+                  className={`${inputCls} resize-none`}
+                />
+              </div>
+
+              {submitError && (
+                <p className="text-xs text-stitch-error flex items-center gap-1.5">
+                  <AlertTriangle size={11} />{submitError}
+                </p>
+              )}
+
+              <div className="flex gap-2 pt-1">
+                <button type="button" onClick={onClose}
+                  className="flex-1 py-2.5 text-sm text-stitch-on-surface-variant border border-white/10 rounded-lg hover:bg-white/5 transition-colors">
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting || selectedSerials.size === 0}
+                  className="flex-1 py-2.5 text-sm bg-stitch-error text-stitch-on-error font-bold rounded-lg hover:bg-stitch-error/80 disabled:opacity-50 active:scale-95 transition-all"
+                >
+                  {submitting ? 'Submitting…' : `Submit Return (${selectedSerials.size})`}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface OtpModalProps {
   returnId: string;
@@ -129,6 +353,7 @@ export default function ReturnsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('pending');
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState<{ returnId: string; action: 'approve' | 'reject' } | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
   const { user } = useAuthStore();
   const isOwner = user?.role === 'owner';
   const containerRef = useRef<HTMLDivElement>(null);
@@ -145,9 +370,13 @@ export default function ReturnsPage() {
 
   useEffect(() => {
     if (!loading && containerRef.current) {
-      gsap.from(containerRef.current.querySelectorAll('.return-card'), {
-        opacity: 0, y: 12, duration: 0.4, stagger: 0.05, ease: 'power2.out',
-      });
+      const els = containerRef.current.querySelectorAll('.return-card');
+      gsap.killTweensOf(els);
+      const tw = gsap.fromTo(els,
+        { opacity: 0, y: 6 },
+        { opacity: 1, y: 0, duration: 0.25, stagger: 0.03, ease: 'power3.out', overwrite: true, clearProps: 'transform,opacity' },
+      );
+      return () => { tw.kill(); };
     }
   }, [loading, returns]);
 
@@ -163,10 +392,18 @@ export default function ReturnsPage() {
             <p className="text-xs text-stitch-on-surface-variant">Return requests and OTP-verified approvals</p>
           </div>
         </div>
-        <button onClick={load}
-          className="flex items-center gap-1.5 text-sm text-stitch-on-surface-variant hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5">
-          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-1.5 px-4 py-2 bg-stitch-primary text-stitch-on-primary text-sm font-bold rounded-lg hover:bg-stitch-primary/90 transition-all active:scale-95"
+          >
+            <Plus size={14} /> New Return
+          </button>
+          <button onClick={load}
+            className="flex items-center gap-1.5 text-sm text-stitch-on-surface-variant hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5">
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-1.5">
@@ -271,6 +508,13 @@ export default function ReturnsPage() {
           </div>
         ))}
       </div>
+
+      {showCreate && (
+        <CreateReturnModal
+          onClose={() => setShowCreate(false)}
+          onSuccess={() => { setShowCreate(false); setStatusFilter('pending'); load(); }}
+        />
+      )}
 
       {modal && (
         <OtpModal

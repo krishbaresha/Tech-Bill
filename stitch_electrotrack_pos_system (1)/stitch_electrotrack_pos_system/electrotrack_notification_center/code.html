@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ElectroTrack | Notification Center</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            background-color: #0A0F1E;
+            color: #dee1f7;
+            overflow: hidden;
+            font-family: 'DM Sans', sans-serif;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: all 0.3s ease;
+        }
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .unread-glow {
+            box-shadow: 0 0 8px #ffb4ab;
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-tint": "#c0c1ff",
+                      "background": "#0e1322",
+                      "secondary-fixed-dim": "#d0bcff",
+                      "on-tertiary": "#00363e",
+                      "surface-container-lowest": "#090e1c",
+                      "surface-container": "#1a1f2f",
+                      "on-primary-fixed": "#07006c",
+                      "surface": "#0e1322",
+                      "on-surface-variant": "#c7c4d7",
+                      "error-container": "#93000a",
+                      "secondary-container": "#571bc1",
+                      "inverse-on-surface": "#2b3040",
+                      "tertiary-fixed-dim": "#2fd9f4",
+                      "surface-bright": "#343949",
+                      "surface-container-high": "#25293a",
+                      "primary-fixed": "#e1e0ff",
+                      "surface-dim": "#0e1322",
+                      "on-background": "#dee1f7",
+                      "on-surface": "#dee1f7",
+                      "on-tertiary-fixed-variant": "#004e5a",
+                      "primary-fixed-dim": "#c0c1ff",
+                      "on-tertiary-fixed": "#001f25",
+                      "surface-variant": "#2f3445",
+                      "secondary": "#d0bcff",
+                      "on-secondary": "#3c0091",
+                      "primary": "#c0c1ff",
+                      "tertiary-container": "#008395",
+                      "on-secondary-fixed": "#23005c",
+                      "outline-variant": "#464554",
+                      "inverse-surface": "#dee1f7",
+                      "on-secondary-fixed-variant": "#5516be",
+                      "surface-container-highest": "#2f3445",
+                      "tertiary-fixed": "#a2eeff",
+                      "on-tertiary-container": "#000608",
+                      "primary-container": "#8083ff",
+                      "on-error": "#690005",
+                      "tertiary": "#2fd9f4",
+                      "on-secondary-container": "#c4abff",
+                      "inverse-primary": "#494bd6",
+                      "outline": "#908fa0",
+                      "error": "#ffb4ab",
+                      "on-primary-fixed-variant": "#2f2ebe",
+                      "on-primary": "#1000a9",
+                      "on-error-container": "#ffdad6",
+                      "secondary-fixed": "#e9ddff",
+                      "surface-container-low": "#161b2b",
+                      "on-primary-container": "#0d0096"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "stack-sm": "8px",
+                      "stack-md": "16px",
+                      "margin": "32px",
+                      "gutter": "24px",
+                      "container-max": "1440px",
+                      "unit": "4px",
+                      "stack-xs": "4px",
+                      "stack-lg": "32px"
+              },
+              "fontFamily": {
+                      "headline-md": ["Space Grotesk"],
+                      "label-caps": ["DM Sans"],
+                      "headline-xl": ["Space Grotesk"],
+                      "body-md": ["DM Sans"],
+                      "body-lg": ["DM Sans"],
+                      "body-sm": ["DM Sans"],
+                      "label-mono": ["JetBrains Mono"],
+                      "headline-lg": ["Space Grotesk"]
+              }
+            }
+          }
+        }
+    </script>
+</head>
+<body class="bg-background min-h-screen">
+<!-- Background Dashboard (Static/Blurred Context) -->
+<main class="fixed inset-0 grid grid-cols-12 gap-gutter p-margin pointer-events-none opacity-40 blur-sm">
+<div class="col-span-3 h-full flex flex-col gap-stack-md">
+<div class="h-32 glass-panel rounded-xl"></div>
+<div class="flex-grow glass-panel rounded-xl"></div>
+</div>
+<div class="col-span-9 grid grid-rows-6 gap-stack-md">
+<div class="row-span-1 glass-panel rounded-xl flex items-center px-6">
+<div class="w-48 h-6 bg-white/10 rounded"></div>
+</div>
+<div class="row-span-3 grid grid-cols-3 gap-stack-md">
+<div class="glass-panel rounded-xl"></div>
+<div class="glass-panel rounded-xl"></div>
+<div class="glass-panel rounded-xl"></div>
+</div>
+<div class="row-span-2 glass-panel rounded-xl"></div>
+</div>
+</main>
+<!-- Overlay Backdrop -->
+<div class="fixed inset-0 bg-background/60 backdrop-blur-sm z-40" id="overlay"></div>
+<!-- Navigation Drawer (Predicted Component Mapping) -->
+<aside class="fixed right-0 top-0 h-full w-[400px] z-50 bg-surface-container-high/90 backdrop-blur-xl border-l border-white/10 shadow-2xl flex flex-col transform translate-x-full" id="drawer">
+<!-- Header -->
+<header class="p-stack-md flex flex-col gap-stack-sm border-b border-white/5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<h2 class="font-headline-md text-headline-md font-bold text-on-surface">Notifications</h2>
+<span class="bg-error-container text-on-error-container text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">3 unread</span>
+</div>
+<button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors" id="close-drawer">
+<span class="material-symbols-outlined text-on-surface-variant">close</span>
+</button>
+</div>
+<div class="flex items-center justify-between mt-2">
+<button class="text-label-mono text-primary hover:underline transition-all flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">done_all</span>
+                    Mark all read
+                </button>
+</div>
+</header>
+<!-- Filter Pills -->
+<div class="px-stack-md py-4 flex gap-2 overflow-x-auto no-scrollbar">
+<button class="bg-primary-container text-on-primary-container rounded-full px-4 py-1 text-xs font-medium whitespace-nowrap">All</button>
+<button class="text-on-surface-variant border border-outline-variant rounded-full px-4 py-1 text-xs whitespace-nowrap hover:bg-white/5">Unread</button>
+<button class="text-on-surface-variant border border-outline-variant rounded-full px-4 py-1 text-xs whitespace-nowrap hover:bg-white/5">Sales</button>
+<button class="text-on-surface-variant border border-outline-variant rounded-full px-4 py-1 text-xs whitespace-nowrap hover:bg-white/5">Stock</button>
+<button class="text-on-surface-variant border border-outline-variant rounded-full px-4 py-1 text-xs whitespace-nowrap hover:bg-white/5">Returns</button>
+<button class="text-on-surface-variant border border-outline-variant rounded-full px-4 py-1 text-xs whitespace-nowrap hover:bg-white/5">System</button>
+</div>
+<!-- Notification List -->
+<div class="flex-grow overflow-y-auto px-stack-md flex flex-col gap-stack-sm pb-24">
+<!-- Unread: Low Stock -->
+<div class="notification-item glass-card p-stack-md rounded-xl flex gap-stack-md relative group cursor-pointer">
+<div class="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-orange-400" data-icon="inventory_2">inventory_2</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="text-label-mono text-[10px] uppercase text-orange-400 font-bold">Stock Alert</span>
+<div class="flex items-center gap-2">
+<span class="text-[10px] text-on-surface-variant font-medium">14 mins ago</span>
+<div class="w-2 h-2 rounded-full bg-error unread-glow"></div>
+</div>
+</div>
+<p class="font-body-md text-on-surface font-medium leading-tight">Samsung A55 only 4 units remaining</p>
+<p class="text-body-sm text-on-surface-variant">Reorder suggested based on current trend.</p>
+</div>
+</div>
+<!-- Unread: High Risk Return -->
+<div class="notification-item glass-card p-stack-md rounded-xl flex gap-stack-md relative group cursor-pointer">
+<div class="w-10 h-10 rounded-lg bg-error-container/20 flex items-center justify-center shrink-0 border border-error/20">
+<span class="material-symbols-outlined text-error" data-icon="assignment_return">assignment_return</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="text-label-mono text-[10px] uppercase text-error font-bold">High Risk</span>
+<div class="flex items-center gap-2">
+<span class="text-[10px] text-on-surface-variant font-medium">32 mins ago</span>
+<div class="w-2 h-2 rounded-full bg-error unread-glow"></div>
+</div>
+</div>
+<p class="font-body-md text-on-surface font-medium leading-tight">RET-0045 flagged HIGH risk</p>
+<p class="text-body-sm text-on-surface-variant">Manual verification required for refund.</p>
+</div>
+</div>
+<!-- Unread: Sale Complete -->
+<div class="notification-item glass-card p-stack-md rounded-xl flex gap-stack-md relative group cursor-pointer">
+<div class="w-10 h-10 rounded-lg bg-primary-container/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary" data-icon="payments">payments</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="text-label-mono text-[10px] uppercase text-primary font-bold">Transaction</span>
+<div class="flex items-center gap-2">
+<span class="text-[10px] text-on-surface-variant font-medium">1 hr ago</span>
+<div class="w-2 h-2 rounded-full bg-error unread-glow"></div>
+</div>
+</div>
+<p class="font-body-md text-on-surface font-medium leading-tight">INV-84920 by Ali Hassan ₨62,500</p>
+<p class="text-body-sm text-on-surface-variant">Payment successful via Bank Transfer.</p>
+</div>
+</div>
+<!-- Read: Stock Updated -->
+<div class="notification-item opacity-70 glass-card p-stack-md rounded-xl flex gap-stack-md relative group cursor-pointer">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="inventory">inventory</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="text-label-mono text-[10px] uppercase text-on-surface-variant font-bold">Inventory</span>
+<span class="text-[10px] text-on-surface-variant font-medium">2 hrs ago</span>
+</div>
+<p class="font-body-md text-on-surface leading-tight">20 HP Pen Drives added</p>
+<p class="text-body-sm text-on-surface-variant">Update by Manager: Warehouse A.</p>
+</div>
+</div>
+<!-- Read: Shift Started -->
+<div class="notification-item opacity-70 glass-card p-stack-md rounded-xl flex gap-stack-md relative group cursor-pointer">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="person_clock">calendar_clock</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="text-label-mono text-[10px] uppercase text-on-surface-variant font-bold">System Log</span>
+<span class="text-[10px] text-on-surface-variant font-medium">3 hrs ago</span>
+</div>
+<p class="font-body-md text-on-surface leading-tight">Ali Hassan clocked in</p>
+<p class="text-body-sm text-on-surface-variant">Shift: Evening Terminal 01.</p>
+</div>
+</div>
+<!-- Read: AI Insight -->
+<div class="notification-item opacity-70 glass-card p-stack-md rounded-xl flex gap-stack-md relative group cursor-pointer">
+<div class="w-10 h-10 rounded-lg bg-tertiary-container/10 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-tertiary" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="text-label-mono text-[10px] uppercase text-tertiary font-bold">AI Insight</span>
+<span class="text-[10px] text-on-surface-variant font-medium">5 hrs ago</span>
+</div>
+<p class="font-body-md text-on-surface leading-tight">Revenue forecast updated</p>
+<p class="text-body-sm text-on-surface-variant">Predicted 12% growth for next quarter.</p>
+</div>
+</div>
+</div>
+<!-- Footer -->
+<footer class="absolute bottom-0 left-0 w-full p-stack-md bg-surface-container-high/95 backdrop-blur-md border-t border-white/5">
+<a class="flex items-center justify-center gap-2 text-primary font-bold hover:gap-3 transition-all" href="#">
+                View all notifications
+                <span class="material-symbols-outlined">trending_flat</span>
+</a>
+</footer>
+</aside>
+<script>
+        // Micro-interactions and Entrance Animations
+        window.addEventListener('DOMContentLoaded', () => {
+            const drawer = document.getElementById('drawer');
+            const overlay = document.getElementById('overlay');
+            const closeBtn = document.getElementById('close-drawer');
+
+            // Open Animation
+            const openDrawer = () => {
+                gsap.to(drawer, {
+                    x: 0,
+                    duration: 0.6,
+                    ease: "power4.out"
+                });
+                gsap.to(overlay, {
+                    autoAlpha: 1,
+                    duration: 0.4
+                });
+                
+                // Stagger items entry
+                gsap.fromTo(".notification-item", 
+                    { x: 50, opacity: 0 },
+                    { 
+                        x: 0, 
+                        opacity: 1, 
+                        stagger: 0.08, 
+                        duration: 0.5, 
+                        delay: 0.2,
+                        ease: "back.out(1.2)"
+                    }
+                );
+            };
+
+            // Close Animation
+            const closeDrawer = () => {
+                gsap.to(drawer, {
+                    x: '100%',
+                    duration: 0.4,
+                    ease: "power4.in"
+                });
+                gsap.to(overlay, {
+                    autoAlpha: 0,
+                    duration: 0.3
+                });
+            };
+
+            // Initial Trigger (Mocking the sheet opening)
+            setTimeout(openDrawer, 300);
+
+            closeBtn.addEventListener('click', closeDrawer);
+            overlay.addEventListener('click', closeDrawer);
+
+            // Item Hover Effects (GSAP micro-interactions)
+            const cards = document.querySelectorAll('.glass-card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    gsap.to(card, {
+                        scale: 1.02,
+                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                        duration: 0.3,
+                        ease: "power2.out"
+                    });
+                });
+                card.addEventListener('mouseleave', () => {
+                    gsap.to(card, {
+                        scale: 1,
+                        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                        duration: 0.3,
+                        ease: "power2.out"
+                    });
+                });
+            });
+        });
+    </script>
+</body></html>
