@@ -51,6 +51,143 @@ export class InventoryService {
     return rows.map((r) => r.category as string);
   }
 
+  async getDashboard(tenantId: string) {
+    // 1. Fetch lowStockThreshold from ShopSettings (default 2 if not configured)
+    const settings = await this.prisma.shopSettings.findFirst({
+      where: { tenantId },
+      select: { lowStockThreshold: true },
+    });
+    const lowStockThreshold = settings?.lowStockThreshold ?? 2;
+
+    // 2. Fetch all active products
+    const products = await this.prisma.product.findMany({
+      where: { tenantId, isActive: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // 3. Fetch per-product unit status counts via groupBy
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const unitCounts = await this.prisma.inventoryUnit.groupBy({
+      by: ['productId', 'status'],
+      where: { tenantId },
+      _count: { id: true },
+    });
+
+    // 4. Build Map<productId, { in_stock, sold, returned }>
+    const countMap = new Map<
+      string,
+      { in_stock: number; sold: number; returned: number }
+    >();
+    for (const row of unitCounts) {
+      const entry = countMap.get(row.productId) ?? {
+        in_stock: 0,
+        sold: 0,
+        returned: 0,
+      };
+      if (row.status === UnitStatus.in_stock) {
+        entry.in_stock = row._count.id;
+      } else if (row.status === UnitStatus.sold) {
+        entry.sold = row._count.id;
+      } else if (row.status === UnitStatus.returned) {
+        entry.returned = row._count.id;
+      }
+      countMap.set(row.productId, entry);
+    }
+
+    // 5. Fetch sold counts for last 30 days only (for fastSelling)
+    const recentSoldCounts = await this.prisma.inventoryUnit.groupBy({
+      by: ['productId'],
+      where: {
+        tenantId,
+        status: UnitStatus.sold,
+        saleItems: {
+          some: {
+            sale: { createdAt: { gte: thirtyDaysAgo } },
+          },
+        },
+      },
+      _count: { id: true },
+    });
+    const recentSoldMap = new Map<string, number>(
+      recentSoldCounts.map((r) => [r.productId, r._count.id]),
+    );
+
+    // 6. Build ProductCard shape for each product
+    interface ProductCard {
+      id: string;
+      name: string;
+      brand: string | null;
+      category: string | null;
+      sellingPrice: number;
+      inStockCount: number;
+      soldCount: number;
+      returnedCount: number;
+    }
+
+    const cards: ProductCard[] = products.map((p) => {
+      const counts = countMap.get(p.id) ?? {
+        in_stock: 0,
+        sold: 0,
+        returned: 0,
+      };
+      return {
+        id: p.id,
+        name: p.name,
+        brand: p.brand,
+        category: p.category,
+        sellingPrice: Number(p.sellingPrice),
+        inStockCount: counts.in_stock,
+        soldCount: counts.sold,
+        returnedCount: counts.returned,
+      };
+    });
+
+    // 7. Derive dashboard slices
+    const categories = [
+      ...new Set(
+        products
+          .map((p) => p.category)
+          .filter((c): c is string => c !== null),
+      ),
+    ].sort();
+
+    const lowStock = cards.filter((c) => c.inStockCount <= lowStockThreshold);
+
+    const recentlyAdded = [...cards]
+      .sort((a, b) => {
+        const dateA = products.find((p) => p.id === a.id)!.createdAt.getTime();
+        const dateB = products.find((p) => p.id === b.id)!.createdAt.getTime();
+        return dateB - dateA;
+      })
+      .slice(0, 6);
+
+    const fastSelling = [...cards]
+      .sort(
+        (a, b) =>
+          (recentSoldMap.get(b.id) ?? 0) - (recentSoldMap.get(a.id) ?? 0),
+      )
+      .slice(0, 6);
+
+    // 8. Aggregate stats
+    const totalInStock = cards.reduce((s, c) => s + c.inStockCount, 0);
+    const totalSold = cards.reduce((s, c) => s + c.soldCount, 0);
+
+    return {
+      categories,
+      lowStock,
+      recentlyAdded,
+      fastSelling,
+      stats: {
+        totalProducts: cards.length,
+        totalInStock,
+        totalSold,
+        totalLowStock: lowStock.length,
+      },
+    };
+  }
+
   async createProduct(dto: CreateProductDto, userId: string, tenantId: string) {
     return this.prisma.product.create({
       data: {
@@ -119,7 +256,11 @@ export class InventoryService {
     return { data: units, meta: { total, page, limit } };
   }
 
-  async lookupBySerial(serialNumber: string, tenantId: string) {
+  async lookupBySerial(
+    serialNumber: string,
+    tenantId: string,
+    anyStatus = false,
+  ) {
     const unit = await this.prisma.inventoryUnit.findUnique({
       where: {
         tenantId_serialNumber: {
@@ -144,7 +285,7 @@ export class InventoryService {
     if (!unit)
       throw new NotFoundException(`Serial number "${serialNumber}" not found`);
 
-    if (unit.status !== UnitStatus.in_stock) {
+    if (!anyStatus && unit.status !== UnitStatus.in_stock) {
       throw new BadRequestException(
         `Unit "${serialNumber}" is not available — current status: ${unit.status}`,
       );

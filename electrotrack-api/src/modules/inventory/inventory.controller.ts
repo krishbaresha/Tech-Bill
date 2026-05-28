@@ -39,6 +39,14 @@ interface RequestWithUser extends Request {
 export class InventoryController {
   constructor(private inventoryService: InventoryService) {}
 
+  // ─── Dashboard ────────────────────────────────────────────────────────────
+
+  @Get('dashboard')
+  @Permissions('pos.read')
+  getDashboard(@Req() req: RequestWithUser) {
+    return this.inventoryService.getDashboard(req.user.tenantId);
+  }
+
   // ─── Products ─────────────────────────────────────────────────────────────
 
   @Get('categories')
@@ -89,8 +97,16 @@ export class InventoryController {
 
   @Get('units/lookup/:serial')
   @Permissions('inventory.read')
-  lookupBySerial(@Param('serial') serial: string, @Req() req: RequestWithUser) {
-    return this.inventoryService.lookupBySerial(serial, req.user.tenantId);
+  lookupBySerial(
+    @Param('serial') serial: string,
+    @Query('anyStatus') anyStatus: string,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.inventoryService.lookupBySerial(
+      serial,
+      req.user.tenantId,
+      anyStatus === 'true',
+    );
   }
 
   @Post('units')

@@ -248,7 +248,9 @@ export class SalesService {
               select: {
                 serialNumber: true,
                 condition: true,
-                product: { select: { name: true, brand: true, warrantyMonths: true } },
+                product: {
+                  select: { name: true, brand: true, warrantyMonths: true },
+                },
               },
             },
           },
