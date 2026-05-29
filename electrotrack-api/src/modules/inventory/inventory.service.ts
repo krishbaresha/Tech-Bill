@@ -221,7 +221,8 @@ export class InventoryService {
       category: product.category,
       specifications: product.specifications as Record<string, string> | null,
     });
-    if (!result) return { message: 'AI enrichment unavailable — GROQ_API_KEY not set' };
+    if (!result)
+      return { message: 'AI enrichment unavailable — GROQ_API_KEY not set' };
     const updated = await this.prisma.product.update({
       where: { id },
       data: {

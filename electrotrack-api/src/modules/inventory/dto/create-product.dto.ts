@@ -1,6 +1,14 @@
 import {
-  IsString, IsOptional, IsNumber, IsPositive,
-  MinLength, Min, IsInt, IsArray, IsObject, MaxLength,
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsPositive,
+  MinLength,
+  Min,
+  IsInt,
+  IsArray,
+  IsObject,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 

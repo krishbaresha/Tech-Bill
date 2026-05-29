@@ -18,7 +18,12 @@ export class AiService {
     brand?: string | null;
     category?: string | null;
     specifications?: Record<string, string> | null;
-  }): Promise<{ shortDescription: string; aiSummary: string; tags: string[]; category: string } | null> {
+  }): Promise<{
+    shortDescription: string;
+    aiSummary: string;
+    tags: string[];
+    category: string;
+  } | null> {
     if (!this.apiKey) return null;
 
     const specsText = product.specifications
@@ -44,20 +49,33 @@ ${specsText ? `Specs: ${specsText}` : ''}
 Respond with ONLY valid JSON. No markdown, no explanation.`;
 
     try {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [{ role: 'user', content: prompt }],
-          max_tokens: 300,
-          temperature: 0.3,
-        }),
-      });
+      const res = await fetch(
+        'https://api.groq.com/openai/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 300,
+            temperature: 0.3,
+          }),
+        },
+      );
       if (!res.ok) return null;
-      const data = (await res.json()) as { choices: { message: { content: string } }[] };
+      const data = (await res.json()) as {
+        choices: { message: { content: string } }[];
+      };
       const raw = data.choices[0]?.message?.content?.trim() ?? '';
-      return JSON.parse(raw) as { shortDescription: string; aiSummary: string; tags: string[]; category: string };
+      return JSON.parse(raw) as {
+        shortDescription: string;
+        aiSummary: string;
+        tags: string[];
+        category: string;
+      };
     } catch (err) {
       this.logger.warn(`Product enrichment failed: ${(err as Error).message}`);
       return null;
@@ -89,7 +107,7 @@ Give insights as a bullet list. No preamble, no headings.`;
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
+        Authorization: `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -108,6 +126,8 @@ Give insights as a bullet list. No preamble, no headings.`;
     const data = (await res.json()) as {
       choices: { message: { content: string } }[];
     };
-    return data.choices[0]?.message?.content?.trim() || 'No insights available.';
+    return (
+      data.choices[0]?.message?.content?.trim() || 'No insights available.'
+    );
   }
 }
