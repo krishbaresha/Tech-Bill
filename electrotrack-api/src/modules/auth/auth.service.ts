@@ -58,7 +58,9 @@ export class AuthService {
 
     // Block suspended/cancelled tenant
     if (user.tenant && user.tenant.status !== 'active') {
-      throw new UnauthorizedException('Your shop account has been suspended. Contact platform admin.');
+      throw new UnauthorizedException(
+        'Your shop account has been suspended. Contact platform admin.',
+      );
     }
 
     const passwordValid = await bcrypt.compare(dto.password, user.passwordHash);
@@ -115,7 +117,13 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string, ipAddress?: string) {
-    let payload: { sub: string; email: string; role: string; tenantId: string | null; permissions: string[] };
+    let payload: {
+      sub: string;
+      email: string;
+      role: string;
+      tenantId: string | null;
+      permissions: string[];
+    };
     try {
       payload = this.jwtService.verify(refreshToken, {
         secret: this.configService.get('JWT_REFRESH_SECRET'),
@@ -262,16 +270,11 @@ export class AuthService {
     }
 
     return {
-      message:
-        'If this account can reset password, an OTP has been sent.',
+      message: 'If this account can reset password, an OTP has been sent.',
     };
   }
 
-  async confirmPasswordReset(
-    email: string,
-    otp: string,
-    newPassword: string,
-  ) {
+  async confirmPasswordReset(email: string, otp: string, newPassword: string) {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user || !user.isActive) {
       throw new BadRequestException('Invalid reset request');
@@ -279,7 +282,9 @@ export class AuthService {
 
     // Only platform_admin and owner can self-reset
     if (user.role !== Role.platform_admin && user.role !== Role.owner) {
-      throw new ForbiddenException('Workers cannot reset their own password. Contact your admin.');
+      throw new ForbiddenException(
+        'Workers cannot reset their own password. Contact your admin.',
+      );
     }
 
     const valid = await this.otpService.verify(user.id, otp);

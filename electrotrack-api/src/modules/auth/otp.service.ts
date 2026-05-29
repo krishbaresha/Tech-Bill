@@ -16,7 +16,11 @@ export class OtpService {
     this.length = parseInt(configService.get<string>('OTP_LENGTH', '6'));
 
     const redisUrl = configService.get<string>('REDIS_URL');
-    if (redisUrl && !redisUrl.includes('<') && !redisUrl.includes('undefined')) {
+    if (
+      redisUrl &&
+      !redisUrl.includes('<') &&
+      !redisUrl.includes('undefined')
+    ) {
       this.redis = new Redis(redisUrl, {
         lazyConnect: true,
         enableOfflineQueue: false,
@@ -25,7 +29,9 @@ export class OtpService {
         this.logger.warn(`Redis OTP error: ${err.message}`);
       });
     } else {
-      this.logger.warn('REDIS_URL not configured — using in-memory OTP store (dev only)');
+      this.logger.warn(
+        'REDIS_URL not configured — using in-memory OTP store (dev only)',
+      );
     }
   }
 
@@ -39,7 +45,9 @@ export class OtpService {
         await this.redis.set(`otp:${userId}`, code, 'EX', this.ttl);
         return code;
       } catch (err) {
-        this.logger.warn(`Redis OTP write failed, falling back to memory: ${(err as Error).message}`);
+        this.logger.warn(
+          `Redis OTP write failed, falling back to memory: ${(err as Error).message}`,
+        );
       }
     }
 
@@ -68,13 +76,16 @@ export class OtpService {
         // Key not in Redis — could be a Redis failure during generate,
         // fall through to mem store
       } catch (err) {
-        this.logger.warn(`Redis OTP read failed, falling back to memory: ${(err as Error).message}`);
+        this.logger.warn(
+          `Redis OTP read failed, falling back to memory: ${(err as Error).message}`,
+        );
       }
     }
 
     // Memory store path
     const entry = this.memStore.get(userId);
-    if (!entry || entry.expiresAt < Date.now() || entry.code !== code) return false;
+    if (!entry || entry.expiresAt < Date.now() || entry.code !== code)
+      return false;
     this.memStore.delete(userId);
     return true;
   }

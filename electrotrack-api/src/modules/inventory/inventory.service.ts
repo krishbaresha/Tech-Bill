@@ -147,17 +147,19 @@ export class InventoryService {
     // 7. Derive dashboard slices
     const categories = [
       ...new Set(
-        products
-          .map((p) => p.category)
-          .filter((c): c is string => c !== null),
+        products.map((p) => p.category).filter((c): c is string => c !== null),
       ),
     ].sort();
 
     const lowStock = cards.filter((c) => c.inStockCount <= lowStockThreshold);
 
-    const createdAtMap = new Map(products.map((p) => [p.id, p.createdAt.getTime()]));
+    const createdAtMap = new Map(
+      products.map((p) => [p.id, p.createdAt.getTime()]),
+    );
     const recentlyAdded = [...cards]
-      .sort((a, b) => (createdAtMap.get(b.id) ?? 0) - (createdAtMap.get(a.id) ?? 0))
+      .sort(
+        (a, b) => (createdAtMap.get(b.id) ?? 0) - (createdAtMap.get(a.id) ?? 0),
+      )
       .slice(0, 6);
 
     const fastSelling = [...cards]
