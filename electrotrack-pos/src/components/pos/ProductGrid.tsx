@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { Plus, Package, PackageX, Tag } from 'lucide-react';
+import { Plus, Package, PackageX, Tag, Cpu, HardDrive, MemoryStick, Sparkles } from 'lucide-react';
 import { gsap } from 'gsap';
+import type { ProductSpecifications } from '../../types';
 
 export interface ProductCard {
   id: string;
@@ -8,9 +9,15 @@ export interface ProductCard {
   brand: string | null;
   category: string | null;
   sellingPrice: number;
+  comparePrice?: number | null;
   inStockCount: number;
   soldCount: number;
   returnedCount: number;
+  shortDescription?: string | null;
+  aiSummary?: string | null;
+  imageUrl?: string | null;
+  tags?: string[];
+  specifications?: ProductSpecifications | null;
 }
 
 interface Props {
@@ -22,17 +29,37 @@ interface Props {
 }
 
 const AVATAR_PALETTE = [
-  'bg-indigo-500/30 text-indigo-200 ring-indigo-400/40',
-  'bg-violet-500/30 text-violet-200 ring-violet-400/40',
-  'bg-fuchsia-500/30 text-fuchsia-200 ring-fuchsia-400/40',
-  'bg-rose-500/30 text-rose-200 ring-rose-400/40',
-  'bg-amber-500/30 text-amber-200 ring-amber-400/40',
-  'bg-emerald-500/30 text-emerald-200 ring-emerald-400/40',
-  'bg-teal-500/30 text-teal-200 ring-teal-400/40',
-  'bg-sky-500/30 text-sky-200 ring-sky-400/40',
-  'bg-blue-500/30 text-blue-200 ring-blue-400/40',
-  'bg-pink-500/30 text-pink-200 ring-pink-400/40',
+  'from-indigo-500/40 to-violet-600/40 text-indigo-200',
+  'from-violet-500/40 to-fuchsia-600/40 text-violet-200',
+  'from-rose-500/40 to-pink-600/40 text-rose-200',
+  'from-amber-500/40 to-orange-600/40 text-amber-200',
+  'from-emerald-500/40 to-teal-600/40 text-emerald-200',
+  'from-sky-500/40 to-blue-600/40 text-sky-200',
+  'from-teal-500/40 to-cyan-600/40 text-teal-200',
+  'from-pink-500/40 to-rose-600/40 text-pink-200',
 ];
+
+const SPEC_ICONS: Record<string, React.ReactNode> = {
+  cpu:     <Cpu size={9} />,
+  ram:     <MemoryStick size={9} />,
+  storage: <HardDrive size={9} />,
+};
+
+function SpecChips({ specs }: { specs: ProductSpecifications }) {
+  const chips = (['ram', 'storage', 'cpu'] as const)
+    .flatMap((k) => (specs[k] ? [{ key: k, val: specs[k]! }] : []))
+    .slice(0, 3);
+  if (!chips.length) return null;
+  return (
+    <div className="flex flex-wrap gap-1 mt-1.5">
+      {chips.map(({ key, val }) => (
+        <span key={key} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/[0.06] text-[10px] text-stitch-on-surface-variant font-mono">
+          {SPEC_ICONS[key]}{val}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 function hashString(value: string): number {
   let hash = 0;
@@ -127,80 +154,94 @@ export default function ProductGrid({
   }
 
   return (
-    <div
-      ref={gridRef}
-      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"
-    >
+    <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
       {products.map((product) => {
         const outOfStock = product.inStockCount === 0;
-        const initial = product.name.charAt(0).toUpperCase() || '?';
-        const avatarClasses = getAvatarClasses(product.name);
+        const palette = AVATAR_PALETTE[hashString(product.name) % AVATAR_PALETTE.length];
+        const hasDiscount = product.comparePrice && product.comparePrice > product.sellingPrice;
 
         return (
           <div
             key={product.id}
             data-product-card
             onClick={() => onViewUnits(product)}
-            className="glass-card rounded-xl p-4 cursor-pointer border border-white/5 hover:border-white/20 hover:scale-[1.02] transition-all duration-200 flex flex-col group"
+            className="glass-card rounded-xl overflow-hidden cursor-pointer border border-white/5 hover:border-stitch-primary/30 hover:shadow-lg hover:shadow-stitch-primary/5 transition-all duration-200 group flex flex-col"
           >
-            <div className="flex items-start gap-3">
-              <div
-                className={`w-11 h-11 rounded-full ring-1 flex items-center justify-center font-semibold text-base shrink-0 ${avatarClasses}`}
-              >
-                {initial}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-stitch-on-surface truncate">
-                  {product.name}
-                </p>
-                {product.brand && (
-                  <p className="text-xs text-stitch-on-surface-variant truncate mt-0.5">
-                    {product.brand}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {product.category && (
-              <div className="mt-3">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-stitch-surface-container-high text-[10px] font-medium text-stitch-on-surface-variant uppercase tracking-wide">
-                  <Tag size={9} />
-                  {product.category}
-                </span>
-              </div>
-            )}
-
-            <div className="mt-3 flex items-baseline gap-1">
-              <span className="text-lg font-bold text-stitch-tertiary tabular-nums">
-                {formatPkr(product.sellingPrice)}
-              </span>
-            </div>
-
-            <div className="mt-auto pt-4 flex items-center justify-between gap-2">
-              {outOfStock ? (
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-stitch-error/15 text-stitch-error text-[11px] font-semibold">
-                  <PackageX size={11} />
-                  Out of stock
-                </span>
+            {/* Hero image / gradient avatar */}
+            <div className="relative h-28 shrink-0 overflow-hidden">
+              {product.imageUrl ? (
+                <img
+                  src={product.imageUrl}
+                  alt={product.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
               ) : (
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-500/15 text-emerald-300 text-[11px] font-semibold">
-                  <Package size={11} />
-                  {product.inStockCount} in stock
+                <div className={`w-full h-full bg-gradient-to-br ${palette} flex items-center justify-center`}>
+                  <span className="text-3xl font-black opacity-60 select-none">
+                    {product.name.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
+              {product.category && (
+                <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-sm text-[10px] font-medium text-white/70">
+                  <Tag size={8} />{product.category}
                 </span>
               )}
+              {product.aiSummary && (
+                <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-stitch-primary/20 backdrop-blur-sm flex items-center justify-center" title={product.aiSummary}>
+                  <Sparkles size={10} className="text-stitch-primary" />
+                </span>
+              )}
+              {outOfStock && (
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                  <span className="text-[11px] font-bold text-white/60 uppercase tracking-widest">Out of Stock</span>
+                </div>
+              )}
+            </div>
 
-              <button
-                type="button"
-                disabled={outOfStock}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!outOfStock) onAddToCart(product);
-                }}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-stitch-primary/90 hover:bg-stitch-primary text-stitch-on-primary text-xs font-bold transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-              >
-                <Plus size={13} />
-                {outOfStock ? 'Unavailable' : 'Pick Serial'}
-              </button>
+            {/* Body */}
+            <div className="p-3 flex flex-col flex-1 gap-1.5">
+              <div>
+                <p className="text-sm font-bold text-stitch-on-surface truncate leading-snug">{product.name}</p>
+                {product.brand && <p className="text-[11px] text-stitch-on-surface-variant truncate">{product.brand}</p>}
+              </div>
+
+              {product.specifications
+                ? <SpecChips specs={product.specifications} />
+                : product.shortDescription && (
+                  <p className="text-[11px] text-stitch-on-surface-variant leading-normal line-clamp-2 mt-0.5">
+                    {product.shortDescription}
+                  </p>
+                )
+              }
+
+              <div className="flex items-baseline gap-2 mt-auto pt-1.5">
+                <span className="text-base font-bold text-stitch-tertiary tabular-nums">{formatPkr(product.sellingPrice)}</span>
+                {hasDiscount && (
+                  <span className="text-xs text-stitch-on-surface-variant/50 line-through tabular-nums">{formatPkr(product.comparePrice!)}</span>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between gap-2 pt-0.5">
+                {outOfStock ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-stitch-error/15 text-stitch-error text-[11px] font-semibold">
+                    <PackageX size={10} /> Out
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 text-[11px] font-semibold">
+                    <Package size={10} /> {product.inStockCount}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  disabled={outOfStock}
+                  onClick={(e) => { e.stopPropagation(); if (!outOfStock) onAddToCart(product); }}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-stitch-primary/90 hover:bg-stitch-primary text-stitch-on-primary text-xs font-bold transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <Plus size={12} /> Add
+                </button>
+              </div>
             </div>
           </div>
         );

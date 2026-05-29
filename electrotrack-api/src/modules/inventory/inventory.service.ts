@@ -5,6 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AiService } from '../ai/ai.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateUnitDto } from './dto/create-unit.dto';
@@ -15,7 +16,10 @@ import { UnitStatus } from '@prisma/client';
 
 @Injectable()
 export class InventoryService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private aiService: AiService,
+  ) {}
 
   // ─── Products ────────────────────────────────────────────────────────────────
 
@@ -194,13 +198,40 @@ export class InventoryService {
         brand: dto.brand,
         category: dto.category,
         description: dto.description,
+        shortDescription: dto.shortDescription,
+        aiSummary: dto.aiSummary,
+        imageUrl: dto.imageUrl,
+        tags: dto.tags ?? [],
+        specifications: dto.specifications ?? undefined,
         sellingPrice: dto.sellingPrice,
         costPrice: dto.costPrice,
+        comparePrice: dto.comparePrice,
         warrantyMonths: dto.warrantyMonths ?? 0,
         createdById: userId,
         tenantId,
       },
     });
+  }
+
+  async enrichProduct(id: string, tenantId: string) {
+    const product = await this.findProductOrThrow(id, tenantId);
+    const result = await this.aiService.enrichProduct({
+      name: product.name,
+      brand: product.brand,
+      category: product.category,
+      specifications: product.specifications as Record<string, string> | null,
+    });
+    if (!result) return { message: 'AI enrichment unavailable — GROQ_API_KEY not set' };
+    const updated = await this.prisma.product.update({
+      where: { id },
+      data: {
+        shortDescription: result.shortDescription,
+        aiSummary: result.aiSummary,
+        tags: result.tags,
+        category: result.category,
+      },
+    });
+    return updated;
   }
 
   async updateProduct(id: string, dto: UpdateProductDto, tenantId: string) {

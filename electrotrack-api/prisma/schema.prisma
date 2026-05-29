@@ -179,20 +179,26 @@ model ShopSettings {
 // ─── Table 4: products ────────────────────────────────────────────────────────
 
 model Product {
-  id             String   @id @default(uuid()) @db.Uuid
-  name           String   @db.VarChar(255)
-  brand          String?  @db.VarChar(100)
-  category       String?  @db.VarChar(100)
-  description    String?  @db.Text
-  costPrice      Decimal? @map("cost_price") @db.Decimal(10, 2)
-  sellingPrice   Decimal  @map("selling_price") @db.Decimal(10, 2)
-  warrantyMonths Int      @default(0) @map("warranty_months")
-  isActive       Boolean  @default(true) @map("is_active")
-  createdById    String?  @map("created_by_id") @db.Uuid
-  createdBy      User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  tenantId       String   @map("tenant_id") @db.Uuid
-  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  createdAt      DateTime @default(now()) @map("created_at")
+  id               String   @id @default(uuid()) @db.Uuid
+  name             String   @db.VarChar(255)
+  brand            String?  @db.VarChar(100)
+  category         String?  @db.VarChar(100)
+  description      String?  @db.Text
+  shortDescription String?  @map("short_description") @db.VarChar(500)
+  aiSummary        String?  @map("ai_summary") @db.Text
+  imageUrl         String?  @map("image_url") @db.Text
+  tags             String[] @default([])
+  specifications   Json?    @db.Json
+  costPrice        Decimal? @map("cost_price") @db.Decimal(10, 2)
+  sellingPrice     Decimal  @map("selling_price") @db.Decimal(10, 2)
+  comparePrice     Decimal? @map("compare_price") @db.Decimal(10, 2)
+  warrantyMonths   Int      @default(0) @map("warranty_months")
+  isActive         Boolean  @default(true) @map("is_active")
+  createdById      String?  @map("created_by_id") @db.Uuid
+  createdBy        User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  tenantId         String   @map("tenant_id") @db.Uuid
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now()) @map("created_at")
 
   inventoryUnits     InventoryUnit[]
   purchaseOrderItems PurchaseOrderItem[]

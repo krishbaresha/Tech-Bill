@@ -134,6 +134,13 @@ export class InventoryController {
     return this.inventoryService.updateUnit(id, dto, req.user.tenantId);
   }
 
+  @Post('products/:id/enrich')
+  @Permissions('inventory.write')
+  @HttpCode(HttpStatus.OK)
+  enrichProduct(@Param('id') id: string, @Req() req: RequestWithUser) {
+    return this.inventoryService.enrichProduct(id, req.user.tenantId);
+  }
+
   @Delete('products/:id')
   @Permissions('inventory.delete')
   @HttpCode(HttpStatus.OK)

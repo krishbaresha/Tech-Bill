@@ -139,14 +139,33 @@ export interface DeadStockItem {
   receivedAt: string;
 }
 
+export interface ProductSpecifications {
+  cpu?: string;
+  ram?: string;
+  storage?: string;
+  display?: string;
+  battery?: string;
+  gpu?: string;
+  os?: string;
+  color?: string;
+  condition?: string;
+  [key: string]: string | undefined;
+}
+
 export interface Product {
   id: string;
   name: string;
   brand: string | null;
   category: string | null;
   sellingPrice: number;
+  comparePrice?: number | null;
   warrantyMonths: number;
   isActive: boolean;
+  shortDescription?: string | null;
+  aiSummary?: string | null;
+  imageUrl?: string | null;
+  tags?: string[];
+  specifications?: ProductSpecifications | null;
 }
 
 export interface InventoryUnit {
