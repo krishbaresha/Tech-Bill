@@ -1,0 +1,24 @@
+User-agent: *
+Allow: /
+Allow: /login
+
+# Authenticated routes — no value in indexing
+Disallow: /pos
+Disallow: /dashboard
+Disallow: /inventory
+Disallow: /reports
+Disallow: /settings
+Disallow: /users
+Disallow: /returns
+Disallow: /suppliers
+Disallow: /customers
+Disallow: /warranty
+Disallow: /audit
+Disallow: /tenants
+Disallow: /grn
+Disallow: /purchase-orders
+Disallow: /loyalty
+Disallow: /return-analytics
+Disallow: /cash-reconciliation
+
+Sitemap: https://electrotrack.app/sitemap.xml

@@ -1,30 +1,56 @@
-# Dependencies
+# ── Dependencies ──────────────────────────────────────────────────────────────
 node_modules/
 .pnpm-store/
 
-# Environment secrets — never commit these
+# ── Secrets — NEVER commit .env files ─────────────────────────────────────────
 .env
 .env.local
+.env.development
+.env.production
+.env.staging
 .env.*.local
-electrotrack-api/.env
-electrotrack-pos/.env
+**/.env
+**/.env.local
+**/.env.production
+**/.env.development
+!.env.example
+!**/.env.example
 
-# Build outputs
+# ── Build outputs ─────────────────────────────────────────────────────────────
 dist/
 build/
+.output/
 electrotrack-api/dist/
 electrotrack-pos/dist/
 
-# Logs
+# ── Logs ──────────────────────────────────────────────────────────────────────
 *.log
+logs/
 api.log
 npm-debug.log*
 
-# Editor / OS
+# ── Editor / OS ───────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 .vscode/settings.json
+.idea/
+*.swp
 
-# Zip archives
+# ── Sensitive file extensions ─────────────────────────────────────────────────
+*.pem
+*.p12
+*.key
+*.cert
+*.secret
+serviceAccountKey.json
+secrets/
+credentials/
+
+# ── Archives & junk ───────────────────────────────────────────────────────────
 *.zip
+*.tar.gz
 pas
+
+# ── Test coverage ─────────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
