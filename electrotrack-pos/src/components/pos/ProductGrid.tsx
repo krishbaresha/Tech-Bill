@@ -70,10 +70,6 @@ function hashString(value: string): number {
   return Math.abs(hash);
 }
 
-function getAvatarClasses(name: string): string {
-  const index = hashString(name) % AVATAR_PALETTE.length;
-  return AVATAR_PALETTE[index];
-}
 
 function formatPkr(value: number): string {
   return `₨ ${value.toLocaleString('en-PK')}`;

@@ -17,6 +17,9 @@ export interface SearchProduct {
   category: string | null;
   sellingPrice: number | string;
   inStockCount?: number;
+  tags?: string[];
+  specifications?: Record<string, string> | null;
+  shortDescription?: string | null;
 }
 
 interface ProductSuggestion {
@@ -126,7 +129,14 @@ export default function UniversalSearch({
 
     const productMatches: ProductSuggestion[] = products
       .filter((p) => {
-        const haystack = [p.name, p.brand ?? '', p.category ?? ''].join(' ').toLowerCase();
+        const specValues = p.specifications
+          ? Object.values(p.specifications as Record<string, string>).join(' ')
+          : '';
+        const haystack = [
+          p.name, p.brand ?? '', p.category ?? '',
+          ...(p.tags ?? []),
+          specValues,
+        ].join(' ').toLowerCase();
         return haystack.includes(q);
       })
       .slice(0, MAX_PRODUCT_SUGGESTIONS)
