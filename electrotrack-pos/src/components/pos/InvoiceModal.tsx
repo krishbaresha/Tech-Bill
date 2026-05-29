@@ -1,10 +1,11 @@
 import { X, Printer, Plus } from 'lucide-react';
 import { format, addMonths } from 'date-fns';
-import type { Sale } from '../../types';
+import type { Sale, ShopSettings } from '../../types';
 import { useAuthStore } from '../../store/auth.store';
 
 interface InvoiceModalProps {
   sale: Sale;
+  shopSettings?: ShopSettings | null;
   shopName?: string;
   onClose: () => void;
 }
@@ -39,7 +40,7 @@ function getPaymentBadgeClass(method: string): string {
   return PAYMENT_BADGE_CLASSES[method] ?? 'bg-white/10 text-white/70 border-white/20';
 }
 
-function VerificationCode({ invoiceNumber }: { invoiceNumber: string }) {
+function VerificationCode({ invoiceNumber, accentColor }: { invoiceNumber: string; accentColor?: string }) {
   const cells = Array.from({ length: 64 }, (_, i) => {
     const seed = invoiceNumber.charCodeAt(i % invoiceNumber.length) + i * 7;
     return (seed % 3) !== 0;
@@ -51,7 +52,7 @@ function VerificationCode({ invoiceNumber }: { invoiceNumber: string }) {
           {cells.map((on, i) => (
             <div
               key={i}
-              className={on ? 'bg-white/90 rounded-[1px]' : 'bg-transparent'}
+              style={on ? { backgroundColor: accentColor ?? 'rgba(255,255,255,0.9)', borderRadius: '1px' } : undefined}
             />
           ))}
         </div>
@@ -68,9 +69,17 @@ function VerificationCode({ invoiceNumber }: { invoiceNumber: string }) {
   );
 }
 
-export default function InvoiceModal({ sale, shopName, onClose }: InvoiceModalProps) {
+export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: InvoiceModalProps) {
   const tenantName = useAuthStore((s) => s.user?.tenantName);
-  const resolvedShopName = shopName ?? tenantName ?? 'ElectroTrack';
+  const resolvedShopName = shopSettings?.shopName ?? shopName ?? tenantName ?? 'ElectroTrack';
+
+  const accentColor = shopSettings?.invoiceAccentColor ?? '#14b8a6';
+  const primaryColor = shopSettings?.invoicePrimaryColor ?? '#ffffff';
+  const fontFamily = shopSettings?.invoiceFontFamily ?? 'Inter';
+  const footerNotes = shopSettings?.invoiceFooterNotes ?? null;
+  const showWatermark = shopSettings?.invoiceShowWatermark ?? false;
+  const watermarkText = shopSettings?.invoiceWatermarkText ?? '';
+  const logoUrl = shopSettings?.logoUrl ?? null;
 
   const subtotal = sale.items.reduce((s, i) => s + Number(i.sellingPrice), 0);
   const discount = Number(sale.discountAmount);
@@ -135,19 +144,41 @@ export default function InvoiceModal({ sale, shopName, onClose }: InvoiceModalPr
               id="invoice-print-area"
               className="relative bg-zinc-950 text-white"
               style={{
-                backgroundImage:
-                  'linear-gradient(to bottom, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0) 30%)',
+                fontFamily: `${fontFamily}, system-ui, sans-serif`,
+                backgroundImage: 'linear-gradient(to bottom, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0) 30%)',
               }}
             >
-              <div className="px-7 pt-7 pb-5">
+              {/* Watermark */}
+              {showWatermark && watermarkText && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden z-0">
+                  <span
+                    className="text-6xl font-black uppercase opacity-[0.04] whitespace-nowrap"
+                    style={{ transform: 'rotate(-30deg)', color: primaryColor }}
+                  >
+                    {watermarkText}
+                  </span>
+                </div>
+              )}
+
+              <div className="px-7 pt-7 pb-5 relative z-10">
                 <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h2 className="text-xl font-medium tracking-tight text-white leading-tight">
-                      {resolvedShopName}
-                    </h2>
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-white/40 mt-1.5">
-                      Tax Invoice · <span className="font-mono normal-case tracking-normal text-white/60">{sale.invoiceNumber}</span>
-                    </p>
+                  <div className="flex items-center gap-3">
+                    {logoUrl && (
+                      <img
+                        src={logoUrl}
+                        alt={resolvedShopName}
+                        className="h-10 w-auto object-contain rounded"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    )}
+                    <div>
+                      <h2 className="text-xl font-medium tracking-tight leading-tight" style={{ color: primaryColor }}>
+                        {resolvedShopName}
+                      </h2>
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-white/40 mt-1.5">
+                        Tax Invoice · <span className="font-mono normal-case tracking-normal text-white/60">{sale.invoiceNumber}</span>
+                      </p>
+                    </div>
                   </div>
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold tracking-wide bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 rounded-full">
                     <span className="text-[11px] leading-none">✓</span> VERIFIED
@@ -204,7 +235,7 @@ export default function InvoiceModal({ sale, shopName, onClose }: InvoiceModalPr
                           <p className="text-[11px] text-white/45">{product.brand}</p>
                         )}
                         {serial && (
-                          <p className="text-[11px] font-mono text-teal-300/80">
+                          <p className="text-[11px] font-mono" style={{ color: accentColor, opacity: 0.8 }}>
                             SN · {serial}
                           </p>
                         )}
@@ -253,11 +284,14 @@ export default function InvoiceModal({ sale, shopName, onClose }: InvoiceModalPr
               <div className="h-px bg-white/10 mx-7" />
 
               <div className="px-7 py-7 flex flex-col items-center gap-4">
-                <VerificationCode invoiceNumber={sale.invoiceNumber} />
+                <VerificationCode invoiceNumber={sale.invoiceNumber} accentColor={accentColor} />
                 <div className="text-center pt-2 space-y-1">
                   <p className="text-sm text-white/80">Thank you for your purchase</p>
-                  <p className="text-[10px] uppercase tracking-[0.22em] text-white/35">
-                    ElectroTrack POS
+                  {footerNotes && (
+                    <p className="text-xs text-white/50 max-w-xs mx-auto mt-2 leading-relaxed">{footerNotes}</p>
+                  )}
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-white/35 mt-1">
+                    {resolvedShopName} · ElectroTrack POS
                   </p>
                 </div>
               </div>

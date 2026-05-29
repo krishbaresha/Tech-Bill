@@ -88,6 +88,13 @@ export interface ShopSettings {
   maxDiscountWithoutOtp: number;
   returnFraudWindowDays: number;
   returnFraudCountThreshold: number;
+  logoUrl: string | null;
+  invoiceFontFamily: string;
+  invoicePrimaryColor: string;
+  invoiceAccentColor: string;
+  invoiceFooterNotes: string | null;
+  invoiceWatermarkText: string | null;
+  invoiceShowWatermark: boolean;
 }
 
 export interface AuditLog {
@@ -145,7 +152,7 @@ export interface Product {
 export interface InventoryUnit {
   id: string;
   serialNumber: string;
-  status: 'in_stock' | 'sold' | 'returned' | 'damaged';
+  status: 'in_stock' | 'sold' | 'return_pending' | 'returned' | 'damaged' | 'repair' | 'reserved';
   purchasePrice: number;
   product: Product;
 }

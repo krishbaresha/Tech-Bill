@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { ShoppingCart, Package, AlertTriangle, Layers, User, X, Plus } from 'lucide-react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { ShoppingCart, Package, AlertTriangle, Layers, User, X, Plus, TrendingUp, Clock, Zap } from 'lucide-react';
 import gsap from 'gsap';
-import UniversalSearch from '../../components/pos/UniversalSearch';
+import UniversalSearch, { type SearchProduct } from '../../components/pos/UniversalSearch';
 import ProductGrid from '../../components/pos/ProductGrid';
 import CartTable from '../../components/pos/CartTable';
 import PaymentForm from '../../components/pos/PaymentForm';
@@ -9,7 +9,7 @@ import InvoiceModal from '../../components/pos/InvoiceModal';
 import { useCartStore } from '../../store/cart.store';
 import { useAuthStore } from '../../store/auth.store';
 import { api } from '../../api/client';
-import type { Sale, CartItem } from '../../types';
+import type { Sale, CartItem, ShopSettings } from '../../types';
 
 interface ProductCard {
   id: string;
@@ -46,13 +46,21 @@ interface InventoryUnit {
   brand?: string | null;
 }
 
-type StatusFilter = 'in_stock' | 'all' | 'sold';
+type StatusFilter = 'in_stock' | 'all' | 'sold' | 'returned';
+
+const STATUS_LABELS: Record<StatusFilter, string> = {
+  in_stock: 'In Stock',
+  all: 'All Items',
+  sold: 'Sold',
+  returned: 'Returned',
+};
 
 const formatPKR = (n: number): string => `₨ ${n.toLocaleString('en-PK')}`;
 
 export default function PosScreen() {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [shopSettings, setShopSettings] = useState<ShopSettings | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('in_stock');
   const [viewingProduct, setViewingProduct] = useState<ProductCard | null>(null);
@@ -61,6 +69,7 @@ export default function PosScreen() {
   const [completedSale, setCompletedSale] = useState<Sale | null>(null);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [serialAlert, setSerialAlert] = useState<{ serial: string; status: string } | null>(null);
   const [now, setNow] = useState(new Date());
 
   const items = useCartStore((s) => s.items);
@@ -80,44 +89,36 @@ export default function PosScreen() {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      try {
-        setDashboardLoading(true);
-        const res = await api.get<DashboardData>('/inventory/dashboard');
-        if (mounted) setDashboard(res.data);
-      } catch {
-        if (mounted) setDashboard(null);
-      } finally {
-        if (mounted) setDashboardLoading(false);
-      }
+      setDashboardLoading(true);
+      const [dashRes, settingsRes] = await Promise.allSettled([
+        api.get<DashboardData>('/inventory/dashboard'),
+        api.get<ShopSettings>('/settings'),
+      ]);
+      if (!mounted) return;
+      if (dashRes.status === 'fulfilled') setDashboard(dashRes.value.data);
+      if (settingsRes.status === 'fulfilled') setShopSettings(settingsRes.value.data);
+      setDashboardLoading(false);
     })();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
   useEffect(() => {
     if (!dashboard) return;
     const ctx = gsap.context(() => {
       if (statsRef.current) {
-        gsap.fromTo(
-          statsRef.current.children,
+        gsap.fromTo(statsRef.current.children,
           { opacity: 0, y: 12 },
-          { opacity: 1, y: 0, duration: 0.4, stagger: 0.06, ease: 'power2.out' }
-        );
+          { opacity: 1, y: 0, duration: 0.4, stagger: 0.06, ease: 'power2.out' });
       }
       if (pillsRef.current) {
-        gsap.fromTo(
-          pillsRef.current.children,
+        gsap.fromTo(pillsRef.current.children,
           { opacity: 0, x: -8 },
-          { opacity: 1, x: 0, duration: 0.3, stagger: 0.03, ease: 'power2.out', delay: 0.15 }
-        );
+          { opacity: 1, x: 0, duration: 0.3, stagger: 0.03, ease: 'power2.out', delay: 0.15 });
       }
       if (gridWrapRef.current) {
-        gsap.fromTo(
-          gridWrapRef.current,
+        gsap.fromTo(gridWrapRef.current,
           { opacity: 0, y: 10 },
-          { opacity: 1, y: 0, duration: 0.45, ease: 'power2.out', delay: 0.2 }
-        );
+          { opacity: 1, y: 0, duration: 0.45, ease: 'power2.out', delay: 0.2 });
       }
     });
     return () => ctx.revert();
@@ -137,6 +138,7 @@ export default function PosScreen() {
       if (selectedCategory && p.category !== selectedCategory) return false;
       if (statusFilter === 'in_stock' && p.inStockCount <= 0) return false;
       if (statusFilter === 'sold' && p.soldCount <= 0) return false;
+      if (statusFilter === 'returned' && p.returnedCount <= 0) return false;
       return true;
     });
   }, [allProducts, selectedCategory, statusFilter]);
@@ -150,8 +152,7 @@ export default function PosScreen() {
         `/inventory/units?productId=${product.id}&status=in_stock&limit=100`
       );
       const data = res.data as InventoryUnit[] | { units: InventoryUnit[] };
-      const units = Array.isArray(data) ? data : data.units ?? [];
-      setUnitPickerUnits(units);
+      setUnitPickerUnits(Array.isArray(data) ? data : data.units ?? []);
     } catch {
       setUnitPickerUnits([]);
     } finally {
@@ -162,20 +163,63 @@ export default function PosScreen() {
   const handleAddUnit = (unit: InventoryUnit) => {
     if (!viewingProduct) return;
     if (items.some((i) => i.serialNumber === unit.serialNumber)) return;
-    const cartItem: CartItem = {
+    addItem({
       serialNumber: unit.serialNumber,
       productId: viewingProduct.id,
       productName: viewingProduct.name,
       brand: viewingProduct.brand,
       sellingPrice: unit.sellingPrice ?? viewingProduct.sellingPrice,
-    };
-    addItem(cartItem);
+    });
     setUnitPickerUnits((prev) => prev.filter((u) => u.serialNumber !== unit.serialNumber));
   };
 
-  const handleSaleComplete = (sale: Sale) => {
-    setCompletedSale(sale);
-  };
+  const handleProductSelect = useCallback((product: SearchProduct) => {
+    openUnitPicker({
+      id: product.id,
+      name: product.name,
+      brand: product.brand,
+      category: product.category,
+      sellingPrice: Number(product.sellingPrice),
+      inStockCount: product.inStockCount ?? 0,
+      soldCount: 0,
+      returnedCount: 0,
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSerialAdd = useCallback(async (serial: string) => {
+    try {
+      const res = await api.get<InventoryUnit[] | { units: InventoryUnit[] }>(
+        `/inventory/units?serialNumber=${encodeURIComponent(serial)}&limit=1`
+      );
+      const data = res.data as InventoryUnit[] | { units: InventoryUnit[] };
+      const units = Array.isArray(data) ? data : data.units ?? [];
+      const unit = units[0];
+
+      if (!unit) {
+        setSerialAlert({ serial, status: 'not_found' });
+        setTimeout(() => setSerialAlert(null), 3000);
+        return;
+      }
+      if (unit.status === 'in_stock') {
+        if (!items.some((i) => i.serialNumber === unit.serialNumber)) {
+          addItem({
+            serialNumber: unit.serialNumber,
+            productId: unit.productId,
+            productName: unit.productName ?? 'Unknown',
+            brand: unit.brand ?? null,
+            sellingPrice: unit.sellingPrice,
+          });
+        }
+      } else {
+        setSerialAlert({ serial: unit.serialNumber, status: unit.status });
+        setTimeout(() => setSerialAlert(null), 4000);
+      }
+    } catch {
+      setSerialAlert({ serial, status: 'error' });
+      setTimeout(() => setSerialAlert(null), 3000);
+    }
+  }, [items, addItem]);
 
   const closeInvoice = () => {
     setCompletedSale(null);
@@ -189,7 +233,6 @@ export default function PosScreen() {
 
   return (
     <div className="h-full flex flex-col bg-stitch-surface">
-      {/* Header */}
       <header className="h-14 shrink-0 border-b border-white/5 px-6 flex items-center justify-between bg-stitch-surface-container/40 backdrop-blur">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-stitch-primary/15 flex items-center justify-center ring-1 ring-stitch-primary/20">
@@ -197,7 +240,9 @@ export default function PosScreen() {
           </div>
           <div>
             <h1 className="text-sm font-bold text-stitch-on-surface font-space leading-tight">Point of Sale</h1>
-            <p className="text-[10px] text-stitch-on-surface-variant uppercase tracking-wider">ElectroTrack Retail</p>
+            <p className="text-[10px] text-stitch-on-surface-variant uppercase tracking-wider">
+              {shopSettings?.shopName ?? 'ElectroTrack Retail'}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-5 text-xs">
@@ -218,92 +263,77 @@ export default function PosScreen() {
       <div className="flex-1 flex min-h-0">
         {/* LEFT PANEL */}
         <div className="flex-1 flex flex-col min-h-0 overflow-y-auto px-6 py-5 gap-5">
-          <UniversalSearch />
+          <UniversalSearch onSerialAdd={handleSerialAdd} onProductSelect={handleProductSelect} />
+
+          {serialAlert && (
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-amber-400/30 bg-amber-500/10 text-amber-300 text-sm">
+              <AlertTriangle size={14} className="shrink-0" />
+              <span>
+                <span className="font-mono font-semibold">{serialAlert.serial}</span>
+                {serialAlert.status === 'not_found'
+                  ? ' — not found in inventory'
+                  : serialAlert.status === 'error'
+                  ? ' — lookup failed'
+                  : ` — status: ${serialAlert.status.replace(/_/g, ' ')}`}
+              </span>
+            </div>
+          )}
 
           {/* Stats Row */}
-          <div ref={statsRef} className="grid grid-cols-3 gap-3">
-            <StatCard
-              icon={<Package size={15} />}
-              label="Total In Stock"
-              value={dashboard?.stats.totalInStock ?? 0}
-              accent="blue"
-              loading={dashboardLoading}
-            />
-            <StatCard
-              icon={<AlertTriangle size={15} />}
-              label="Low Stock"
-              value={dashboard?.stats.totalLowStock ?? 0}
-              accent={dashboard && dashboard.stats.totalLowStock > 0 ? 'red' : 'green'}
-              loading={dashboardLoading}
-            />
-            <StatCard
-              icon={<Layers size={15} />}
-              label="Products"
-              value={dashboard?.stats.totalProducts ?? 0}
-              accent="purple"
-              loading={dashboardLoading}
-            />
+          <div ref={statsRef} className="grid grid-cols-4 gap-3">
+            <StatCard icon={<Package size={15} />} label="In Stock" value={dashboard?.stats.totalInStock ?? 0} accent="blue" loading={dashboardLoading} />
+            <StatCard icon={<AlertTriangle size={15} />} label="Low Stock" value={dashboard?.stats.totalLowStock ?? 0} accent={dashboard && dashboard.stats.totalLowStock > 0 ? 'red' : 'green'} loading={dashboardLoading} />
+            <StatCard icon={<Layers size={15} />} label="Products" value={dashboard?.stats.totalProducts ?? 0} accent="purple" loading={dashboardLoading} />
+            <StatCard icon={<TrendingUp size={15} />} label="Total Sold" value={dashboard?.stats.totalSold ?? 0} accent="teal" loading={dashboardLoading} />
           </div>
 
           {/* Category Pills */}
           <div ref={pillsRef} className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-thin">
-            <Pill active={selectedCategory === null} onClick={() => setSelectedCategory(null)}>
-              All
-            </Pill>
+            <Pill active={selectedCategory === null} onClick={() => setSelectedCategory(null)}>All</Pill>
             {(dashboard?.categories ?? []).map((cat) => (
-              <Pill
-                key={cat}
-                active={selectedCategory === cat}
-                onClick={() => setSelectedCategory(cat)}
-              >
-                {cat}
-              </Pill>
+              <Pill key={cat} active={selectedCategory === cat} onClick={() => setSelectedCategory(cat)}>{cat}</Pill>
             ))}
           </div>
 
           {/* Status Tabs */}
           <div className="flex items-center gap-1 border-b border-white/5">
-            {(['in_stock', 'all', 'sold'] as StatusFilter[]).map((s) => (
+            {(Object.keys(STATUS_LABELS) as StatusFilter[]).map((s) => (
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
                 className={`relative px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${
-                  statusFilter === s
-                    ? 'text-stitch-primary'
-                    : 'text-stitch-on-surface-variant hover:text-stitch-on-surface'
+                  statusFilter === s ? 'text-stitch-primary' : 'text-stitch-on-surface-variant hover:text-stitch-on-surface'
                 }`}
               >
-                {s === 'in_stock' ? 'In Stock' : s === 'all' ? 'All Items' : 'Sold'}
-                {statusFilter === s && (
-                  <span className="absolute left-2 right-2 -bottom-px h-0.5 bg-stitch-primary rounded-full" />
-                )}
+                {STATUS_LABELS[s]}
+                {statusFilter === s && <span className="absolute left-2 right-2 -bottom-px h-0.5 bg-stitch-primary rounded-full" />}
               </button>
             ))}
           </div>
 
           {/* Product Grid */}
-          <div ref={gridWrapRef} className="flex-1 min-h-0">
+          <div ref={gridWrapRef} className="flex-1 min-h-0 pb-4">
             {dashboardLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="h-40 rounded-xl bg-white/[0.03] animate-pulse" />
-                ))}
-              </div>
-            ) : filteredProducts.length === 0 ? (
-              <div className="h-full min-h-[200px] flex flex-col items-center justify-center text-center gap-2 py-10">
+              <ProductGrid products={[]} loading={true} onAddToCart={() => {}} onViewUnits={() => {}} selectedCategory={null} />
+            ) : filteredProducts.length === 0 && !(selectedCategory === null && statusFilter === 'in_stock') ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center gap-2">
                 <Package size={32} className="text-stitch-on-surface-variant/30" />
                 <p className="text-sm text-stitch-on-surface-variant">No products match this filter</p>
-                <p className="text-xs text-stitch-on-surface-variant/60">
-                  Try a different category or status
-                </p>
+                <p className="text-xs text-stitch-on-surface-variant/60">Try a different category or status</p>
               </div>
+            ) : selectedCategory === null && statusFilter === 'in_stock' ? (
+              <SectionedGrid
+                dashboard={dashboard}
+                onAddToCart={(p) => { if (p.inStockCount > 0) openUnitPicker(p); }}
+                onViewUnits={openUnitPicker}
+              />
             ) : (
               <ProductGrid
                 products={filteredProducts}
-                onAddToCart={(p: ProductCard) => {
-                  if (p.inStockCount > 0) openUnitPicker(p);
-                }}
-                onViewUnits={(p: ProductCard) => openUnitPicker(p)}
+                loading={false}
+                onAddToCart={(p) => { if (p.inStockCount > 0) openUnitPicker(p); }}
+                onViewUnits={openUnitPicker}
+                selectedCategory={selectedCategory}
               />
             )}
           </div>
@@ -311,7 +341,6 @@ export default function PosScreen() {
 
         {/* RIGHT PANEL */}
         <aside className="w-96 shrink-0 border-l border-white/5 bg-stitch-surface-container/30 flex flex-col min-h-0">
-          {/* Cart header */}
           <div className="h-14 shrink-0 px-5 border-b border-white/5 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ShoppingCart size={15} className="text-stitch-primary" />
@@ -321,45 +350,20 @@ export default function PosScreen() {
               {items.length} {items.length === 1 ? 'item' : 'items'}
             </span>
           </div>
-
-          {/* Scrollable content */}
           <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4">
-            <div className="min-h-[180px]">
-              <CartTable />
-            </div>
-
-            {/* Customer section */}
+            <div className="min-h-[180px]"><CartTable /></div>
             <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 space-y-2">
-              <p className="text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">
-                Customer
-              </p>
-              <input
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="Customer name"
-                className="w-full bg-stitch-surface-container-high/50 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-stitch-on-surface outline-none focus:border-stitch-primary/50 transition-colors"
-              />
-              <input
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                placeholder="03XX-XXXXXXX"
-                inputMode="tel"
-                className="w-full bg-stitch-surface-container-high/50 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-stitch-on-surface outline-none focus:border-stitch-primary/50 transition-colors"
-              />
+              <p className="text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Customer</p>
+              <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Customer name"
+                className="w-full bg-stitch-surface-container-high/50 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-stitch-on-surface outline-none focus:border-stitch-primary/50 transition-colors" />
+              <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="03XX-XXXXXXX" inputMode="tel"
+                className="w-full bg-stitch-surface-container-high/50 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-stitch-on-surface outline-none focus:border-stitch-primary/50 transition-colors" />
             </div>
-
-            {items.length > 0 && (
-              <PaymentForm
-                onSaleComplete={handleSaleComplete}
-                customerName={customerName}
-                customerPhone={customerPhone}
-              />
-            )}
+            {items.length > 0 && <PaymentForm onSaleComplete={setCompletedSale} customerName={customerName} customerPhone={customerPhone} />}
           </div>
         </aside>
       </div>
 
-      {/* Unit Picker Sheet */}
       {viewingProduct && (
         <UnitPickerSheet
           product={viewingProduct}
@@ -371,42 +375,81 @@ export default function PosScreen() {
         />
       )}
 
-      {completedSale && <InvoiceModal sale={completedSale} onClose={closeInvoice} />}
+      {completedSale && <InvoiceModal sale={completedSale} shopSettings={shopSettings} onClose={closeInvoice} />}
     </div>
   );
 }
+
+// ─── Sectioned Grid ────────────────────────────────────────────────────────────
+
+interface SectionedGridProps {
+  dashboard: DashboardData | null;
+  onAddToCart: (p: ProductCard) => void;
+  onViewUnits: (p: ProductCard) => void;
+}
+
+function SectionedGrid({ dashboard, onAddToCart, onViewUnits }: SectionedGridProps) {
+  if (!dashboard) return null;
+  const sections: { label: string; icon: React.ReactNode; items: ProductCard[] }[] = [
+    { label: 'Low Stock Alert', icon: <AlertTriangle size={13} />, items: dashboard.lowStock },
+    { label: 'Recently Added', icon: <Clock size={13} />, items: dashboard.recentlyAdded },
+    { label: 'Fast Selling', icon: <Zap size={13} />, items: dashboard.fastSelling },
+  ].filter((s) => s.items.length > 0);
+
+  if (sections.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center gap-2">
+        <Package size={32} className="text-stitch-on-surface-variant/30" />
+        <p className="text-sm text-stitch-on-surface-variant">No inventory yet</p>
+        <p className="text-xs text-stitch-on-surface-variant/60">Add stock via Inventory → GRN</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-7">
+      {sections.map(({ label, icon, items }) => (
+        <div key={label}>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-stitch-on-surface-variant/60">{icon}</span>
+            <h3 className="text-xs font-bold text-stitch-on-surface-variant uppercase tracking-wider">{label}</h3>
+            <div className="flex-1 h-px bg-white/5" />
+          </div>
+          <ProductGrid products={items} loading={false} onAddToCart={onAddToCart} onViewUnits={onViewUnits} selectedCategory={null} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Sub-components ────────────────────────────────────────────────────────────
 
 interface StatCardProps {
   icon: React.ReactNode;
   label: string;
   value: number;
-  accent: 'blue' | 'red' | 'green' | 'purple';
+  accent: 'blue' | 'red' | 'green' | 'purple' | 'teal';
   loading: boolean;
 }
 
 function StatCard({ icon, label, value, accent, loading }: StatCardProps) {
   const accents: Record<StatCardProps['accent'], { ring: string; text: string; bg: string }> = {
-    blue: { ring: 'ring-sky-400/25', text: 'text-sky-300', bg: 'bg-sky-400/10' },
-    red: { ring: 'ring-rose-400/25', text: 'text-rose-300', bg: 'bg-rose-400/10' },
-    green: { ring: 'ring-emerald-400/25', text: 'text-emerald-300', bg: 'bg-emerald-400/10' },
-    purple: { ring: 'ring-violet-400/25', text: 'text-violet-300', bg: 'bg-violet-400/10' },
+    blue:   { ring: 'ring-sky-400/25',     text: 'text-sky-300',     bg: 'bg-sky-400/10' },
+    red:    { ring: 'ring-rose-400/25',    text: 'text-rose-300',    bg: 'bg-rose-400/10' },
+    green:  { ring: 'ring-emerald-400/25', text: 'text-emerald-300', bg: 'bg-emerald-400/10' },
+    purple: { ring: 'ring-violet-400/25',  text: 'text-violet-300',  bg: 'bg-violet-400/10' },
+    teal:   { ring: 'ring-teal-400/25',    text: 'text-teal-300',    bg: 'bg-teal-400/10' },
   };
   const a = accents[accent];
   return (
-    <div className="rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 flex items-center gap-3">
-      <div className={`w-9 h-9 rounded-lg flex items-center justify-center ring-1 ${a.ring} ${a.bg} ${a.text}`}>
-        {icon}
-      </div>
+    <div className="rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 flex items-center gap-3 hover:bg-white/[0.04] transition-colors">
+      <div className={`w-9 h-9 rounded-lg flex items-center justify-center ring-1 ${a.ring} ${a.bg} ${a.text}`}>{icon}</div>
       <div className="min-w-0">
-        <p className="text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider truncate">
-          {label}
-        </p>
+        <p className="text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider truncate">{label}</p>
         {loading ? (
-          <div className="h-6 w-16 rounded bg-white/5 animate-pulse mt-0.5" />
+          <div className="h-6 w-14 rounded bg-white/5 animate-pulse mt-0.5" />
         ) : (
-          <p className="text-xl font-bold text-stitch-on-surface tabular-nums font-space leading-tight">
-            {value.toLocaleString('en-PK')}
-          </p>
+          <p className="text-xl font-bold text-stitch-on-surface tabular-nums font-space leading-tight">{value.toLocaleString('en-PK')}</p>
         )}
       </div>
     </div>
@@ -448,45 +491,26 @@ function UnitPickerSheet({ product, units, loading, onClose, onAdd, cartSerials 
 
   useEffect(() => {
     if (!sheetRef.current) return;
-    gsap.fromTo(
-      sheetRef.current,
-      { y: 40, opacity: 0 },
-      { y: 0, opacity: 1, duration: 0.3, ease: 'power3.out' }
-    );
+    gsap.fromTo(sheetRef.current, { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3, ease: 'power3.out' });
   }, []);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
-      <div
-        ref={sheetRef}
-        onClick={(e) => e.stopPropagation()}
-        className="w-full md:max-w-lg md:rounded-2xl rounded-t-2xl bg-stitch-surface-container border border-white/10 shadow-2xl flex flex-col max-h-[75vh]"
-      >
+      <div ref={sheetRef} onClick={(e) => e.stopPropagation()}
+        className="w-full md:max-w-lg md:rounded-2xl rounded-t-2xl bg-stitch-surface-container border border-white/10 shadow-2xl flex flex-col max-h-[75vh]">
         <div className="px-5 py-4 border-b border-white/5 flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">
-              Select Serial Number
-            </p>
+            <p className="text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Select Serial Number</p>
             <h3 className="text-base font-bold text-stitch-on-surface font-space truncate">{product.name}</h3>
-            <p className="text-xs text-stitch-on-surface-variant">
-              {product.brand ?? '—'} · {formatPKR(product.sellingPrice)}
-            </p>
+            <p className="text-xs text-stitch-on-surface-variant">{product.brand ?? '—'} · {formatPKR(product.sellingPrice)}</p>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-stitch-on-surface-variant hover:text-stitch-on-surface hover:bg-white/5 transition-colors"
-          >
+          <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-stitch-on-surface-variant hover:text-stitch-on-surface hover:bg-white/5 transition-colors">
             <X size={16} />
           </button>
         </div>
-
         <div className="flex-1 overflow-y-auto p-3">
           {loading ? (
-            <div className="space-y-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-12 rounded-lg bg-white/[0.03] animate-pulse" />
-              ))}
-            </div>
+            <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-12 rounded-lg bg-white/[0.03] animate-pulse" />)}</div>
           ) : units.length === 0 ? (
             <div className="py-10 text-center">
               <Package size={28} className="text-stitch-on-surface-variant/30 mx-auto mb-2" />
@@ -497,23 +521,14 @@ function UnitPickerSheet({ product, units, loading, onClose, onAdd, cartSerials 
               {units.map((u) => {
                 const inCart = cartSerials.includes(u.serialNumber);
                 return (
-                  <li
-                    key={u.id}
-                    className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] transition-colors"
-                  >
+                  <li key={u.id} className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] transition-colors">
                     <div className="min-w-0">
                       <p className="font-mono text-sm text-stitch-tertiary truncate">{u.serialNumber}</p>
-                      <p className="text-[11px] text-stitch-on-surface-variant">
-                        {u.condition ?? 'New'} · {formatPKR(u.sellingPrice ?? product.sellingPrice)}
-                      </p>
+                      <p className="text-[11px] text-stitch-on-surface-variant">{u.condition ?? 'New'} · {formatPKR(u.sellingPrice ?? product.sellingPrice)}</p>
                     </div>
-                    <button
-                      onClick={() => onAdd(u)}
-                      disabled={inCart}
-                      className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-stitch-primary text-stitch-on-primary text-xs font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Plus size={12} />
-                      {inCart ? 'Added' : 'Add'}
+                    <button onClick={() => onAdd(u)} disabled={inCart}
+                      className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-stitch-primary text-stitch-on-primary text-xs font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                      <Plus size={12} />{inCart ? 'Added' : 'Add'}
                     </button>
                   </li>
                 );

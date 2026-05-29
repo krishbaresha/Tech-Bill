@@ -12,6 +12,13 @@ interface SettingsForm {
   maxDiscountWithoutOtp: string;
   returnFraudWindowDays: string;
   returnFraudCountThreshold: string;
+  logoUrl: string;
+  invoiceFontFamily: string;
+  invoicePrimaryColor: string;
+  invoiceAccentColor: string;
+  invoiceFooterNotes: string;
+  invoiceWatermarkText: string;
+  invoiceShowWatermark: boolean;
 }
 
 const inputCls = 'w-full bg-stitch-surface-container-high/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-stitch-on-surface outline-none focus:border-stitch-primary/50 transition-colors placeholder:text-stitch-on-surface-variant/50';
@@ -31,6 +38,8 @@ function FieldGroup({ title, children }: FieldGroupProps) {
   );
 }
 
+const FONT_OPTIONS = ['Inter', 'system-ui', 'Georgia', 'Courier New', 'Helvetica'];
+
 export default function SettingsPage() {
   const { user, accessToken, setAuth } = useAuthStore();
   const [loading, setLoading] = useState(false);
@@ -39,11 +48,18 @@ export default function SettingsPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [form, setForm] = useState<SettingsForm>({
     shopName: '',
-    lowStockThreshold: '3',
+    lowStockThreshold: '2',
     deadStockDays: '60',
     maxDiscountWithoutOtp: '500',
     returnFraudWindowDays: '30',
-    returnFraudCountThreshold: '3',
+    returnFraudCountThreshold: '2',
+    logoUrl: '',
+    invoiceFontFamily: 'Inter',
+    invoicePrimaryColor: '#ffffff',
+    invoiceAccentColor: '#14b8a6',
+    invoiceFooterNotes: '',
+    invoiceWatermarkText: '',
+    invoiceShowWatermark: false,
   });
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -59,6 +75,13 @@ export default function SettingsPage() {
           maxDiscountWithoutOtp: String(s.maxDiscountWithoutOtp),
           returnFraudWindowDays: String(s.returnFraudWindowDays),
           returnFraudCountThreshold: String(s.returnFraudCountThreshold),
+          logoUrl: s.logoUrl ?? '',
+          invoiceFontFamily: s.invoiceFontFamily ?? 'Inter',
+          invoicePrimaryColor: s.invoicePrimaryColor ?? '#ffffff',
+          invoiceAccentColor: s.invoiceAccentColor ?? '#14b8a6',
+          invoiceFooterNotes: s.invoiceFooterNotes ?? '',
+          invoiceWatermarkText: s.invoiceWatermarkText ?? '',
+          invoiceShowWatermark: s.invoiceShowWatermark ?? false,
         });
       })
       .catch(() => setError('Failed to load settings'))
@@ -77,7 +100,7 @@ export default function SettingsPage() {
     }
   }, [loading]);
 
-  const set = (key: keyof SettingsForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
+  const set = (key: keyof SettingsForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
 
   const handleSave = async (e: React.FormEvent) => {
@@ -92,8 +115,15 @@ export default function SettingsPage() {
         maxDiscountWithoutOtp: parseFloat(form.maxDiscountWithoutOtp),
         returnFraudWindowDays: parseInt(form.returnFraudWindowDays),
         returnFraudCountThreshold: parseInt(form.returnFraudCountThreshold),
+        logoUrl: form.logoUrl || null,
+        invoiceFontFamily: form.invoiceFontFamily,
+        invoicePrimaryColor: form.invoicePrimaryColor,
+        invoiceAccentColor: form.invoiceAccentColor,
+        invoiceFooterNotes: form.invoiceFooterNotes || null,
+        invoiceWatermarkText: form.invoiceWatermarkText || null,
+        invoiceShowWatermark: form.invoiceShowWatermark,
       });
-      setSuccessMsg('Settings saved successfully');
+      setSuccessMsg('Settings saved');
       setTimeout(() => setSuccessMsg(''), 3000);
       if (form.shopName && user && accessToken) {
         setAuth({ ...user, tenantName: form.shopName }, accessToken);
@@ -115,14 +145,14 @@ export default function SettingsPage() {
   }
 
   return (
-    <div ref={containerRef} className="p-6 max-w-xl space-y-6">
+    <div ref={containerRef} className="p-6 max-w-2xl space-y-6">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-lg bg-stitch-primary/10 flex items-center justify-center">
           <Settings size={20} className="text-stitch-primary" />
         </div>
         <div>
           <h1 className="text-xl font-bold text-stitch-on-surface font-space">Shop Settings</h1>
-          <p className="text-xs text-stitch-on-surface-variant">Configure thresholds and controls</p>
+          <p className="text-xs text-stitch-on-surface-variant">Configure thresholds, controls, and invoice template</p>
         </div>
       </div>
 
@@ -178,6 +208,83 @@ export default function SettingsPage() {
             <label className={labelCls}>Return Fraud Count Threshold</label>
             <input type="number" min="1" value={form.returnFraudCountThreshold} onChange={set('returnFraudCountThreshold')} className={inputCls} />
             <p className="text-[10px] text-stitch-on-surface-variant/60 mt-1">Flag as suspicious if customer has this many returns in the window</p>
+          </div>
+        </FieldGroup>
+
+        <FieldGroup title="Invoice Template">
+          <div>
+            <label className={labelCls}>Logo URL</label>
+            <input value={form.logoUrl} onChange={set('logoUrl')} placeholder="https://..." className={inputCls} />
+            <p className="text-[10px] text-stitch-on-surface-variant/60 mt-1">Publicly accessible image URL shown at the top of invoices</p>
+          </div>
+          {form.logoUrl && (
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.03] border border-white/5">
+              <img src={form.logoUrl} alt="Logo preview" className="h-10 w-auto object-contain rounded" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              <p className="text-xs text-stitch-on-surface-variant">Logo preview</p>
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Primary Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={form.invoicePrimaryColor}
+                  onChange={(e) => setForm((prev) => ({ ...prev, invoicePrimaryColor: e.target.value }))}
+                  className="w-10 h-10 rounded-lg border border-white/10 bg-transparent cursor-pointer"
+                />
+                <input value={form.invoicePrimaryColor} onChange={set('invoicePrimaryColor')} placeholder="#ffffff" className={`${inputCls} flex-1`} />
+              </div>
+              <p className="text-[10px] text-stitch-on-surface-variant/60 mt-1">Shop name & heading color</p>
+            </div>
+            <div>
+              <label className={labelCls}>Accent Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={form.invoiceAccentColor}
+                  onChange={(e) => setForm((prev) => ({ ...prev, invoiceAccentColor: e.target.value }))}
+                  className="w-10 h-10 rounded-lg border border-white/10 bg-transparent cursor-pointer"
+                />
+                <input value={form.invoiceAccentColor} onChange={set('invoiceAccentColor')} placeholder="#14b8a6" className={`${inputCls} flex-1`} />
+              </div>
+              <p className="text-[10px] text-stitch-on-surface-variant/60 mt-1">Serial numbers & QR color</p>
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>Invoice Font</label>
+            <select value={form.invoiceFontFamily} onChange={set('invoiceFontFamily')}
+              className="w-full bg-stitch-surface-container-high/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-stitch-on-surface outline-none focus:border-stitch-primary/50 transition-colors">
+              {FONT_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Footer Notes</label>
+            <textarea
+              value={form.invoiceFooterNotes}
+              onChange={(e) => setForm((prev) => ({ ...prev, invoiceFooterNotes: e.target.value }))}
+              placeholder="e.g. All sales are final. Warranty claims require original receipt."
+              rows={2}
+              className="w-full bg-stitch-surface-container-high/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-stitch-on-surface outline-none focus:border-stitch-primary/50 transition-colors placeholder:text-stitch-on-surface-variant/50 resize-none"
+            />
+            <p className="text-[10px] text-stitch-on-surface-variant/60 mt-1">Printed at the bottom of every invoice</p>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Watermark Text</label>
+              <input value={form.invoiceWatermarkText} onChange={set('invoiceWatermarkText')} placeholder="e.g. PAID" className={inputCls} />
+            </div>
+            <div className="flex items-end pb-0.5">
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <div
+                  onClick={() => setForm((prev) => ({ ...prev, invoiceShowWatermark: !prev.invoiceShowWatermark }))}
+                  className={`relative w-10 h-5 rounded-full transition-colors cursor-pointer ${form.invoiceShowWatermark ? 'bg-stitch-primary' : 'bg-white/10'}`}
+                >
+                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${form.invoiceShowWatermark ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                </div>
+                <span className="text-xs text-stitch-on-surface-variant">Show watermark</span>
+              </label>
+            </div>
           </div>
         </FieldGroup>
 

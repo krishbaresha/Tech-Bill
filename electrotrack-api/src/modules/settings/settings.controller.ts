@@ -45,6 +45,13 @@ export class SettingsController {
       maxDiscountWithoutOtp?: number;
       returnFraudWindowDays?: number;
       returnFraudCountThreshold?: number;
+      logoUrl?: string | null;
+      invoiceFontFamily?: string;
+      invoicePrimaryColor?: string;
+      invoiceAccentColor?: string;
+      invoiceFooterNotes?: string | null;
+      invoiceWatermarkText?: string | null;
+      invoiceShowWatermark?: boolean;
     },
   ) {
     return this.settingsService.updateSettings(req.user.tenantId, dto);

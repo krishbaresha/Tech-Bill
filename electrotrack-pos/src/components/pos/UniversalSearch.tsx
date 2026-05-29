@@ -6,11 +6,11 @@ import BarcodeScanner from './BarcodeScanner';
 
 interface Props {
   onSerialAdd: (serial: string) => void;
-  onProductSelect: (productId: string, productName: string) => void;
+  onProductSelect: (product: SearchProduct) => void;
   loading?: boolean;
 }
 
-interface SearchProduct {
+export interface SearchProduct {
   id: string;
   name: string;
   brand: string | null;
@@ -159,7 +159,7 @@ export default function UniversalSearch({
 
   const commitSuggestion = (s: Suggestion) => {
     if (s.kind === 'product') {
-      onProductSelect(s.product.id, s.product.name);
+      onProductSelect(s.product);
     } else {
       onSerialAdd(s.value);
     }

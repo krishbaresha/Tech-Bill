@@ -24,6 +24,7 @@ enum UnitStatus {
   return_pending
   returned
   damaged
+  repair
   reserved
 }
 
@@ -159,6 +160,14 @@ model ShopSettings {
   maxDiscountWithoutOtp     Decimal  @default(500) @map("max_discount_without_otp") @db.Decimal(10, 2)
   returnFraudWindowDays     Int      @default(30) @map("return_fraud_window_days")
   returnFraudCountThreshold Int      @default(2) @map("return_fraud_count_threshold")
+  // Invoice template fields
+  logoUrl                   String?  @map("logo_url") @db.Text
+  invoiceFontFamily         String   @default("Inter") @map("invoice_font_family") @db.VarChar(100)
+  invoicePrimaryColor       String   @default("#ffffff") @map("invoice_primary_color") @db.VarChar(7)
+  invoiceAccentColor        String   @default("#14b8a6") @map("invoice_accent_color") @db.VarChar(7)
+  invoiceFooterNotes        String?  @map("invoice_footer_notes") @db.Text
+  invoiceWatermarkText      String?  @map("invoice_watermark_text") @db.VarChar(255)
+  invoiceShowWatermark      Boolean  @default(false) @map("invoice_show_watermark")
   tenantId                  String   @map("tenant_id") @db.Uuid
   tenant                    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   updatedAt                 DateTime @updatedAt @map("updated_at")

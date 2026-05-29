@@ -1,5 +1,21 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+
+interface UpdateSettingsDto {
+  shopName?: string;
+  lowStockThreshold?: number;
+  deadStockDays?: number;
+  maxDiscountWithoutOtp?: number;
+  returnFraudWindowDays?: number;
+  returnFraudCountThreshold?: number;
+  logoUrl?: string | null;
+  invoiceFontFamily?: string;
+  invoicePrimaryColor?: string;
+  invoiceAccentColor?: string;
+  invoiceFooterNotes?: string | null;
+  invoiceWatermarkText?: string | null;
+  invoiceShowWatermark?: boolean;
+}
 
 @Injectable()
 export class SettingsService {
@@ -11,7 +27,6 @@ export class SettingsService {
     });
 
     if (!settings) {
-      // Fallback: create settings if missing
       settings = await this.prisma.shopSettings.create({
         data: {
           tenantId,
@@ -21,6 +36,10 @@ export class SettingsService {
           maxDiscountWithoutOtp: 500,
           returnFraudWindowDays: 30,
           returnFraudCountThreshold: 2,
+          invoiceFontFamily: 'Inter',
+          invoicePrimaryColor: '#ffffff',
+          invoiceAccentColor: '#14b8a6',
+          invoiceShowWatermark: false,
         },
       });
     }
@@ -28,19 +47,8 @@ export class SettingsService {
     return settings;
   }
 
-  async updateSettings(
-    tenantId: string,
-    dto: {
-      shopName?: string;
-      lowStockThreshold?: number;
-      deadStockDays?: number;
-      maxDiscountWithoutOtp?: number;
-      returnFraudWindowDays?: number;
-      returnFraudCountThreshold?: number;
-    },
-  ) {
+  async updateSettings(tenantId: string, dto: UpdateSettingsDto) {
     const settings = await this.getSettings(tenantId);
-
     return this.prisma.shopSettings.update({
       where: { id: settings.id },
       data: dto,
