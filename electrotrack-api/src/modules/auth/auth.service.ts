@@ -168,10 +168,13 @@ export class AuthService {
     const newAccessToken = this.jwtService.sign(newPayload, {
       expiresIn: this.configService.get('JWT_ACCESS_EXPIRES_IN', '15m'),
     });
-    const newRefreshToken = this.jwtService.sign(newPayload, {
-      secret: this.configService.get('JWT_REFRESH_SECRET'),
-      expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d'),
-    });
+    const newRefreshToken = this.jwtService.sign(
+      { ...newPayload, jti: crypto.randomUUID() },
+      {
+        secret: this.configService.get('JWT_REFRESH_SECRET'),
+        expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d'),
+      },
+    );
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);

@@ -45,7 +45,7 @@ export default function OwnerDashboard() {
     : [];
 
   return (
-    <div ref={containerRef} className="p-6 space-y-6">
+    <div ref={containerRef} className="p-4 sm:p-6 space-y-6">
       <AiInsights />
 
       {summary ? (

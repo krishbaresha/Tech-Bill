@@ -257,7 +257,7 @@ export default function InventoryPage() {
         )}
       </div>
 
-      <div className="relative max-w-xs">
+      <div className="relative w-full sm:max-w-xs">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stitch-on-surface-variant pointer-events-none" />
         <input
           value={search}
@@ -294,8 +294,8 @@ export default function InventoryPage() {
               <X size={16} />
             </button>
           </div>
-          <form onSubmit={handleAddProduct} className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
+          <form onSubmit={handleAddProduct} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="col-span-1 sm:col-span-2">
               <label className={labelCls}>Name *</label>
               <input value={productForm.name} onChange={(e) => setProductForm({ ...productForm, name: e.target.value })} required className={inputCls} />
             </div>
@@ -326,7 +326,7 @@ export default function InventoryPage() {
               <input type="number" min="0" value={productForm.warrantyMonths}
                 onChange={(e) => setProductForm({ ...productForm, warrantyMonths: e.target.value })} className={inputCls} />
             </div>
-            <div className="col-span-2 flex gap-2 justify-end pt-1">
+            <div className="col-span-1 sm:col-span-2 flex gap-2 justify-end pt-1">
               <button type="button" onClick={() => setShowAddProduct(false)}
                 className="px-4 py-2 text-sm text-stitch-on-surface-variant hover:text-white hover:bg-white/5 rounded-lg transition-colors">
                 Cancel
@@ -351,7 +351,7 @@ export default function InventoryPage() {
               <X size={16} />
             </button>
           </div>
-          <form onSubmit={handleAddUnit} className="grid grid-cols-3 gap-4">
+          <form onSubmit={handleAddUnit} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className={labelCls}>Serial Number *</label>
               <input value={unitForm.serialNumber} onChange={(e) => setUnitForm({ ...unitForm, serialNumber: e.target.value })}
@@ -369,7 +369,7 @@ export default function InventoryPage() {
               <input type="number" min="0" step="0.01" value={unitForm.purchasePrice}
                 onChange={(e) => setUnitForm({ ...unitForm, purchasePrice: e.target.value })} className={inputCls} />
             </div>
-            <div className="col-span-3 flex gap-2 justify-end pt-1">
+            <div className="col-span-1 sm:col-span-3 flex gap-2 justify-end pt-1">
               <button type="button" onClick={() => setShowAddUnit(false)}
                 className="px-4 py-2 text-sm text-stitch-on-surface-variant hover:text-white hover:bg-white/5 rounded-lg transition-colors">
                 Cancel

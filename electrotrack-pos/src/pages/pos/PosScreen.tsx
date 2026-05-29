@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { ShoppingCart, Package, AlertTriangle, Layers, User, X, Plus, TrendingUp, Clock, Zap } from 'lucide-react';
+import { ShoppingCart, Package, AlertTriangle, Layers, User, X, Plus, TrendingUp, Clock, Zap, ChevronLeft } from 'lucide-react';
 import gsap from 'gsap';
 import UniversalSearch, { type SearchProduct } from '../../components/pos/UniversalSearch';
 import ProductGrid from '../../components/pos/ProductGrid';
@@ -71,6 +71,8 @@ export default function PosScreen() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [serialAlert, setSerialAlert] = useState<{ serial: string; status: string } | null>(null);
   const [now, setNow] = useState(new Date());
+
+  const [mobileView, setMobileView] = useState<'browse' | 'cart'>('browse');
 
   const items = useCartStore((s) => s.items);
   const addItem = useCartStore((s) => s.addItem);
@@ -233,36 +235,36 @@ export default function PosScreen() {
 
   return (
     <div className="h-full flex flex-col bg-stitch-surface">
-      <header className="h-14 shrink-0 border-b border-white/5 px-6 flex items-center justify-between bg-stitch-surface-container/40 backdrop-blur">
+      <header className="h-14 shrink-0 border-b border-white/5 px-3 sm:px-6 flex items-center justify-between bg-stitch-surface-container/40 backdrop-blur">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-stitch-primary/15 flex items-center justify-center ring-1 ring-stitch-primary/20">
+          <div className="w-9 h-9 rounded-lg bg-stitch-primary/15 flex items-center justify-center ring-1 ring-stitch-primary/20 shrink-0">
             <ShoppingCart size={17} className="text-stitch-primary" />
           </div>
-          <div>
-            <h1 className="text-sm font-bold text-stitch-on-surface font-space leading-tight">Point of Sale</h1>
-            <p className="text-[10px] text-stitch-on-surface-variant uppercase tracking-wider">
+          <div className="min-w-0">
+            <h1 className="text-sm font-bold text-stitch-on-surface font-space leading-tight truncate">Point of Sale</h1>
+            <p className="text-[10px] text-stitch-on-surface-variant uppercase tracking-wider truncate">
               {shopSettings?.shopName ?? 'ElectroTrack Retail'}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-5 text-xs">
-          <div className="flex flex-col items-end leading-tight">
+        <div className="flex items-center gap-3 sm:gap-5 text-xs">
+          <div className="hidden sm:flex flex-col items-end leading-tight">
             <span className="text-stitch-on-surface font-medium tabular-nums">{timeStr}</span>
             <span className="text-[10px] text-stitch-on-surface-variant uppercase tracking-wider">{dateStr}</span>
           </div>
-          <div className="h-7 w-px bg-white/10" />
+          <div className="hidden sm:block h-7 w-px bg-white/10" />
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-stitch-tertiary/15 flex items-center justify-center ring-1 ring-stitch-tertiary/20">
+            <div className="w-7 h-7 rounded-full bg-stitch-tertiary/15 flex items-center justify-center ring-1 ring-stitch-tertiary/20 shrink-0">
               <User size={13} className="text-stitch-tertiary" />
             </div>
-            <span className="text-stitch-on-surface font-medium">{user?.name ?? 'Cashier'}</span>
+            <span className="text-stitch-on-surface font-medium truncate max-w-[80px] sm:max-w-none">{user?.name ?? 'Cashier'}</span>
           </div>
         </div>
       </header>
 
-      <div className="flex-1 flex min-h-0">
+      <div className="flex-1 flex min-h-0 relative">
         {/* LEFT PANEL */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-y-auto px-6 py-5 gap-5">
+        <div className={`flex-1 flex flex-col min-h-0 overflow-y-auto px-3 sm:px-6 py-4 sm:py-5 gap-4 sm:gap-5 ${mobileView === 'cart' ? 'hidden lg:flex' : 'flex'}`}>
           <UniversalSearch onSerialAdd={handleSerialAdd} onProductSelect={handleProductSelect} />
 
           {serialAlert && (
@@ -280,7 +282,7 @@ export default function PosScreen() {
           )}
 
           {/* Stats Row */}
-          <div ref={statsRef} className="grid grid-cols-4 gap-3">
+          <div ref={statsRef} className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatCard icon={<Package size={15} />} label="In Stock" value={dashboard?.stats.totalInStock ?? 0} accent="blue" loading={dashboardLoading} />
             <StatCard icon={<AlertTriangle size={15} />} label="Low Stock" value={dashboard?.stats.totalLowStock ?? 0} accent={dashboard && dashboard.stats.totalLowStock > 0 ? 'red' : 'green'} loading={dashboardLoading} />
             <StatCard icon={<Layers size={15} />} label="Products" value={dashboard?.stats.totalProducts ?? 0} accent="purple" loading={dashboardLoading} />
@@ -312,7 +314,7 @@ export default function PosScreen() {
           </div>
 
           {/* Product Grid */}
-          <div ref={gridWrapRef} className="flex-1 min-h-0 pb-4">
+          <div ref={gridWrapRef} className="flex-1 min-h-0 pb-20 lg:pb-4">
             {dashboardLoading ? (
               <ProductGrid products={[]} loading={true} onAddToCart={() => {}} onViewUnits={() => {}} selectedCategory={null} />
             ) : filteredProducts.length === 0 && !(selectedCategory === null && statusFilter === 'in_stock') ? (
@@ -337,12 +339,34 @@ export default function PosScreen() {
               />
             )}
           </div>
+          {/* Mobile floating cart button */}
+          {items.length > 0 && (
+            <div className="lg:hidden fixed bottom-4 inset-x-3 z-20">
+              <button
+                onClick={() => setMobileView('cart')}
+                className="w-full flex items-center justify-between px-4 py-3 bg-stitch-primary text-stitch-on-primary rounded-xl font-bold shadow-lg text-sm"
+              >
+                <span className="flex items-center gap-2">
+                  <ShoppingCart size={16} />
+                  View Cart
+                </span>
+                <span className="tabular-nums">{items.length} {items.length === 1 ? 'item' : 'items'} · ₨ {items.reduce((s, i) => s + i.sellingPrice, 0).toLocaleString('en-PK')}</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* RIGHT PANEL */}
-        <aside className="w-96 shrink-0 border-l border-white/5 bg-stitch-surface-container/30 flex flex-col min-h-0">
-          <div className="h-14 shrink-0 px-5 border-b border-white/5 flex items-center justify-between">
+        <aside className={`shrink-0 border-l border-white/5 bg-stitch-surface-container/30 flex-col min-h-0 ${mobileView === 'browse' ? 'hidden lg:flex lg:w-96' : 'flex w-full lg:w-96'}`}>
+          <div className="h-14 shrink-0 px-4 sm:px-5 border-b border-white/5 flex items-center justify-between">
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => setMobileView('browse')}
+                className="lg:hidden flex items-center gap-1 text-stitch-on-surface-variant hover:text-white transition-colors mr-2"
+                aria-label="Back to products"
+              >
+                <ChevronLeft size={16} />
+              </button>
               <ShoppingCart size={15} className="text-stitch-primary" />
               <h2 className="text-sm font-bold text-stitch-on-surface font-space">Cart</h2>
             </div>

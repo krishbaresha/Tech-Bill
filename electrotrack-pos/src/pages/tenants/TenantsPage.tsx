@@ -194,7 +194,7 @@ export default function TenantsPage() {
 
             <div className="border-t border-white/5 pt-4">
               <p className="text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider mb-3">Primary Owner Account</p>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className={labelCls}>Owner Full Name *</label>
                   <input value={form.ownerName} onChange={(e) => setForm({ ...form, ownerName: e.target.value })}

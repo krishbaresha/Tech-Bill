@@ -146,7 +146,7 @@ export default function AppShell() {
               </button>
 
               {bellOpen && (
-                <div className="fixed top-16 left-0 lg:left-56 w-80 glass-modal rounded-xl z-50 flex flex-col max-h-80 shadow-2xl overflow-hidden animate-fade-in border border-white/10">
+                <div className="fixed top-16 left-2 right-2 sm:left-auto sm:right-4 sm:w-80 lg:left-56 lg:right-auto glass-modal rounded-xl z-50 flex flex-col max-h-80 shadow-2xl overflow-hidden animate-fade-in border border-white/10">
                   <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 shrink-0 bg-white/5">
                     <span className="text-xs font-bold text-stitch-primary font-space">Notifications</span>
                     {unreadCount > 0 && (
