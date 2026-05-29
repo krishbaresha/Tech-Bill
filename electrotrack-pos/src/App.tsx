@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth.store';
 import { api } from './api/client';
@@ -72,14 +72,22 @@ function RequireAuth({
 
 export default function App() {
   const { user, accessToken, setToken, clearAuth, setHydrating } = useAuthStore();
+  // Guard against React StrictMode double-invocation in dev.
+  // Without this, both calls hit /auth/refresh with the same cookie:
+  //   Call 1 → revokes token A, creates token B → success
+  //   Call 2 → token A already revoked → 401 → clearAuth() → forced logout
+  const refreshCalled = useRef(false);
 
   useEffect(() => {
+    if (refreshCalled.current) return;
+    refreshCalled.current = true;
+
     if (user && !accessToken) {
       setHydrating(true);
       api
         .post<{ access_token: string }>('/auth/refresh', null, { timeout: 10_000 })
         .then(({ data }) => setToken(data.access_token))
-        .catch(() => clearAuth()); // clearAuth sets user=null, ending the pendingRefresh spin
+        .catch(() => clearAuth());
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
