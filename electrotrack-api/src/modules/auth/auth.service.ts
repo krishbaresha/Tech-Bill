@@ -193,13 +193,27 @@ export class AuthService {
       throw new BadRequestException('User not found');
 
     const code = await this.otpService.generate(userId);
+    const ttl = this.configService.get('OTP_TTL_SECONDS', '300');
 
-    await this.mailer.sendMail({
-      from: this.configService.get('SMTP_FROM'),
-      to: user.email,
-      subject: 'ElectroTrack OTP',
-      text: `Your OTP is: ${code}. Valid for ${this.configService.get('OTP_TTL_SECONDS', '300')} seconds.`,
-    });
+    // Dev bypass: set OTP_LOG_TO_CONSOLE=true in .env to skip email during development
+    if (this.configService.get('OTP_LOG_TO_CONSOLE') === 'true') {
+      console.log(`[DEV OTP] ${user.email} → ${code} (valid ${ttl}s)`);
+      return;
+    }
+
+    try {
+      await this.mailer.sendMail({
+        from: this.configService.get('SMTP_FROM'),
+        to: user.email,
+        subject: 'ElectroTrack — Your OTP Code',
+        text: `Your OTP is: ${code}\n\nValid for ${ttl} seconds. Do not share this code.`,
+        html: `<p>Your OTP is: <strong style="font-size:24px;letter-spacing:4px">${code}</strong></p><p>Valid for ${ttl} seconds.</p>`,
+      });
+    } catch {
+      // Invalidate the generated OTP so it doesn't persist without delivery
+      await this.otpService.invalidate(userId);
+      throw new BadRequestException('Failed to send OTP — please try again');
+    }
   }
 
   async verifyOtp(userId: string, code: string) {

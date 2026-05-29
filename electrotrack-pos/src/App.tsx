@@ -77,9 +77,9 @@ export default function App() {
     if (user && !accessToken) {
       setHydrating(true);
       api
-        .post<{ access_token: string }>('/auth/refresh')
+        .post<{ access_token: string }>('/auth/refresh', null, { timeout: 10_000 })
         .then(({ data }) => setToken(data.access_token))
-        .catch(() => clearAuth());
+        .catch(() => clearAuth()); // clearAuth sets user=null, ending the pendingRefresh spin
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

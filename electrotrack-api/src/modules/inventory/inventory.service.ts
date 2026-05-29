@@ -155,12 +155,9 @@ export class InventoryService {
 
     const lowStock = cards.filter((c) => c.inStockCount <= lowStockThreshold);
 
+    const createdAtMap = new Map(products.map((p) => [p.id, p.createdAt.getTime()]));
     const recentlyAdded = [...cards]
-      .sort((a, b) => {
-        const dateA = products.find((p) => p.id === a.id)!.createdAt.getTime();
-        const dateB = products.find((p) => p.id === b.id)!.createdAt.getTime();
-        return dateB - dateA;
-      })
+      .sort((a, b) => (createdAtMap.get(b.id) ?? 0) - (createdAtMap.get(a.id) ?? 0))
       .slice(0, 6);
 
     const fastSelling = [...cards]
