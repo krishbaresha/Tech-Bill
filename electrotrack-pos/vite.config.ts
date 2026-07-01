@@ -14,8 +14,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
         runtimeCaching: [
           {
-            // Match API server at any host (dev or production) — avoid hardcoding localhost
-            urlPattern: ({ url }) => url.pathname.startsWith('/api'),
+            // Cache API calls with network-first strategy
+            urlPattern: /\/api\/.*/,
             handler: 'NetworkFirst',
             options: { cacheName: 'api-cache', networkTimeoutSeconds: 10 },
           },
