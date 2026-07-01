@@ -21,6 +21,7 @@ export default function AppShell() {
   const bellRef = useRef<HTMLDivElement>(null);
 
   const isPlatformAdmin = user?.role === 'platform_admin';
+  const isOwner = user?.role === 'owner';
 
   // Permission-based nav checks
   const canSeePOS = useCan('pos.read') && !isPlatformAdmin;
@@ -207,6 +208,12 @@ export default function AppShell() {
             <NavLink to="/dashboard" className={navClass}>
               <BarChart3 size={16} />
               Dashboard
+            </NavLink>
+          )}
+          {isOwner && !isPlatformAdmin && (
+            <NavLink to="/invoices" className={navClass}>
+              <FileText size={16} />
+              Invoices
             </NavLink>
           )}
           {canSeeInventory && (

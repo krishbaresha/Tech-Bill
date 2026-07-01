@@ -190,7 +190,7 @@ export interface SaleItem {
   sellingPrice: number;
   inventoryUnit: {
     serialNumber: string;
-    product: { id?: string; name: string; brand: string | null };
+    product: { id?: string; name: string; brand: string | null; warrantyMonths?: number };
   };
 }
 

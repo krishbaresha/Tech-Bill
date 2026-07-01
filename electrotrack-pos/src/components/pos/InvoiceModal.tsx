@@ -1,5 +1,7 @@
-import { X, Printer, Plus } from 'lucide-react';
-import { format, addMonths } from 'date-fns';
+import { X, Printer, Plus, Download } from 'lucide-react';
+import { format, addMonths, differenceInDays } from 'date-fns';
+import { QRCodeSVG } from 'qrcode.react';
+import html2pdf from 'html2pdf.js';
 import type { Sale, ShopSettings } from '../../types';
 import { useAuthStore } from '../../store/auth.store';
 
@@ -26,8 +28,6 @@ const PAYMENT_BADGE_CLASSES: Record<string, string> = {
   bank_transfer: 'bg-purple-500/15 text-purple-300 border-purple-400/30',
 };
 
-const DEFAULT_WARRANTY_MONTHS = 12;
-
 function formatCurrency(value: number): string {
   return `₨ ${Number(value).toLocaleString('en-PK')}`;
 }
@@ -40,33 +40,13 @@ function getPaymentBadgeClass(method: string): string {
   return PAYMENT_BADGE_CLASSES[method] ?? 'bg-white/10 text-white/70 border-white/20';
 }
 
-function VerificationCode({ invoiceNumber, accentColor }: { invoiceNumber: string; accentColor?: string }) {
-  const cells = Array.from({ length: 64 }, (_, i) => {
-    const seed = invoiceNumber.charCodeAt(i % invoiceNumber.length) + i * 7;
-    return (seed % 3) !== 0;
-  });
-  return (
-    <div className="flex flex-col items-center gap-3">
-      <div className="relative p-3 bg-white/[0.03] border border-white/10 rounded-xl">
-        <div className="grid grid-cols-8 gap-[2px] w-[88px] h-[88px]">
-          {cells.map((on, i) => (
-            <div
-              key={i}
-              style={on ? { backgroundColor: accentColor ?? 'rgba(255,255,255,0.9)', borderRadius: '1px' } : undefined}
-            />
-          ))}
-        </div>
-        <span className="absolute top-1 left-1 w-2.5 h-2.5 border-t border-l border-white/40" />
-        <span className="absolute top-1 right-1 w-2.5 h-2.5 border-t border-r border-white/40" />
-        <span className="absolute bottom-1 left-1 w-2.5 h-2.5 border-b border-l border-white/40" />
-        <span className="absolute bottom-1 right-1 w-2.5 h-2.5 border-b border-r border-white/40" />
-      </div>
-      <div className="text-center">
-        <p className="text-[10px] uppercase tracking-[0.18em] text-white/40">Scan to verify</p>
-        <p className="font-mono text-xs text-white/80 mt-1">{invoiceNumber}</p>
-      </div>
-    </div>
-  );
+function getWarrantyText(warrantyMonths: number, saleDate: Date): string {
+  if (!warrantyMonths || warrantyMonths <= 0) return '';
+  const expiryDate = addMonths(saleDate, warrantyMonths);
+  const daysLeft = differenceInDays(expiryDate, new Date());
+  if (daysLeft < 0) return `Expired ${Math.abs(daysLeft)} days ago`;
+  if (daysLeft === 0) return 'Expires today';
+  return `${daysLeft} days left (until ${format(expiryDate, 'dd MMM yyyy')})`;
 }
 
 export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: InvoiceModalProps) {
@@ -85,26 +65,60 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: 
   const discount = Number(sale.discountAmount);
   const total = Number(sale.totalAmount);
   const saleDate = new Date(sale.createdAt);
-  const warrantyEnd = addMonths(saleDate, DEFAULT_WARRANTY_MONTHS);
+
+  // Secure UUID-based URL — no sequential IDs, prevents IDOR attacks
+  const publicInvoiceUrl = `${window.location.origin}/public/invoice/${sale.id}`;
 
   const handlePrint = (): void => {
     window.print();
+  };
+
+  const handleDownloadPDF = (): void => {
+    const element = document.getElementById('invoice-print-area');
+    if (!element) return;
+    
+    // Calculate the actual height of the element in millimeters
+    const pxToMm = 25.4 / 96; // 1 pixel = 25.4 mm / 96 DPI
+    const elementHeightMm = element.scrollHeight * pxToMm;
+    const pageHeight = Math.max(200, elementHeightMm);
+
+    const opt = {
+      margin: 0,
+      filename: `Receipt_${sale.invoiceNumber}.pdf`,
+      image: { type: 'jpeg', quality: 1 },
+      html2canvas: { scale: 3, useCORS: true, backgroundColor: '#09090b' },
+      jsPDF: { unit: 'mm', format: [80, pageHeight], orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(element).save();
   };
 
   return (
     <>
       <style>{`
         @media print {
+          @page {
+            size: 80mm auto;
+            margin: 0;
+          }
           body * { visibility: hidden !important; }
           #invoice-print-area, #invoice-print-area * { visibility: visible !important; }
           #invoice-print-area {
-            position: absolute !important;
+            position: fixed !important;
             left: 0; top: 0;
-            width: 100% !important;
-            background: #0a0a0a !important;
-            color: #fff !important;
-            padding: 32px !important;
+            width: 80mm !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            padding: 8mm 6mm !important;
+            font-size: 10pt !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
+          #invoice-print-area * {
+            color: #000000 !important;
+            border-color: #cccccc !important;
+            background: transparent !important;
+          }
+          #invoice-print-area .print-total { font-size: 13pt !important; font-weight: bold !important; }
           .no-print { display: none !important; }
         }
       `}</style>
@@ -115,6 +129,13 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: 
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/5 shrink-0">
             <p className="text-[11px] uppercase tracking-[0.22em] text-white/40">Receipt</p>
             <div className="flex items-center gap-1.5">
+              <button
+                onClick={handleDownloadPDF}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white/80 hover:text-white border border-white/10 hover:border-white/25 hover:bg-white/5 rounded-lg transition-all"
+              >
+                <Download size={13} />
+                PDF
+              </button>
               <button
                 onClick={handlePrint}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white/80 hover:text-white border border-white/10 hover:border-white/25 hover:bg-white/5 rounded-lg transition-all"
@@ -221,6 +242,8 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: 
                   {sale.items.map((item, idx) => {
                     const product = item.inventoryUnit?.product;
                     const serial = item.inventoryUnit?.serialNumber;
+                    const wMonths = product?.warrantyMonths ?? 0;
+                    const warrantyText = getWarrantyText(wMonths, saleDate);
                     return (
                       <div key={item.id ?? idx} className="space-y-1">
                         <div className="flex items-baseline justify-between gap-3">
@@ -239,9 +262,11 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: 
                             SN · {serial}
                           </p>
                         )}
-                        <p className="text-[10px] text-white/35">
-                          Warranty until {format(warrantyEnd, 'dd MMM yyyy')}
-                        </p>
+                        {warrantyText && (
+                          <p className="text-[10px] text-white/35">
+                            Warranty: {warrantyText}
+                          </p>
+                        )}
                         {idx < sale.items.length - 1 && (
                           <div className="h-px bg-white/5 mt-4" />
                         )}
@@ -267,7 +292,7 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: 
                 <div className="h-px bg-white/15 my-3" />
                 <div className="flex items-baseline justify-between">
                   <span className="text-[11px] uppercase tracking-[0.22em] text-white/50">Total</span>
-                  <span className="text-2xl font-medium text-white tabular-nums tracking-tight">
+                  <span className="text-2xl font-medium text-white tabular-nums tracking-tight print-total">
                     {formatCurrency(total)}
                   </span>
                 </div>
@@ -283,8 +308,23 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: 
 
               <div className="h-px bg-white/10 mx-7" />
 
+              {/* Real QR Code — UUID-based, IDOR-safe, error correction H */}
               <div className="px-7 py-7 flex flex-col items-center gap-4">
-                <VerificationCode invoiceNumber={sale.invoiceNumber} accentColor={accentColor} />
+                <div className="flex flex-col items-center gap-3">
+                  <div className="p-3 bg-white rounded-xl">
+                    <QRCodeSVG
+                      value={publicInvoiceUrl}
+                      size={96}
+                      level="H"
+                      fgColor="#000000"
+                      bgColor="#ffffff"
+                    />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-white/40">Scan to verify</p>
+                    <p className="font-mono text-xs text-white/80 mt-1">{sale.invoiceNumber}</p>
+                  </div>
+                </div>
                 <div className="text-center pt-2 space-y-1">
                   <p className="text-sm text-white/80">Thank you for your purchase</p>
                   {footerNotes && (

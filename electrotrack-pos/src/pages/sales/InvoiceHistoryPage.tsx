@@ -3,6 +3,8 @@ import { FileText, Search, ChevronDown, ChevronUp, RefreshCw, X } from 'lucide-r
 import { format, addMonths } from 'date-fns';
 import { api } from '../../api/client';
 import gsap from 'gsap';
+import InvoiceModal from '../../components/pos/InvoiceModal';
+import type { Sale, ShopSettings } from '../../types';
 
 const formatPKR = (n: number) => `₨ ${n.toLocaleString('en-PK')}`;
 
@@ -50,7 +52,7 @@ const PAYMENT_LABELS: Record<string, string> = {
   card: 'Card', bank_transfer: 'Bank Transfer',
 };
 
-function ExpandedDetail({ saleId, createdAt }: { saleId: string; createdAt: string }) {
+function ExpandedDetail({ saleId, createdAt, onViewReceipt }: { saleId: string; createdAt: string; onViewReceipt: (detail: SaleDetail) => void }) {
   const [detail, setDetail] = useState<SaleDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -84,6 +86,15 @@ function ExpandedDetail({ saleId, createdAt }: { saleId: string; createdAt: stri
                 {h}
               </th>
             ))}
+            <th className="pb-1.5 text-right">
+              <button
+                onClick={() => onViewReceipt(detail)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold bg-stitch-primary/10 text-stitch-primary hover:bg-stitch-primary/20 rounded transition-colors"
+              >
+                <FileText size={12} />
+                View Receipt
+              </button>
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-white/[0.04]">
@@ -115,9 +126,10 @@ function ExpandedDetail({ saleId, createdAt }: { saleId: string; createdAt: stri
                     <span className="text-stitch-on-surface-variant/50">None</span>
                   )}
                 </td>
-                <td className="py-2 font-mono tabular-nums text-stitch-on-surface">
+                <td className="py-2 pr-4 font-mono tabular-nums text-stitch-on-surface">
                   {formatPKR(Number(item.sellingPrice))}
                 </td>
+                <td className="py-2"></td>
               </tr>
             );
           })}
@@ -135,6 +147,8 @@ export default function InvoiceHistoryPage() {
   const [searchInput, setSearchInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [shopSettings, setShopSettings] = useState<ShopSettings | null>(null);
+  const [viewSale, setViewSale] = useState<SaleDetail | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const limit = 25;
 
@@ -152,6 +166,12 @@ export default function InvoiceHistoryPage() {
   };
 
   useEffect(() => { load(page, search); }, [page, search]);
+
+  useEffect(() => {
+    api.get<ShopSettings>('/settings')
+      .then((r) => setShopSettings(r.data))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!loading && containerRef.current) {
@@ -298,7 +318,7 @@ export default function InvoiceHistoryPage() {
                   {expandedId === s.id && (
                     <tr className="bg-white/[0.015]">
                       <td colSpan={9}>
-                        <ExpandedDetail saleId={s.id} createdAt={s.createdAt} />
+                        <ExpandedDetail saleId={s.id} createdAt={s.createdAt} onViewReceipt={setViewSale} />
                       </td>
                     </tr>
                   )}
@@ -326,6 +346,14 @@ export default function InvoiceHistoryPage() {
           </div>
         )}
       </div>
+
+      {viewSale && (
+        <InvoiceModal
+          sale={viewSale as unknown as Sale}
+          shopSettings={shopSettings}
+          onClose={() => setViewSale(null)}
+        />
+      )}
     </div>
   );
 }

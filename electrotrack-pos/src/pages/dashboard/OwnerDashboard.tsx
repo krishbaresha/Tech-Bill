@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
-import { TrendingUp, ShoppingCart, Package, Tag, Banknote, X } from 'lucide-react';
+import { TrendingUp, ShoppingCart, Package, Tag, Banknote, X, FileText } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
 
 import SalesChart from '../../components/dashboard/SalesChart';
@@ -13,6 +14,7 @@ import gsap from 'gsap';
 const formatPKR = (n: number) => `₨ ${n.toLocaleString('en-PK')}`;
 
 export default function OwnerDashboard() {
+  const navigate = useNavigate();
   const [summary, setSummary] = useState<SalesSummary | null>(null);
   const [showItemsModal, setShowItemsModal] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -48,6 +50,17 @@ export default function OwnerDashboard() {
 
   return (
     <div ref={containerRef} className="p-4 sm:p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold font-space text-white">Dashboard</h1>
+        <button
+          onClick={() => navigate('/invoices')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stitch-primary text-stitch-on-primary text-sm font-bold shadow hover:bg-stitch-primary/90 transition-all"
+        >
+          <FileText size={15} />
+          View All Invoices
+        </button>
+      </div>
+
       <AiInsights />
 
       {summary ? (

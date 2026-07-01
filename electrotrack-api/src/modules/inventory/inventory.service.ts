@@ -310,6 +310,15 @@ export class InventoryService {
             warrantyMonths: true,
           },
         },
+        saleItems: {
+          take: 1,
+          orderBy: { sale: { createdAt: 'desc' } },
+          include: {
+            sale: {
+              select: { createdAt: true },
+            },
+          },
+        },
       },
     });
 
@@ -322,7 +331,11 @@ export class InventoryService {
       );
     }
 
-    return unit;
+    // Attach soldAt from the most recent sale for warranty calculation
+    const soldAt = unit.saleItems[0]?.sale?.createdAt ?? null;
+
+    const { saleItems: _si, ...unitWithoutSaleItems } = unit;
+    return { ...unitWithoutSaleItems, soldAt };
   }
 
   async createUnit(dto: CreateUnitDto, tenantId: string) {

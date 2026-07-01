@@ -21,6 +21,8 @@ import PurchaseOrdersPage from './pages/suppliers/PurchaseOrdersPage';
 import GrnPage from './pages/suppliers/GrnPage';
 import WarrantyPage from './pages/warranty/WarrantyPage';
 import TenantsPage from './pages/tenants/TenantsPage';
+import InvoiceHistoryPage from './pages/sales/InvoiceHistoryPage';
+import PublicInvoicePage from './pages/sales/PublicInvoicePage';
 import AppShell from './components/layout/AppShell';
 import { can } from './lib/permissions';
 import type { Role, Permission } from './types';
@@ -106,6 +108,8 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        {/* Public unauthenticated route for QR code invoice verification */}
+        <Route path="/public/invoice/:id" element={<PublicInvoicePage />} />
         <Route
           path="/"
           element={
@@ -260,6 +264,15 @@ export default function App() {
             element={
               <RequireAuth permission="reports.read">
                 <ExpensesPage />
+              </RequireAuth>
+            }
+          />
+          {/* Owner-only: full invoice management */}
+          <Route
+            path="invoices"
+            element={
+              <RequireAuth roles={['owner']}>
+                <InvoiceHistoryPage />
               </RequireAuth>
             }
           />

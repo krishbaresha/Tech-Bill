@@ -63,7 +63,7 @@ export default function WarrantyPage() {
     setError('');
     setResult(null);
     try {
-      const res = await api.get<WarrantyResult>(`/inventory/units/lookup/${serial.trim()}`);
+      const res = await api.get<WarrantyResult>(`/inventory/units/lookup/${serial.trim()}?anyStatus=true`);
       setResult(res.data);
       const info = getWarrantyInfo(res.data);
       setRecentChecks((prev) => [
