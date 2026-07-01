@@ -21,4 +21,4 @@ Disallow: /loyalty
 Disallow: /return-analytics
 Disallow: /cash-reconciliation
 
-Sitemap: https://electrotrack.app/sitemap.xml
+Sitemap: https://electrotrack-saas-five.vercel.app/sitemap.xml
