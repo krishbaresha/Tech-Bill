@@ -123,13 +123,16 @@ export default function AppShell() {
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <div className="p-4 border-b border-white/5 flex items-center justify-between shrink-0">
-          <div className="min-w-0 flex-1">
-            <p className="font-bold text-white text-sm tracking-tight font-space truncate">
-              {isPlatformAdmin ? 'SaaS Admin Console' : user?.tenantName || 'ElectroTrack'}
-            </p>
-            <p className="text-[10px] text-stitch-on-surface-variant mt-0.5 truncate font-semibold uppercase tracking-wider font-mono">
-              {user?.role?.replace('_', ' ')}
-            </p>
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <img src="/favicon.svg" alt="ElectroTrack Icon" className="w-6 h-6 object-contain shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="font-bold text-white text-sm tracking-tight font-space truncate">
+                {isPlatformAdmin ? 'SaaS Admin Console' : user?.tenantName || 'ElectroTrack'}
+              </p>
+              <p className="text-[10px] text-stitch-on-surface-variant mt-0.5 truncate font-semibold uppercase tracking-wider font-mono">
+                {user?.role?.replace('_', ' ')}
+              </p>
+            </div>
           </div>
           {!isPlatformAdmin && (
             <div ref={bellRef} className="relative ml-2">

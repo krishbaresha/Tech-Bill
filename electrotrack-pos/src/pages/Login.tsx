@@ -119,12 +119,9 @@ export default function Login() {
       <div className="absolute bottom-10 right-10 w-96 h-96 bg-stitch-tertiary/5 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="glass-card rounded-2xl p-8 w-full max-w-sm relative z-10 border border-white/10">
-        <div className="mb-7 text-center">
-          <div className="w-12 h-12 bg-stitch-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3 border border-stitch-primary/20">
-            <span className="text-xl font-black text-stitch-primary font-space">ET</span>
-          </div>
-          <h1 className="text-xl font-bold text-white font-space">ElectroTrack POS</h1>
-          <p className="text-[11px] text-white/40 mt-1">SaaS Multi-tenant Enterprise Management</p>
+        <div className="mb-6 text-center flex flex-col items-center">
+          <img src="/logo.svg" alt="ElectroTrack Logo" className="h-14 w-auto mb-2" />
+          <p className="text-[10px] text-white/40 uppercase tracking-wider font-semibold">SaaS Multi-tenant Enterprise Management</p>
         </div>
 
         {serverError && (
