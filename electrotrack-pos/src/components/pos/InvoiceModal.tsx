@@ -85,9 +85,9 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: 
     const opt = {
       margin: 0,
       filename: `Receipt_${sale.invoiceNumber}.pdf`,
-      image: { type: 'jpeg', quality: 1 },
+      image: { type: 'jpeg' as const, quality: 1 },
       html2canvas: { scale: 3, useCORS: true, backgroundColor: '#09090b' },
-      jsPDF: { unit: 'mm', format: [80, pageHeight], orientation: 'portrait' }
+      jsPDF: { unit: 'mm', format: [80, pageHeight] as [number, number], orientation: 'portrait' as const }
     };
     html2pdf().set(opt).from(element).save();
   };

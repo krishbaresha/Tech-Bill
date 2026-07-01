@@ -239,42 +239,28 @@ function CreateReturnModal({ onClose, onSuccess }: { onClose: () => void; onSucc
   );
 }
 
-interface OtpModalProps {
+interface ApproveRejectModalProps {
   returnId: string;
   action: 'approve' | 'reject';
   onClose: () => void;
   onSuccess: () => void;
 }
 
-function OtpModal({ returnId, action, onClose, onSuccess }: OtpModalProps) {
-  const [otpCode, setOtpCode] = useState('');
+function ApproveRejectModal({ returnId, action, onClose, onSuccess }: ApproveRejectModalProps) {
   const [notes, setNotes] = useState('');
   const [refundAmount, setRefundAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
 
   const inputCls = 'w-full bg-stitch-surface-container-high/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-stitch-on-surface outline-none focus:border-stitch-primary/50 transition-colors';
   const labelCls = 'block text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider mb-1';
 
-  const sendOtp = async () => {
-    try {
-      await api.post('/auth/request-otp', {});
-      setOtpSent(true);
-    } catch {
-      setError('Failed to send OTP');
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otpCode) { setError('Enter OTP first'); return; }
     setLoading(true);
     setError('');
     try {
-      const { data } = await api.post('/auth/verify-otp', { code: otpCode });
       await api.patch(`/returns/${returnId}/${action}`, {
-        otpToken: data.otpToken,
         reviewNotes: notes || undefined,
         ...(action === 'approve' && refundAmount ? { refundAmount: parseFloat(refundAmount) } : {}),
       });
@@ -292,57 +278,38 @@ function OtpModal({ returnId, action, onClose, onSuccess }: OtpModalProps) {
       <div className="glass-modal rounded-xl w-full max-w-sm p-6 space-y-4 border border-white/10">
         <h2 className="font-bold text-stitch-on-surface font-space capitalize">{action} Return</h2>
         <p className="text-sm text-stitch-on-surface-variant">
-          Owner OTP verification required.{!otpSent && ' Click "Send OTP" to receive a code via email.'}
+          Please confirm this return request.
         </p>
-        {!otpSent ? (
-          <div className="flex flex-col gap-2">
-            <button onClick={sendOtp}
-              className="w-full py-2.5 bg-stitch-primary text-stitch-on-primary text-sm font-bold rounded-lg hover:bg-stitch-primary/90 transition-all active:scale-95">
-              Send OTP
-            </button>
-            <button onClick={onClose}
-              className="w-full py-2 text-sm text-stitch-on-surface-variant hover:text-white transition-colors">
+        <form onSubmit={handleSubmit} className="space-y-3">
+          {action === 'approve' && (
+            <div>
+              <label className={labelCls}>Refund Amount (₨)</label>
+              <input type="number" min="0" step="0.01" value={refundAmount}
+                onChange={(e) => setRefundAmount(e.target.value)} className={inputCls} />
+            </div>
+          )}
+          <div>
+            <label className={labelCls}>
+              Review Notes{action === 'reject' ? ' *' : ' (optional)'}
+            </label>
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
+              required={action === 'reject'}
+              className={`${inputCls} resize-none`} />
+          </div>
+          {error && <p className="text-xs text-stitch-error flex items-center gap-1.5"><AlertTriangle size={11} />{error}</p>}
+          <div className="flex gap-2">
+            <button type="button" onClick={onClose}
+              className="flex-1 py-2 text-sm text-stitch-on-surface-variant border border-white/10 rounded-lg hover:bg-white/5 transition-colors">
               Cancel
             </button>
+            <button type="submit" disabled={loading}
+              className={`flex-1 py-2 text-sm text-stitch-on-primary font-bold rounded-lg disabled:opacity-50 active:scale-95 transition-all ${
+                action === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-stitch-error hover:bg-stitch-error/80'
+              }`}>
+              {loading ? '…' : action === 'approve' ? 'Approve' : 'Reject'}
+            </button>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div>
-              <label className={labelCls}>6-digit OTP</label>
-              <input value={otpCode} onChange={(e) => setOtpCode(e.target.value)} maxLength={6}
-                placeholder="000000"
-                className={`${inputCls} text-center tracking-widest font-mono text-lg`} />
-            </div>
-            {action === 'approve' && (
-              <div>
-                <label className={labelCls}>Refund Amount (₨)</label>
-                <input type="number" min="0" step="0.01" value={refundAmount}
-                  onChange={(e) => setRefundAmount(e.target.value)} className={inputCls} />
-              </div>
-            )}
-            <div>
-              <label className={labelCls}>
-                Review Notes{action === 'reject' ? ' *' : ' (optional)'}
-              </label>
-              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
-                required={action === 'reject'}
-                className={`${inputCls} resize-none`} />
-            </div>
-            {error && <p className="text-xs text-stitch-error flex items-center gap-1.5"><AlertTriangle size={11} />{error}</p>}
-            <div className="flex gap-2">
-              <button type="button" onClick={onClose}
-                className="flex-1 py-2 text-sm text-stitch-on-surface-variant border border-white/10 rounded-lg hover:bg-white/5 transition-colors">
-                Cancel
-              </button>
-              <button type="submit" disabled={loading}
-                className={`flex-1 py-2 text-sm text-stitch-on-primary font-bold rounded-lg disabled:opacity-50 active:scale-95 transition-all ${
-                  action === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-stitch-error hover:bg-stitch-error/80'
-                }`}>
-                {loading ? '…' : action === 'approve' ? 'Approve' : 'Reject'}
-              </button>
-            </div>
-          </form>
-        )}
+        </form>
       </div>
     </div>
   );
@@ -517,7 +484,7 @@ export default function ReturnsPage() {
       )}
 
       {modal && (
-        <OtpModal
+        <ApproveRejectModal
           returnId={modal.returnId}
           action={modal.action}
           onClose={() => setModal(null)}
