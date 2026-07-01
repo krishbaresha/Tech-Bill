@@ -31,7 +31,7 @@ export class AuthController {
     res.cookie('refresh_token', result.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
@@ -53,7 +53,7 @@ export class AuthController {
     res.cookie('refresh_token', result.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
@@ -68,7 +68,11 @@ export class AuthController {
     if (token) {
       await this.authService.logout(token);
     }
-    res.clearCookie('refresh_token');
+    res.clearCookie('refresh_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    });
     return res.json({ message: 'Logged out' });
   }
 
