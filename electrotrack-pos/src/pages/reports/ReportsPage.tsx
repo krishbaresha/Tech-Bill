@@ -176,7 +176,7 @@ export default function ReportsPage() {
                 <div className="glass-card rounded-xl p-5">
                   <h3 className="text-sm font-semibold text-stitch-on-surface font-space mb-4">Top Products</h3>
                   <div className="space-y-2">
-                    {summary.topProducts.slice(0, 5).map((p, i) => (
+                    {summary.soldProducts.slice(0, 5).map((p: { productId: string; name: string; units: number; revenue: number }, i: number) => (
                       <div key={p.productId} className="flex items-center gap-3 text-sm">
                         <span className="text-stitch-on-surface-variant text-xs w-4 text-right font-mono">{i + 1}.</span>
                         <span className="flex-1 text-stitch-on-surface truncate">{p.name}</span>

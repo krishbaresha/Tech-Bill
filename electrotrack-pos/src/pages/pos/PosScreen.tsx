@@ -9,7 +9,7 @@ import InvoiceModal from '../../components/pos/InvoiceModal';
 import { useCartStore } from '../../store/cart.store';
 import { useAuthStore } from '../../store/auth.store';
 import { api } from '../../api/client';
-import type { Sale, CartItem, ShopSettings } from '../../types';
+import type { Sale, ShopSettings } from '../../types';
 
 interface ProductCard {
   id: string;
@@ -383,7 +383,7 @@ export default function PosScreen() {
               <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="03XX-XXXXXXX" inputMode="tel"
                 className="w-full bg-stitch-surface-container-high/50 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-stitch-on-surface outline-none focus:border-stitch-primary/50 transition-colors" />
             </div>
-            {items.length > 0 && <PaymentForm onSaleComplete={setCompletedSale} customerName={customerName} customerPhone={customerPhone} />}
+            {items.length > 0 && <PaymentForm onSaleComplete={(sale: Sale) => setCompletedSale(sale)} />}
           </div>
         </aside>
       </div>

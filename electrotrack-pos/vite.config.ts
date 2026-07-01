@@ -15,7 +15,7 @@ export default defineConfig({
         runtimeCaching: [
           {
             // Match API server at any host (dev or production) — avoid hardcoding localhost
-            urlPattern: ({ url }) => url.origin !== self.location.origin,
+            urlPattern: ({ url }) => url.pathname.startsWith('/api'),
             handler: 'NetworkFirst',
             options: { cacheName: 'api-cache', networkTimeoutSeconds: 10 },
           },
