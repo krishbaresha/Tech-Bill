@@ -19,7 +19,6 @@ import { FilterReturnsDto } from './dto/filter-returns.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { TenantGuard } from '../../common/guards/tenant.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
-import { OtpGuard } from '../../common/guards/otp.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 
 interface RequestWithUser extends Request {
@@ -61,7 +60,6 @@ export class ReturnsController {
 
   @Patch(':id/approve')
   @Permissions('returns.review')
-  @UseGuards(OtpGuard)
   @HttpCode(HttpStatus.OK)
   approveReturn(
     @Param('id') id: string,
@@ -78,7 +76,6 @@ export class ReturnsController {
 
   @Patch(':id/reject')
   @Permissions('returns.review')
-  @UseGuards(OtpGuard)
   @HttpCode(HttpStatus.OK)
   rejectReturn(
     @Param('id') id: string,
