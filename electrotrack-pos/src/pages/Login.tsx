@@ -117,7 +117,7 @@ export default function Login() {
               </div>
               <div className="relative">
                 <input {...register('password')} type={showPassword ? 'text' : 'password'} autoComplete="current-password"
-                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" className={`${inputCls} pr-10`} />
+                  placeholder="********" className={`${inputCls} pr-10`} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors flex items-center justify-center">
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
