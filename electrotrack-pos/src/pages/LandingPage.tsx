@@ -935,7 +935,9 @@ export default function LandingPage() {
                     </motion.span>
                   </AnimatePresence>
                 </span>
-                <span className="text-sm text-slate-450 dark:text-white/30 font-medium">/ month</span>
+                <span className="text-sm text-slate-450 dark:text-white/30 font-medium">
+                  {billingPeriod === 'annual' ? '/ mo, billed annually' : '/ month'}
+                </span>
               </div>
 
               <ul className="mt-8 space-y-4">
@@ -993,7 +995,9 @@ export default function LandingPage() {
                       </motion.span>
                     </AnimatePresence>
                   </span>
-                  <span className="text-sm text-slate-450 dark:text-white/30 font-medium">/ month</span>
+                  <span className="text-sm text-slate-450 dark:text-white/30 font-medium">
+                    {billingPeriod === 'annual' ? '/ mo, billed annually' : '/ month'}
+                  </span>
                 </div>
 
                 <ul className="mt-8 space-y-4">

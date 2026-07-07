@@ -169,23 +169,27 @@ export default function CheckoutPage() {
                 </button>
               </div>
             </div>
-
             <div className="pt-6 border-t border-slate-200/50 dark:border-white/5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/30">
                 Summary Total
               </span>
               <div className="flex items-baseline gap-1 mt-2">
                 <span className="text-4xl font-extrabold text-slate-950 dark:text-white font-space">
-                  {currencyInfo.symbol}{price}
+                  {currencyInfo.symbol}{billing === 'annual' ? price * 12 : price}
                 </span>
                 <span className="text-xs text-slate-400 dark:text-white/30 font-medium">
                   /{billing === 'annual' ? 'yr' : 'mo'}
                 </span>
               </div>
               {billing === 'annual' && (
-                <p className="mt-1.5 text-xs text-emerald-500 font-bold font-mono">
-                  Annual discount applied (Saved 20%)
-                </p>
+                <div className="mt-2 space-y-1">
+                  <p className="text-xs text-slate-500 dark:text-[#c7c4d7]">
+                    Equivalent to {currencyInfo.symbol}{price}/month, billed annually
+                  </p>
+                  <p className="text-xs text-emerald-500 font-bold font-mono">
+                    Annual discount applied (Saved 20%)
+                  </p>
+                </div>
               )}
             </div>
             
