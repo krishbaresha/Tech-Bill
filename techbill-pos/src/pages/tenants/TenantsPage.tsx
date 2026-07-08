@@ -80,7 +80,8 @@ export default function TenantsPage() {
     try {
       await api.post('/tenants', {
         ...form,
-        ownerEmail: `${form.ownerEmail}@${form.slug || 'tenant'}.techbill.app`
+        username: form.ownerEmail,
+        ownerEmail: undefined // ensure we don't send the raw one if the backend reads it
       });
       setSuccessMsg(`Tenant "${form.name}" registered successfully.`);
       setShowAddForm(false);

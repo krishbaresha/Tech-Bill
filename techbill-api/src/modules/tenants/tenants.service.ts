@@ -49,14 +49,17 @@ export class TenantsService {
 
   async createTenant(dto: {
     name: string;
-    username: string;
+    slug: string;
+    username?: string;
+    ownerEmail?: string;
     plan?: string;
     maxUsers?: number;
     ownerName: string;
     ownerPasswordHashOrText: string;
   }) {
-    const slug = dto.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const ownerEmail = `${dto.username}@${slug}.techbill.app`;
+    const slug = dto.slug || dto.name.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    const username = dto.username || dto.ownerEmail || 'owner';
+    const ownerEmail = `${username}@${slug}.techbill.app`;
 
     // 1. Check if tenant slug or owner email already exists
     const existingTenant = await this.prisma.tenant.findUnique({

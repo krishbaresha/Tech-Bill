@@ -33,7 +33,9 @@ export class TenantsController {
     @Body()
     dto: {
       name: string;
-      username: string;
+      slug: string;
+      username?: string;
+      ownerEmail?: string;
       plan?: string;
       maxUsers?: number;
       ownerName: string;
