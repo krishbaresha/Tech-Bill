@@ -41,7 +41,7 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
       include: {
-        tenant: { select: { id: true, name: true, status: true, plan: true, slug: true, onlineSellingEnabled: true, currentPeriodEnd: true } },
+        tenant: { select: { id: true, name: true, status: true, plan: true, slug: true, onlineSellingEnabled: true, appAccessEnabled: true, currentPeriodEnd: true } },
       },
     });
 
@@ -62,6 +62,15 @@ export class AuthService {
       throw new UnauthorizedException(
         'Your shop account has been suspended. Contact platform admin.',
       );
+    }
+
+    // Block mobile app login if tenant does not have app access
+    if (dto.clientSource === 'mobile') {
+      if (!user.tenant || !user.tenant.appAccessEnabled) {
+        throw new UnauthorizedException(
+          "You don't have an app subscription. Please contact the platform admin."
+        );
+      }
     }
 
     const passwordValid = await bcrypt.compare(dto.password, user.passwordHash);

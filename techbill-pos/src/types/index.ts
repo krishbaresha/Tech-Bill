@@ -306,6 +306,7 @@ export interface Tenant {
   plan: string;
   maxUsers: number;
   onlineSellingEnabled: boolean;
+  appAccessEnabled: boolean;
   createdAt: string;
   updatedAt: string;
   currentPeriodEnd?: string | null;

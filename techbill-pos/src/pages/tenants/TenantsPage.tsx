@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Plus, RefreshCw, X, ShieldAlert, CheckCircle, Ban, Edit3, Building2, Trash2, RotateCcw, CreditCard, Calendar, Key } from 'lucide-react';
+import { Plus, RefreshCw, X, ShieldAlert, CheckCircle, Ban, Edit3, Building2, Trash2, RotateCcw, CreditCard, Calendar, Key, Smartphone } from 'lucide-react';
 import { api } from '../../api/client';
 import type { Tenant } from '../../types';
 import gsap from 'gsap';
@@ -187,6 +187,20 @@ export default function TenantsPage() {
       setError(e.response?.data?.message ?? 'Failed to restore tenant.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleAppAccess = async (tenant: Tenant) => {
+    setError('');
+    try {
+      const newVal = !tenant.appAccessEnabled;
+      await api.patch(`/tenants/${tenant.id}/app-access`, { appAccessEnabled: newVal });
+      setTenants((prev) => prev.map((t) => t.id === tenant.id ? { ...t, appAccessEnabled: newVal } : t));
+      setSuccessMsg(`App access ${newVal ? 'enabled' : 'disabled'} for ${tenant.name}`);
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setError(e.response?.data?.message ?? 'Failed to toggle app access.');
     }
   };
 
@@ -616,6 +630,16 @@ export default function TenantsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => handleToggleAppAccess(t)}
+                          title={t.appAccessEnabled ? 'Disable App Access' : 'Enable App Access'}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            t.appAccessEnabled
+                              ? 'text-green-400 hover:text-green-300 hover:bg-green-500/10'
+                              : 'text-stitch-on-surface-variant hover:text-green-400 hover:bg-green-500/10'
+                          }`}>
+                          <Smartphone size={14} className={!t.appAccessEnabled ? 'opacity-50' : ''} />
+                        </button>
                         <button
                           onClick={() => { setResettingPasswordTenant(t); setNewOwnerPassword(''); }}
                           title="Reset Owner Password"

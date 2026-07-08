@@ -89,6 +89,7 @@ model Tenant {
   currentPeriodEnd DateTime? @map("current_period_end")
   maxUsers         Int      @default(5) @map("max_users")
   onlineSellingEnabled Boolean  @default(false) @map("online_selling_enabled")
+  appAccessEnabled Boolean  @default(false) @map("app_access_enabled")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 

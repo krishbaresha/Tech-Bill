@@ -228,6 +228,13 @@ export class TenantsService {
     return { message: 'Password reset successfully' };
   }
 
+  async toggleAppAccess(id: string, appAccessEnabled: boolean) {
+    return this.prisma.tenant.update({
+      where: { id },
+      data: { appAccessEnabled },
+    });
+  }
+
   private readonly logger = new Logger(TenantsService.name);
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)

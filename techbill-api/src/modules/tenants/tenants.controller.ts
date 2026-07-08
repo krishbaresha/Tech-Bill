@@ -85,4 +85,10 @@ export class TenantsController {
   resetOwnerPassword(@Param('id') id: string, @Body('password') password: string) {
     return this.tenantsService.resetOwnerPassword(id, password);
   }
+
+  @Patch(':id/app-access')
+  @HttpCode(HttpStatus.OK)
+  toggleAppAccess(@Param('id') id: string, @Body('appAccessEnabled') appAccessEnabled: boolean) {
+    return this.tenantsService.toggleAppAccess(id, appAccessEnabled);
+  }
 }
