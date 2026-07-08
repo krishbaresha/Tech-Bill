@@ -1,235 +1,140 @@
-# ElectroTrack Deployment Guide
+# TechBill Production Deployment Guide
 
-## Architecture
+This guide details the step-by-step instructions required to deploy the TechBill multi-tenant SaaS application to production.
+
+---
+
+## Architecture Diagram
 
 ```mermaid
 graph LR
-  U["User Browser"] --> V["Vercel (Frontend)"]
-  V --> R["Render (Backend API)"]
-  R --> DB["Supabase PostgreSQL"]
-  R --> RS["Resend SMTP"]
+  User["Client Browser (*.techbill.app)"] --> Vercel["Vercel Frontend Hosting"]
+  Vercel --> Render["Render API Backend (api.techbill.app)"]
+  Render --> Supabase["Supabase PostgreSQL DB"]
+  Render --> Redis["Upstash / Redis Caching"]
+  Render --> Resend["Resend SMTP Services"]
 ```
 
-| Component | Platform | Directory |
-|-----------|----------|-----------|
-| Frontend (React + Vite) | **Vercel** | `electrotrack-pos/` |
-| Backend (NestJS) | **Render** | `electrotrack-api/` |
+| Deployment Segment | Platform Provider | Source Subdirectory | Production URL |
+|--------------------|-------------------|---------------------|----------------|
+| **Frontend SPA**   | Vercel            | `techbill-pos/`     | `https://techbill.app` |
+| **Backend REST API**| Render            | `techbill-api/`     | `https://api.techbill.app` |
 
 ---
 
-## 🐛 Bugs Fixed Before Deployment
+## Part 1 — Domain Configuration (Name.com)
 
-The following TypeScript errors were **blocking the Vercel build** (`tsc -b && vite build` would fail):
+To support multi-tenant wildcard subdomains (e.g., `alpha.techbill.app`, `beta.techbill.app`), the root domain DNS records must route requests properly to Vercel.
 
-| File | Error | Fix |
-|------|-------|-----|
-| `supabase.ts`, `supabase-auth.store.ts`, `AuthProvider.tsx`, `useAuth.ts` | `@supabase/supabase-js` not installed — TS2307 | Deleted (dead code — app uses `auth.store` with NestJS JWT) |
-| `ProtectedRoute.tsx` | Imported deleted `supabase-auth.store` | Rewrote to use `auth.store` |
-| `ExpensesPage.tsx` | Unused `loading` variable — TS6133 | Prefixed with `_` |
-| `PosScreen.tsx` | Unused `CartItem` import — TS6196 | Removed import |
-| `PosScreen.tsx` | `PaymentForm` passed props it doesn't accept — TS2322 | Removed extra props |
-| `ReportsPage.tsx` | `topProducts` doesn't exist on `SalesSummary` — TS2339 | Changed to `soldProducts` |
-| `ReportsPage.tsx` | Implicit `any` on `.map()` callback — TS7006 | Added explicit types |
-| `vite.config.ts` | `self` not found — TS2304 | Replaced with pathname check |
+1.  Log into your **Name.com** domain registrar.
+2.  Navigate to DNS Management for **`techbill.app`**.
+3.  Add the following records:
 
-> [!IMPORTANT]
-> Build now passes cleanly: `tsc -b && vite build` ✅
+| Record Type | Host / Name | Answer / Destination Value | TTL |
+|-------------|-------------|----------------------------|-----|
+| `CNAME`     | `*`         | `cname.vercel-dns.com.`    | 300 |
+| `CNAME`     | `@` (root)  | `cname.vercel-dns.com.`    | 300 |
+| `CNAME`     | `api`       | `your-api.onrender.com.`   | 300 |
 
 ---
 
-## Part 1 — Deploy Frontend to Vercel
+## Part 2 — Deploy Frontend to Vercel
 
-### Step 1: Import the Repository
+Vercel serves the React SPA assets and handles dynamic wildcard subdomain routing.
 
-1. Go to [vercel.com/new](https://vercel.com/new)
-2. Click **"Import Git Repository"**
-3. Select the **`krishbaresha/electrotrack-saas`** repo from GitHub
-4. Vercel will detect it as a monorepo
+### Step 1: Project Scaffolding
+1.  Go to [Vercel Dashboard](https://vercel.com/new).
+2.  Import the Git repository: **`krishbaresha/Tech-Bill`**.
+3.  Vercel will detect the workspace.
 
-### Step 2: Configure Project Settings
+### Step 2: Configure Workspace Settings
+Set these exact values in the Vercel setup window:
 
-In the Vercel project settings, set these values:
+*   **Framework Preset**: `Vite`
+*   **Root Directory**: `techbill-pos` (Click "Edit" and type `techbill-pos` to direct Vercel to compile only the frontend subdirectory)
+*   **Build Command**: `npm run build`
+*   **Output Directory**: `dist`
+*   **Install Command**: `npm install`
+*   **Node.js Version**: `20.x`
 
-| Setting | Value |
-|---------|-------|
-| **Framework Preset** | `Vite` |
-| **Root Directory** | `electrotrack-pos` |
-| **Build Command** | `npm run build` |
-| **Output Directory** | `dist` |
-| **Install Command** | `npm install` |
-| **Node.js Version** | `18.x` or `20.x` |
+### Step 3: Environment Variables
+Add the following key-value pairs:
 
-> [!TIP]
-> Click **"Edit"** next to Root Directory and type `electrotrack-pos`. This tells Vercel to only build the frontend subdirectory.
-
-### Step 3: Set Environment Variables
-
-In Vercel → **Project Settings → Environment Variables**, add:
-
-| Key | Value | Example |
-|-----|-------|---------|
-| `VITE_API_URL` | Your Render backend URL | `https://electrotrack-api.onrender.com` |
-| `VITE_WS_URL` | Same as API URL (WebSocket) | `https://electrotrack-api.onrender.com` |
-
-> [!CAUTION]
-> Do **NOT** add a trailing slash to the URLs. Use `https://electrotrack-api.onrender.com` not `https://electrotrack-api.onrender.com/`.
-
-### Step 4: Deploy
-
-Click **"Deploy"**. Vercel will:
-1. `cd electrotrack-pos`
-2. `npm install`
-3. `npm run build` → runs `tsc -b && vite build`
-4. Serve the `dist/` directory as static files
-
-### Step 5: Note Your Vercel URL
-
-After deploy, copy your Vercel URL (e.g. `https://electrotrack-pos.vercel.app`). You'll need this for the backend CORS config.
-
----
-
-## Part 2 — Deploy Backend to Render
-
-### Step 1: Create a Web Service
-
-1. Go to [dashboard.render.com](https://dashboard.render.com)
-2. Click **"New +" → "Web Service"**
-3. Connect the **same GitHub repo** (`krishbaresha/electrotrack-saas`)
-
-### Step 2: Configure Service Settings
-
-| Setting | Value |
-|---------|-------|
-| **Name** | `electrotrack-api` |
-| **Root Directory** | `electrotrack-api` |
-| **Runtime** | `Node` |
-| **Build Command** | `npm install && npx prisma generate && npm run build` |
-| **Start Command** | `node dist/src/main` |
-| **Node Version** | Set `NODE_VERSION` env var to `20` |
-
-> [!IMPORTANT]
-> The build command must include `npx prisma generate` before `npm run build` to generate the Prisma client. Without it, the app crashes on startup.
-
-### Step 3: Set Environment Variables
-
-In Render → **Environment**, add these variables:
-
-| Key | Value |
-|-----|-------|
-| `PORT` | `3000` (or let Render assign) |
-| `NODE_ENV` | `production` |
-| `FRONTEND_URL` | `https://your-app.vercel.app` |
-| `DATABASE_URL` | `postgresql://postgres.mlxopjdfjbdmiovnhugp:...@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres` |
-| `JWT_SECRET` | Your JWT secret |
-| `JWT_REFRESH_SECRET` | Your JWT refresh secret |
-| `JWT_ACCESS_EXPIRES_IN` | `15m` |
-| `JWT_REFRESH_EXPIRES_IN` | `7d` |
-| `JWT_OTP_EXPIRES_IN` | `2m` |
-| `OTP_TTL_SECONDS` | `300` |
-| `OTP_LENGTH` | `6` |
-| `SMTP_HOST` | `smtp.resend.com` |
-| `SMTP_PORT` | `465` |
-| `SMTP_SECURE` | `true` |
-| `SMTP_USER` | `resend` |
-| `SMTP_PASS` | Your Resend API key (e.g. `re_VUVntdV5_...`) |
-| `SMTP_FROM` | `ElectroTrack <noreply@yourdomain.com>` |
-| `ALLOWED_ORIGINS` | `https://your-app.vercel.app` |
-| `BCRYPT_ROUNDS` | `12` |
-| `GROK_API_KEY` | Your Groq API key |
-| `SHOP_NAME` | `My Electronics Shop` |
-| `DEFAULT_LOW_STOCK_THRESHOLD` | `2` |
+| Variable Name | Description | Production Value |
+|---------------|-------------|------------------|
+| `VITE_API_URL`| Production Backend API Endpoint | `https://api.techbill.app` |
 
 > [!WARNING]
-> **Resend SMTP**: The `SMTP_FROM` email address domain **must be verified** in your Resend dashboard. Go to [resend.com/domains](https://resend.com/domains) to verify it. If using the free tier, you can only send from `onboarding@resend.dev`.
+> Do **NOT** add trailing slashes to API endpoints. Use `https://api.techbill.app`, not `https://api.techbill.app/`.
 
-### Step 4: Deploy
-
-Click **"Create Web Service"**. Render will build and deploy automatically.
+### Step 4: Wildcard Domain Attachment
+1.  Once deployed, navigate to **Project Settings → Domains** in Vercel.
+2.  Add **`techbill.app`**.
+3.  Add **`*.techbill.app`** (Ensure wildcard support is active; Vercel will auto-generate SSL certificates for all dynamic subdomains using Let's Encrypt).
 
 ---
 
-## Part 3 — Post-Deployment Checklist
+## Part 3 — Deploy Backend to Render
 
-### ✅ Update CORS on Render
+Render hosts the NestJS web service, WebSocket gateway, and executes database migrations.
 
-Once you have your Vercel URL, update the `ALLOWED_ORIGINS` env var on Render:
+### Step 1: Create Web Service
+1.  Navigate to [dashboard.render.com](https://dashboard.render.com).
+2.  Click **New + → Web Service**.
+3.  Connect the Git repository: **`krishbaresha/Tech-Bill`**.
 
-```
-ALLOWED_ORIGINS=https://your-app.vercel.app
-```
+### Step 2: Configure Service Parameters
+Configure the service with these settings:
 
-If you have multiple origins (e.g., a custom domain + Vercel preview):
-```
-ALLOWED_ORIGINS=https://your-app.vercel.app,https://electrotrack.app
-```
+*   **Name**: `techbill-api`
+*   **Root Directory**: `techbill-api`
+*   **Runtime**: `Node`
+*   **Build Command**: `npm install && npx prisma generate && npm run build`
+*   **Start Command**: `node dist/main`
 
-### ✅ Update `VITE_API_URL` on Vercel
+### Step 3: Define System Environment Variables
+Add the following parameters under the Render Service **Environment** settings:
 
-Once Render deploy is live, update the Vercel env vars with the actual Render URL:
+| Variable Name | Recommended Production Setting |
+|---------------|--------------------------------|
+| `NODE_VERSION`| `20` |
+| `NODE_ENV`    | `production` |
+| `PORT`        | `3000` |
+| `DATABASE_URL`| `postgresql://postgres.[username]:[password]@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres` |
+| `JWT_SECRET`  | *High-entropy random key string* |
+| `JWT_REFRESH_SECRET` | *High-entropy random key string* |
+| `JWT_ACCESS_EXPIRES_IN` | `15m` |
+| `JWT_REFRESH_EXPIRES_IN`| `7d` |
+| `JWT_OTP_EXPIRES_IN`    | `2m` |
+| `SMTP_HOST`   | `smtp.resend.com` |
+| `SMTP_PORT`   | `465` |
+| `SMTP_SECURE` | `true` |
+| `SMTP_USER`   | `resend` |
+| `SMTP_PASS`   | *Your Resend API Key* |
+| `SMTP_FROM`   | `TechBill <noreply@techbill.app>` |
+| `ALLOWED_ORIGINS`| `https://techbill.app,https://*.techbill.app` |
+| `BCRYPT_ROUNDS`| `12` |
+| `GROQ_API_KEY`| *Your Groq Cloud API Key* |
 
-```
-VITE_API_URL=https://electrotrack-api.onrender.com
-VITE_WS_URL=https://electrotrack-api.onrender.com
-```
+---
 
-> [!NOTE]
-> After changing env vars on Vercel, you must **redeploy** for changes to take effect. Go to **Deployments → ⋯ → Redeploy**.
+## Part 4 — Post-Deployment Verification
 
-### ✅ Run Prisma Migrations
-
-If this is the first deploy, SSH into Render shell or use the **Shell** tab:
+### 1. Database Migrations
+Run production migrations by connecting to the Render shell or locally using the production connection string:
 ```bash
 npx prisma migrate deploy
-```
-
-### ✅ Seed the Database (First Time)
-
-```bash
 npx prisma db seed
 ```
 
-### ✅ Test the Connection
-
-1. Open your Vercel URL
-2. Try logging in
-3. Check browser DevTools → Network tab for API calls hitting your Render URL
-4. If you see CORS errors, double-check `ALLOWED_ORIGINS` on Render
-
-### ✅ Verify Resend Emails
-
-1. Trigger an OTP login
-2. Check the Resend dashboard at [resend.com/logs](https://resend.com/logs) for delivery logs
-3. If emails fail, verify your domain in Resend and check `SMTP_FROM` matches
-
----
-
-## Vercel Config File Reference
-
-Your [vercel.json](file:///d:/electrotrack-saas/electrotrack-pos/vercel.json) is already set up correctly for SPA routing:
-
-```json
-{
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ]
-}
-```
-
-This ensures all routes (e.g., `/pos`, `/dashboard`) serve `index.html` so React Router handles them client-side.
-
----
-
-## Quick Commands Summary
-
+### 2. Verify Health Check
+Ensure the backend API responds successfully:
 ```bash
-# Commit and push fixes
-cd d:\electrotrack-saas
-git add .
-git commit -m "Fix TypeScript errors for Vercel deployment"
-git push
-
-# Both Vercel and Render will auto-deploy on push (if connected to GitHub)
+curl -I https://api.techbill.app/health
 ```
+**Expected Response**:
+*   Status Code: `200 OK`
+*   Body: `{ "status": "ok", "uptime": ..., "timestamp": ... }`
+
+### 3. DNS Wildcard & Routing Verification
+Go to `https://alpha.techbill.app/login` in your web browser. You should be served the frontend SPA cleanly. Logging in should authenticate against `https://api.techbill.app/auth/login` and establish a secure tenant session.

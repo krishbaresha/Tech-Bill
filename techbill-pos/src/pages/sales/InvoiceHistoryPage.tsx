@@ -5,6 +5,8 @@ import { api } from '../../api/client';
 import gsap from 'gsap';
 import InvoiceModal from '../../components/pos/InvoiceModal';
 import type { Sale, ShopSettings } from '../../types';
+import { useToastStore } from '../../store/toast.store';
+import { TableSkeleton } from '../../components/common/Skeleton';
 
 const formatPKR = (n: number) => `₨ ${n.toLocaleString('en-PK')}`;
 
@@ -142,6 +144,7 @@ function ExpandedDetail({ saleId, createdAt, onViewReceipt }: { saleId: string; 
 }
 
 export default function InvoiceHistoryPage() {
+  const toast = useToastStore();
   const [sales, setSales] = useState<SaleListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -163,7 +166,10 @@ export default function InvoiceHistoryPage() {
         setSales(r.data.data ?? []);
         setTotal(r.data.meta?.total ?? 0);
       })
-      .catch(() => setSales([]))
+      .catch(() => {
+        setSales([]);
+        toast.error('Failed to load invoice history.');
+      })
       .finally(() => setLoading(false));
   };
 
@@ -253,11 +259,7 @@ export default function InvoiceHistoryPage() {
             </thead>
             <tbody className="divide-y divide-white/5">
               {loading && sales.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="py-16 text-center">
-                    <span className="inline-block w-6 h-6 border-2 border-stitch-primary/30 border-t-stitch-primary rounded-full animate-spin" />
-                  </td>
-                </tr>
+                <TableSkeleton cols={9} rows={8} />
               ) : sales.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="py-16 text-center">

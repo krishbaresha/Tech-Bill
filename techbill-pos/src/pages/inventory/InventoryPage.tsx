@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Plus, Package, AlertTriangle, CheckCircle, X, Tag, Search, Layers, Trash2, Wand2, Pencil } from 'lucide-react';
+import { Plus, Package, X, Tag, Search, Layers, Trash2, Wand2, Pencil, AlertTriangle } from 'lucide-react';
 import { api } from '../../api/client';
 import { useCan } from '../../lib/permissions';
 import type { Product, InventoryUnit } from '../../types';
 import gsap from 'gsap';
+import { useToastStore } from '../../store/toast.store';
+import { TableSkeleton } from '../../components/common/Skeleton';
 
 const formatPKR = (n: number) => `₨ ${n.toLocaleString('en-PK')}`;
 
@@ -33,6 +35,7 @@ interface StockModal {
 export default function InventoryPage() {
   const canWrite = useCan('inventory.write');
   const canDelete = useCan('inventory.delete');
+  const toast = useToastStore();
   const [products, setProducts] = useState<ProductWithStock[]>([]);
   const [units, setUnits] = useState<InventoryUnit[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -42,8 +45,7 @@ export default function InventoryPage() {
   const [showAddUnit, setShowAddUnit] = useState(false);
   const [stockModal, setStockModal] = useState<StockModal | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+  const [dataLoading, setDataLoading] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState<ProductWithStock | null>(null);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -64,13 +66,13 @@ export default function InventoryPage() {
   const loadProducts = () => {
     api.get<ProductWithStock[]>('/inventory/products')
       .then((r) => setProducts(r.data))
-      .catch(() => setError('Failed to load products'));
+      .catch(() => toast.error('Failed to load products'));
   };
 
   const loadUnits = () => {
     api.get<{ data: InventoryUnit[] }>('/inventory/units?status=in_stock&limit=100')
       .then((r) => setUnits(r.data.data))
-      .catch(() => setError('Failed to load units'));
+      .catch(() => toast.error('Failed to load units'));
   };
 
   const loadCategories = () => {
@@ -79,10 +81,23 @@ export default function InventoryPage() {
       .catch(() => undefined);
   };
 
+  const loadAllData = async () => {
+    setDataLoading(true);
+    try {
+      await Promise.all([
+        api.get<ProductWithStock[]>('/inventory/products').then((r) => setProducts(r.data)),
+        api.get<{ data: InventoryUnit[] }>('/inventory/units?status=in_stock&limit=100').then((r) => setUnits(r.data.data)),
+        api.get<string[]>('/inventory/categories').then((r) => setCategories(r.data)).catch(() => {})
+      ]);
+    } catch {
+      toast.error('Failed to load inventory data');
+    } finally {
+      setDataLoading(false);
+    }
+  };
+
   useEffect(() => {
-    loadProducts();
-    loadUnits();
-    loadCategories();
+    loadAllData();
   }, []);
 
   useEffect(() => {
@@ -97,22 +112,16 @@ export default function InventoryPage() {
     }
   }, []);
 
-  const showSuccess = (msg: string) => {
-    setSuccessMsg(msg);
-    setTimeout(() => setSuccessMsg(''), 3000);
-  };
-
   const handleDeleteProduct = async (product: ProductWithStock) => {
     setLoading(true);
-    setError('');
     try {
       await api.delete(`/inventory/products/${product.id}`);
-      showSuccess(`"${product.name}" deactivated — historical sales preserved`);
+      toast.success(`"${product.name}" deactivated — historical sales preserved`);
       setDeleteConfirm(null);
       loadProducts();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setError(e.response?.data?.message ?? 'Failed to delete product');
+      toast.error(e.response?.data?.message ?? 'Failed to delete product');
     } finally {
       setLoading(false);
     }
@@ -134,7 +143,6 @@ export default function InventoryPage() {
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
     try {
       if (editingProductId) {
         await api.patch(`/inventory/products/${editingProductId}`, {
@@ -144,7 +152,7 @@ export default function InventoryPage() {
           sellingPrice: parseFloat(productForm.sellingPrice),
           warrantyMonths: parseInt(productForm.warrantyMonths),
         });
-        showSuccess('Product updated successfully');
+        toast.success('Product updated successfully');
       } else {
         await api.post('/inventory/products', {
           name: productForm.name,
@@ -153,7 +161,7 @@ export default function InventoryPage() {
           sellingPrice: parseFloat(productForm.sellingPrice),
           warrantyMonths: parseInt(productForm.warrantyMonths),
         });
-        showSuccess('Product added successfully');
+        toast.success('Product added successfully');
       }
       setShowAddProduct(false);
       setEditingProductId(null);
@@ -162,7 +170,7 @@ export default function InventoryPage() {
       loadCategories();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setError(e.response?.data?.message ?? 'Failed to add product');
+      toast.error(e.response?.data?.message ?? 'Failed to save product');
     } finally {
       setLoading(false);
     }
@@ -171,21 +179,20 @@ export default function InventoryPage() {
   const handleAddUnit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
     try {
       await api.post('/inventory/units', {
         serialNumber: unitForm.serialNumber,
         productId: unitForm.productId,
         purchasePrice: unitForm.purchasePrice ? parseFloat(unitForm.purchasePrice) : undefined,
       });
-      showSuccess('Unit added successfully');
+      toast.success('Unit added successfully');
       setShowAddUnit(false);
       setUnitForm({ serialNumber: '', productId: '', purchasePrice: '' });
       loadUnits();
       loadProducts();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setError(e.response?.data?.message ?? 'Failed to add unit');
+      toast.error(e.response?.data?.message ?? 'Failed to add unit');
     } finally {
       setLoading(false);
     }
@@ -197,13 +204,12 @@ export default function InventoryPage() {
     let serials: string[];
     if (stockMode === 'auto') {
       serials = generateSerials();
-      if (serials.length === 0) { setError('Enter a valid quantity'); return; }
+      if (serials.length === 0) { toast.error('Enter a valid quantity'); return; }
     } else {
       serials = stockSerials.split(/[\n,]+/).map((s) => s.trim()).filter(Boolean);
-      if (serials.length === 0) { setError('Enter at least one serial number'); return; }
+      if (serials.length === 0) { toast.error('Enter at least one serial number'); return; }
     }
     setLoading(true);
-    setError('');
     try {
       await api.post('/inventory/units/bulk', {
         units: serials.map((sn) => ({
@@ -212,7 +218,7 @@ export default function InventoryPage() {
           purchasePrice: stockPurchasePrice ? parseFloat(stockPurchasePrice) : undefined,
         })),
       });
-      showSuccess(`${serials.length} unit(s) added to ${stockModal.productName}`);
+      toast.success(`${serials.length} unit(s) added to ${stockModal.productName}`);
       setStockModal(null);
       setStockSerials('');
       setStockPurchasePrice('');
@@ -223,7 +229,7 @@ export default function InventoryPage() {
       loadUnits();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setError(e.response?.data?.message ?? 'Failed to add stock');
+      toast.error(e.response?.data?.message ?? 'Failed to add stock');
     } finally {
       setLoading(false);
     }
@@ -280,21 +286,7 @@ export default function InventoryPage() {
         />
       </div>
 
-      {error && (
-        <div className="glass-card rounded-xl p-3 flex items-center gap-2 border-l-4 border-stitch-error/50">
-          <AlertTriangle size={14} className="text-stitch-error shrink-0" />
-          <p className="text-sm text-stitch-error">{error}</p>
-          <button onClick={() => setError('')} className="ml-auto text-stitch-on-surface-variant hover:text-white">
-            <X size={14} />
-          </button>
-        </div>
-      )}
-      {successMsg && (
-        <div className="glass-card rounded-xl p-3 flex items-center gap-2 border-l-4 border-green-500/50">
-          <CheckCircle size={14} className="text-green-400 shrink-0" />
-          <p className="text-sm text-green-400">{successMsg}</p>
-        </div>
-      )}
+      {/* Notifications handled globally via ToastContainer */}
 
       {showAddProduct && (
         <div className="glass-card rounded-xl p-5 space-y-4">
@@ -414,7 +406,7 @@ export default function InventoryPage() {
                 <button
                   key={m}
                   type="button"
-                  onClick={() => { setStockMode(m); setError(''); }}
+                  onClick={() => { setStockMode(m); }}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
                     stockMode === m
                       ? 'bg-stitch-primary/20 text-stitch-primary border border-stitch-primary/30'
@@ -533,7 +525,9 @@ export default function InventoryPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {filteredProducts.length === 0 ? (
+                {dataLoading ? (
+                  <TableSkeleton cols={(canWrite || canDelete) ? 8 : 7} rows={6} />
+                ) : filteredProducts.length === 0 ? (
                   <tr>
                     <td colSpan={(canWrite || canDelete) ? 8 : 7} className="py-16 text-center">
                       <Package size={32} className="mx-auto mb-2 text-stitch-on-surface-variant/30" />
@@ -627,7 +621,9 @@ export default function InventoryPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {filteredUnits.length === 0 ? (
+                {dataLoading ? (
+                  <TableSkeleton cols={5} rows={6} />
+                ) : filteredUnits.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-16 text-center">
                       <Package size={32} className="mx-auto mb-2 text-stitch-on-surface-variant/30" />

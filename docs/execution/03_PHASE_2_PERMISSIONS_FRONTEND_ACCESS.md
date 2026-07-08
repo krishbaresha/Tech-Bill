@@ -1,81 +1,67 @@
-# Phase 2: Permissions And Frontend Access
+# Phase 2: Authorization & Frontend Security
 
 ## Purpose
 
-Is phase ka goal frontend ko new SaaS auth model ke saath sync karna hai. Admin workers bana sake, unka password set/reset kare, aur granular permissions assign kare. Worker sirf wahi pages/actions use kare jo admin ne allow kiye hain.
+The objective of this phase is to align the React frontend client with the backend multi-tenant SaaS authorization model. This ensures that the user interface correctly decodes tenant scopes, dynamically hides unauthorized views, gates page routes based on `PERMISSION_MATRIX.md` keys, and provides tenant administrators with administrative tools to manage worker roles, permissions, passwords, and account status.
+
+---
 
 ## Preconditions
 
-1. Phase 1 complete.
-2. Backend auth response includes `tenantId` and `permissions`.
-3. Permission keys are finalized in `PERMISSION_MATRIX.md`.
-4. Backend permission guard exists.
+1.  **Phase 1 Completed**: Backend SaaS authorization models and database tenant isolation fields are active.
+2.  **API Payloads**: Authentication responses yield token payloads containing `tenantId` and `permissions` arrays.
 
-## Files Likely Touched
+---
 
-Frontend:
-1. Auth store and auth types.
-2. Route protection in `App.tsx`.
-3. Layout/sidebar.
-4. Users page.
-5. Login/password reset pages.
+## Targeted Files
 
-Backend:
-1. Users controller/service for permission assignment and password reset.
-2. Permission guard only if frontend needs API alignment.
+### Frontend Client
+*   Auth Stores & Types (`src/stores/auth.store.ts`)
+*   Route Protection Configurations (`src/App.tsx`)
+*   Navigation Components (Sidebar and headers)
+*   Users & Staff administration pages
+*   Login and Password Reset pages
 
-## Line-Wise Tasks
+### Backend Services
+*   Users controllers & services handling worker password resets and updates.
 
-1. Update frontend user type:
-   - Add `tenantId`, `tenantName`, `permissions`.
-   - Add role `platform_admin`.
-2. Update auth store:
-   - Persist access token and new user fields.
-   - Clear auth safely on refresh failure.
-3. Add permission helper:
-   - `can(permissionKey)`
-   - `canAny(permissionKeys)`
-   - `canAll(permissionKeys)`
-4. Replace route guards:
-   - Keep broad role checks only where useful.
-   - Gate pages by permissions from `PERMISSION_MATRIX.md`.
-5. Update sidebar/menu visibility:
-   - Hide pages worker cannot access.
-   - Hide action buttons worker cannot use.
-6. Update Users page:
-   - Admin can create worker.
-   - Admin can set worker role/template.
-   - Admin can assign granular permissions.
-   - Admin can activate/deactivate worker.
-   - Admin can reset worker password.
-7. Add admin password reset UI:
-   - Request OTP by email.
-   - Confirm OTP plus new password.
-   - Route should be available from login screen.
-8. Worker password reset handling:
-   - Login UI may show generic help text: contact admin.
-   - Do not expose worker self-reset completion flow.
-9. Update API client types for auth response.
-10. Run frontend build.
-11. Run backend build if user APIs changed.
+---
 
-## Acceptance Checklist
+## Detailed Task Checklist
 
-1. Admin can create worker with password.
-2. Admin can reset worker password.
-3. Worker cannot self-reset password.
-4. Worker sees only permitted routes.
-5. Worker cannot call blocked backend actions even if URL is manually accessed.
-6. Sidebar and action buttons match permissions.
-7. Frontend build passes.
-8. Backend build passes if touched.
+1.  **Frontend Type Alignment**:
+    *   Extend frontend user interfaces to include `tenantId`, `tenantName`, and `permissions` claims.
+    *   Include the `platform_admin` role in user roles.
+2.  **Zustand Auth Store Sync**:
+    *   Configure persistent storage mechanisms to retain access tokens and tenant fields.
+    *   Ensure token refresh failures clear the auth store cleanly.
+3.  **Permissions Helper Utilities**:
+    *   Deploy core permissions utilities in `src/lib/permissions.ts`:
+        *   `can(permissionKey)`: Validates individual permission keys.
+        *   `canAny(permissionKeys)`: Checks if the user possesses at least one matching key.
+        *   `canAll(permissionKeys)`: Ensures all keys are matched.
+4.  **Route Protection Refactoring**:
+    *   Gate React Router route paths using the permissions helpers, mapping keys directly to the permission matrix.
+5.  **Dynamic UI Element Gating**:
+    *   Hide navigation sidebar links from users lacking read permissions.
+    *   Disable or hide checkout action buttons (such as cart voids or discounts) based on cashier permission profiles.
+6.  **Staff Control Interface Updates**:
+    *   Provide tools for administrators to register workers, configure specific permissions, toggle active status, and perform remote password resets.
+7.  **Admin Password Recovery Views**:
+    *   Implement views for email-based OTP requests and verification on the login screen.
+    *   Configure error prompts directing regular workers to contact their store admin instead of requesting self-serve resets.
+8.  **Compilation Verification**:
+    *   Build and bundle the frontend to check for type issues:
+      ```bash
+      cd electrotrack-pos && npm run build
+      ```
 
-## Rollback Notes
+---
 
-1. Revert frontend permission gating together with auth type changes.
-2. Do not leave backend permission guard stricter than frontend without updating UI.
-3. If Users page breaks, keep old page hidden until permissions are stable.
+## Acceptance Criteria
 
-## Do Not Continue Until
-
-At least one admin and one worker test account prove permissions and password control work end to end.
+*   [ ] Administrators can register workers, configure permissions, and reset user passwords.
+*   [ ] Workers are blocked from requesting self-serve password resets.
+*   [ ] Route components block access to unauthorized pages and redirect to dashboard.
+*   [ ] UI controls (menus, buttons) dynamically update based on active permissions.
+*   [ ] Frontend builds successfully.

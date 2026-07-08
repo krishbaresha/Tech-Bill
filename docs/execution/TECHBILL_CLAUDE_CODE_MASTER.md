@@ -1,4 +1,4 @@
-# PHASE 3 ONLY WARNING
+﻿# PHASE 3 ONLY WARNING
 
 Do not execute this file directly from a fresh repo state.
 
@@ -25,7 +25,7 @@ Mandatory overrides for every instruction below:
 
 ---
 
-# ⚡ ElectroTrack — Claude Code Master Conversion Plan
+# ⚡ Tech Bill — Claude Code Master Conversion Plan
 > Multi-Agent Architecture | React + Vite + TypeScript + Tailwind + GSAP
 > Read PROJECT_REPORT.md before starting anything.
 
@@ -44,9 +44,9 @@ Each sub-agent has its own focused prompt below.
 # ═══════════════════════════════════════════════
 
 ```
-You are the orchestrator for converting the ElectroTrack POS Stitch HTML screens into a
+You are the orchestrator for converting the Tech Bill POS Stitch HTML screens into a
 fully working React + Vite + TypeScript application. The Stitch export is in:
-  stitch_electrotrack_pos_system/
+  stitch_Tech Bill_pos_system/
 
 Your job: coordinate 6 sub-agents working in parallel. Each agent owns one domain.
 Do NOT write any code yourself. Delegate everything.
@@ -436,7 +436,7 @@ export const useUIStore = create<UIStore>()(
       },
       removeToast: (id) => set((s) => ({ toasts: s.toasts.filter((x) => x.id !== id) })),
     }),
-    { name: 'electrotrack-ui', partialize: (s) => ({ theme: s.theme }) }
+    { name: 'Tech Bill-ui', partialize: (s) => ({ theme: s.theme }) }
   )
 );
 
@@ -532,7 +532,7 @@ Report to orchestrator: "AGENT-1 complete. Foundation ready."
 You are AGENT-2 (Layout). Build the shared app shell.
 Wait for AGENT-1 to finish first. Read PROJECT_REPORT.md for RBAC rules.
 
-Source: stitch_electrotrack_pos_system/electrotrack_dashboard_pro_glass_2/code.html
+Source: stitch_Tech Bill_pos_system/Tech Bill_dashboard_pro_glass_2/code.html
 Copy the sidebar and topbar HTML EXACTLY — preserve every class.
 
 ---
@@ -542,7 +542,7 @@ Copy the sidebar and topbar HTML EXACTLY — preserve every class.
 Convert the <aside> block from dashboard_pro_glass_2 to React exactly.
 - Width: fixed w-[260px]
 - Class: glass-sidebar fixed h-full left-0 top-0 flex flex-col p-gutter z-50
-- Logo: ⚡ bolt icon + "ElectroTrack" + "Premium Retail"
+- Logo: ⚡ bolt icon + "Tech Bill" + "Premium Retail"
 - Nav sections: "General" and "Management" with labels
 
 NAV ITEMS (complete list — this is the STANDARD for ALL pages):
@@ -742,8 +742,8 @@ Report to orchestrator: "AGENT-2 complete. AppShell, Sidebar, Topbar, routing do
 ```
 You are AGENT-3 (Auth). Build login and OTP screens.
 Source files:
-  stitch_electrotrack_pos_system/electrotrack_secure_login_glassmorphic/code.html
-  stitch_electrotrack_pos_system/electrotrack_otp_verification_animated/code.html
+  stitch_Tech Bill_pos_system/Tech Bill_secure_login_glassmorphic/code.html
+  stitch_Tech Bill_pos_system/Tech Bill_otp_verification_animated/code.html
 
 Read existing src/store/auth.store.ts and src/api/client.ts. Keep them intact.
 These pages render WITHOUT AppShell (no sidebar).
@@ -752,7 +752,7 @@ These pages render WITHOUT AppShell (no sidebar).
 
 ## FILE: src/pages/auth/LoginPage.tsx
 
-Convert electrotrack_secure_login_glassmorphic/code.html to React EXACTLY.
+Convert Tech Bill_secure_login_glassmorphic/code.html to React EXACTLY.
 Preserve every class, every element. Convert HTML → JSX (className, htmlFor, etc.)
 
 BUGS TO FIX during conversion:
@@ -771,7 +771,7 @@ Background: two radial gradient blobs (indigo + cyan) positioned top-right and b
 
 ## FILE: src/pages/auth/OtpPage.tsx
 
-Convert electrotrack_otp_verification_animated/code.html to React EXACTLY.
+Convert Tech Bill_otp_verification_animated/code.html to React EXACTLY.
 
 INTERACTIONS (must all work):
 - 6 individual input boxes, auto-focus next on digit entry
@@ -807,7 +807,7 @@ For each page:
 ---
 
 ## PAGE 1: src/pages/dashboard/DashboardPage.tsx
-Source: electrotrack_dashboard_pro_glass_2/code.html
+Source: Tech Bill_dashboard_pro_glass_2/code.html
 
 Convert every section:
 1. AI Insight Banner (pulsing-dot, indigo glow, 3 chips)
@@ -823,7 +823,7 @@ GSAP on mount: animateCards('.glass-card'), animateRows('.timeline-item')
 ---
 
 ## PAGE 2: src/pages/pos/PosPage.tsx
-Source: electrotrack_universal_pos_system_2/code.html
+Source: Tech Bill_universal_pos_system_2/code.html
 
 Layout: flex h-[calc(100vh-64px)] overflow-hidden
 Left: flex-1 overflow-y-auto (products)
@@ -858,7 +858,7 @@ Each cart item shows serial + ✓ Verified green badge
 ---
 
 ## PAGE 3: src/pages/inventory/InventoryPage.tsx
-Source: electrotrack_inventory_management/code.html
+Source: Tech Bill_inventory_management/code.html
 
 Convert exactly:
 1. AI Warning banner (amber, left border)
@@ -877,7 +877,7 @@ GSAP: animateRows('.inventory-row') on mount and on filter change
 ---
 
 ## PAGE 4: src/pages/reports/ReportsPage.tsx
-Source: electrotrack_reports_ai_insights/code.html
+Source: Tech Bill_reports_ai_insights/code.html
 
 Tabs (useState activeTab):
   Sales Summary | Staff Performance | AI Predictions | Dead Stock | Cash Reconciliation→link
@@ -923,7 +923,7 @@ For each page: read Stitch HTML → convert to React → fix $ → ₨ → add G
 PAGES TO BUILD:
 
 1. src/pages/customers/CustomersPage.tsx
-   Source: electrotrack_customer_database/code.html
+   Source: Tech Bill_customer_database/code.html
    - 3 stat cards
    - Search filter (works live)
    - Table: Avatar+Name | Phone(mono) | Total₨ | Last Visit | Points | Tier badge | Actions
@@ -932,7 +932,7 @@ PAGES TO BUILD:
    - GSAP: animateRows on mount
 
 2. src/pages/customers/LoyaltyPage.tsx
-   Source: electrotrack_loyalty_rewards/code.html
+   Source: Tech Bill_loyalty_rewards/code.html
    FIX: All $ → ₨ (lines 302,321,340,359,378)
    - AI banner
    - 4 stat cards (countUp GSAP)
@@ -941,7 +941,7 @@ PAGES TO BUILD:
    - Points chart (grouped bars: Issued vs Redeemed per day)
 
 3. src/pages/returns/ReturnsPage.tsx
-   Source: electrotrack_returns_fraud_detection/code.html
+   Source: Tech Bill_returns_fraud_detection/code.html
    FIX: All $ → ₨ (lines 481,488)
    - fraud-pulse animation on HIGH risk banner
    - Filter tabs (All/Pending/Approved/Rejected) — work
@@ -951,7 +951,7 @@ PAGES TO BUILD:
    - HIGH risk cards: class high-risk-row applied
 
 4. src/pages/returns/ReturnAnalyticsPage.tsx
-   Source: electrotrack_return_loss_analytics/code.html
+   Source: Tech Bill_return_loss_analytics/code.html
    - 4 KPI cards (countUp GSAP)
    - Returns by Reason chart (horizontal bars, GSAP width)
    - Return trend line chart
@@ -960,7 +960,7 @@ PAGES TO BUILD:
    - AI Fraud Patterns card (red glow)
 
 5. src/pages/suppliers/SuppliersPage.tsx
-   Source: electrotrack_suppliers_management/code.html
+   Source: Tech Bill_suppliers_management/code.html
    ADD GSAP (missing in original): animateCards + animateRows
    - 3 stat cards
    - Search + filter pills (All/Active/Inactive)
@@ -968,7 +968,7 @@ PAGES TO BUILD:
    - Quick Add panel right side
 
 6. src/pages/suppliers/PurchaseOrdersPage.tsx
-   Source: electrotrack_purchase_orders/code.html
+   Source: Tech Bill_purchase_orders/code.html
    - AI banner
    - Status tabs (All/Draft/Sent/Partial/Received/Overdue)
    - 4 stat cards
@@ -977,7 +977,7 @@ PAGES TO BUILD:
    - Overdue rows: high-risk-row class
 
 7. src/pages/suppliers/GrnPage.tsx
-   Source: electrotrack_goods_received_notes_grn/code.html
+   Source: Tech Bill_goods_received_notes_grn/code.html
    ADD GSAP (missing in original): animateCards + animateRows
    ADD ₨: purchase cost column
    - 4 stat cards
@@ -986,7 +986,7 @@ PAGES TO BUILD:
    - Past GRNs table
 
 8. src/pages/staff/StaffPage.tsx
-   Source: electrotrack_staff_management/code.html
+   Source: Tech Bill_staff_management/code.html
    ADD ₨: revenue figures in staff cards
    - 4 stat cards (countUp GSAP)
    - Filter tabs (All/Cashier/Inventory/Accountant/Technician)
@@ -994,7 +994,7 @@ PAGES TO BUILD:
    - Recent Activity timeline bottom
 
 9. src/pages/audit/AuditPage.tsx
-   Source: electrotrack_audit_log_security/code.html
+   Source: Tech Bill_audit_log_security/code.html
    ADD GSAP (missing in original): animateRows('.audit-row')
    - Filter bar: date range + user dropdown + action type + search
    - 3 stat cards
@@ -1004,14 +1004,14 @@ PAGES TO BUILD:
    - Pagination
 
 10. src/pages/warranty/WarrantyPage.tsx
-    Source: electrotrack_warranty_checker/code.html
+    Source: Tech Bill_warranty_checker/code.html
     - Search hero card (indigo glow border)
     - Result card: IN WARRANTY (green progress bar) or EXPIRED (red)
     - Details grid 2x2
     - Recent checks table
 
 11. src/pages/settings/SettingsPage.tsx
-    Source: electrotrack_system_settings_hub/code.html
+    Source: Tech Bill_system_settings_hub/code.html
     - Left settings nav (260px)
     - Right content panel (switches based on active setting)
     - Shop Info form (controlled inputs)
@@ -1020,13 +1020,13 @@ PAGES TO BUILD:
     - Save button → addToast success
 
 12. src/pages/users/UsersPage.tsx
-    Source: electrotrack_users_access_management/code.html
+    Source: Tech Bill_users_access_management/code.html
     - Role filter tabs
     - Users table with actions
     - Edit slide-in panel (right side)
 
 13. src/pages/reports/CashReconciliationPage.tsx
-    Source: electrotrack_cash_reconciliation/code.html
+    Source: Tech Bill_cash_reconciliation/code.html
     ADD GSAP (missing): animateCards on mount
     - Today's reconciliation form card (controlled inputs)
     - Auto-calculate variance (expected - actual)
@@ -1054,7 +1054,7 @@ Run AFTER all other agents finish.
 ## PART A — BUILD ALL MODALS
 
 ### src/components/modals/SaleCompleteModal.tsx
-Source: electrotrack_sale_complete_confirmation/code.html
+Source: Tech Bill_sale_complete_confirmation/code.html
 - Full-screen overlay (fixed inset-0 bg-black/60 backdrop-blur-sm z-50)
 - Modal card (glass-modal 480px, GSAP scale in 0.92→1 on mount)
 - ✓ checkmark circle (GSAP draw animation using SVG strokeDashoffset)
@@ -1067,7 +1067,7 @@ Source: electrotrack_sale_complete_confirmation/code.html
 - Props: { invoiceData: CartItem[], invoiceNo: string, total: number, onClose: () => void }
 
 ### src/components/modals/AddEditProductModal.tsx
-Source: electrotrack_add_edit_product_modal/code.html
+Source: Tech Bill_add_edit_product_modal/code.html
 - Dialog overlay (glass-modal 560px)
 - GSAP: scale in on mount
 - 2-column form: Name* | Brand | Category(select) | Selling Price₨* | Purchase Price₨
@@ -1078,7 +1078,7 @@ Source: electrotrack_add_edit_product_modal/code.html
 - Props: { product?: Product, onSave: (p: Product) => void, onClose: () => void }
 
 ### src/components/modals/BarcodeScanner.tsx
-Source: electrotrack_barcode_qr_scanner_modal/code.html
+Source: Tech Bill_barcode_qr_scanner_modal/code.html
 FIX: Remove $12,482 — replace with "Scan to look up product or serial"
 - Overlay + 400px modal (glass-modal)
 - Scanner viewport with animated scanning line (GSAP y loop)
@@ -1089,7 +1089,7 @@ FIX: Remove $12,482 — replace with "Scan to look up product or serial"
 - Props: { onScan: (text: string) => void, onClose: () => void }
 
 ### src/components/modals/InvoicePrintModal.tsx
-Source: electrotrack_invoice_print_modal/code.html
+Source: Tech Bill_invoice_print_modal/code.html
 FIX: Add ₨ to ALL price/total/subtotal columns and values
 - Overlay + 620px modal (glass-modal)
 - Inside: white print-area div (for window.print())
@@ -1131,8 +1131,8 @@ SuppliersPage.tsx: animateCards + animateRows on mount
 
 ### FIX-4: Dark/Light mode wired
 In main.tsx, on app load:
-  const theme = localStorage.getItem('electrotrack-ui')
-    ? JSON.parse(localStorage.getItem('electrotrack-ui')!).state?.theme ?? 'dark'
+  const theme = localStorage.getItem('Tech Bill-ui')
+    ? JSON.parse(localStorage.getItem('Tech Bill-ui')!).state?.theme ?? 'dark'
     : 'dark';
   document.documentElement.classList.add(theme);
 
@@ -1141,8 +1141,8 @@ In src/api/client.ts or wherever dates are formatted:
   Replace any T00:00:00Z → T00:00:00+05:00
   Replace any T23:59:59Z → T23:59:59+05:00
 
-### FIX-6: ElectroTrack branding on auth pages
-LoginPage and OtpPage: include ElectroTrack logo (⚡ + text) at top of card.
+### FIX-6: Tech Bill branding on auth pages
+LoginPage and OtpPage: include Tech Bill logo (⚡ + text) at top of card.
 These are standalone pages — no sidebar — but must show the brand.
 
 ### FIX-7: Offline sync retry limit
@@ -1253,7 +1253,7 @@ Phase 3 (final):    AGENT-6
 | Invoice modal no currency | AGENT-6 |
 | Staff revenue blank | AGENT-5 |
 | GRN purchase price blank | AGENT-5 |
-| ElectroTrack branding missing on Returns, POS | AGENT-2 (shared topbar) |
+| Tech Bill branding missing on Returns, POS | AGENT-2 (shared topbar) |
 
 ## Screen → Component Mapping
 
@@ -1284,3 +1284,5 @@ Phase 3 (final):    AGENT-6
 | sale_complete_confirmation | SaleCompleteModal | 6 |
 | notification_center | NotificationPanel | 2 |
 | dashboard_pro_glass_2 (topbar/sidebar) | AppShell | 2 |
+
+

@@ -2,101 +2,109 @@
 
 ## Purpose
 
-Ye file copy-paste prompts provide karti hai. Har prompt ek focused implementation agent ke liye hai. Agents ko phase order follow karna hoga.
+This document contains standardized, copy-paste prompts designed to task autonomous coding agents with executing specific phases of the TechBill refactoring roadmap. Each agent must complete their designated phase checklist and verify compile success before handoff.
 
-## Agent 0: Preflight Fixes
+---
+
+## Agent 0: Preflight System Checks
 
 ```text
-You are Agent 0 for ElectroTrack. Execute docs/execution/01_PHASE_0_PREFLIGHT_FIXES.md only.
+You are Agent 0 tasked with preparing TechBill for architectural refactoring. Execute the tasks defined in docs/execution/01_PHASE_0_PREFLIGHT_FIXES.md.
 
-Rules:
-1. Do not add SaaS schema yet.
-2. Fix backend compile errors first.
-3. Standardize audit route mismatch.
-4. Keep changes minimal and build-focused.
-5. Run backend and frontend builds before reporting complete.
+Operational Constraints:
+1. Do not introduce database schema alterations, multi-tenant fields, or security guards yet.
+2. Resolve reports module compiler issues first.
+3. Standardize and align audit log endpoints between frontend and backend.
+4. Minimize changes; focus strictly on compiling clean code.
+5. Run backend and frontend builds before reporting completion.
 
-Deliverable:
-- List files changed.
-- Confirm backend build status.
-- Confirm frontend build status.
+Deliverable Report:
+- Detailed list of modified files.
+- Status of backend compilation.
+- Status of frontend compilation.
 ```
 
-## Agent 1: SaaS Auth Foundation
+---
+
+## Agent 1: SaaS Authentication Foundation
 
 ```text
-You are Agent 1 for ElectroTrack. Execute docs/execution/02_PHASE_1_SAAS_AUTH_FOUNDATION.md only.
+You are Agent 1 tasked with establishing the multi-tenant architecture for TechBill. Execute the tasks defined in docs/execution/02_PHASE_1_SAAS_AUTH_FOUNDATION.md.
 
-Rules:
-1. Remove Google auth fully.
-2. Implement shared-DB tenant isolation.
-3. Add platform_admin.
-4. Add tenant status/plan fields.
-5. Add admin OTP password reset.
-6. Workers cannot self-reset passwords.
-7. Every tenant-owned service must scope by tenantId.
-8. Run backend build before reporting complete.
+Operational Constraints:
+1. Completely remove all Google OAuth routes, provider strategies, and packages.
+2. Configure database multi-tenancy logical isolation via tenantId scoping.
+3. Create the platform_admin role and tenant lifecycle management tools.
+4. Implement email-based OTP password recovery restricted to owners and platform admins.
+5. Ensure worker accounts cannot trigger self-serve password resets.
+6. Scope database queries in all tenant-owned services by tenantId.
+7. Run backend and frontend builds before reporting completion.
 
-Deliverable:
-- Migration summary.
-- Auth contract summary.
-- Tenant isolation verification steps.
+Deliverable Report:
+- Prisma database migration summary.
+- Updated authentication API contracts.
+- Verification steps confirming tenant data isolation.
 ```
 
-## Agent 2: Permissions Frontend Access
+---
+
+## Agent 2: Authorization & Frontend Security
 
 ```text
-You are Agent 2 for ElectroTrack. Execute docs/execution/03_PHASE_2_PERMISSIONS_FRONTEND_ACCESS.md only.
+You are Agent 2 tasked with gating client-side resources for TechBill. Execute the tasks defined in docs/execution/03_PHASE_2_PERMISSIONS_FRONTEND_ACCESS.md.
 
-Rules:
-1. Use docs/execution/PERMISSION_MATRIX.md exactly.
-2. Update frontend auth types/store.
-3. Route and sidebar visibility must use permissions.
-4. Admin can assign worker permissions.
-5. Admin can reset worker password.
-6. Worker forgot password must not complete reset.
-7. Run frontend build before reporting complete.
+Operational Constraints:
+1. Align frontend code with the keys defined in docs/execution/PERMISSION_MATRIX.md.
+2. Update state storage mechanisms to parse tenant claims from user JWTs.
+3. Secure React Router paths and navigation layout elements based on active permissions.
+4. Provide administrative forms for owners to manage worker permissions and trigger remote password updates.
+5. Block worker self-serve password recovery from completing.
+6. Verify clean client compilation before reporting completion.
 
-Deliverable:
-- Permission helper summary.
-- Routes gated.
-- User management flow summary.
+Deliverable Report:
+- Summary of frontend permissions helper utilities.
+- List of secured frontend routes.
+- User management controls verification details.
 ```
 
-## Agent 3: Stitch UI Sync
+---
+
+## Agent 3: Stitch UI Integration
 
 ```text
-You are Agent 3 for ElectroTrack. Execute docs/execution/04_PHASE_3_STITCH_UI_SYNC.md only.
+You are Agent 3 tasked with applying the dark glassmorphic design system to TechBill. Execute the tasks defined in docs/execution/04_PHASE_3_STITCH_UI_SYNC.md.
 
-Rules:
-1. Use ELECTROTRACK_CLAUDE_CODE_MASTER.md as source material, not direct execution.
-2. Preserve SaaS auth, tenantId, and permissions.
-3. Use real APIs first, not mock-first production pages.
-4. Preserve POS serial verification.
-5. Every API action must remain tenant scoped.
-6. Run frontend build before reporting complete.
+Operational Constraints:
+1. Treat docs/execution/TECHBILL_CLAUDE_CODE_MASTER.md as reference source material, not direct steps.
+2. Retain multi-tenant boundaries, tenantId scoping, and permission guards.
+3. Bind views to live backend API services (do not fall back to static mock data).
+4. Maintain POS serial number verification and checkout flow logic.
+5. Scope all UI mutations and queries by tenantId.
+6. Confirm compile success for the frontend client before reporting completion.
 
-Deliverable:
-- Screens converted.
-- Any mock-only fallback screens listed.
-- Permission checks preserved.
+Deliverable Report:
+- List of redesigned client views.
+- Identification of any remaining static fallback views.
+- Verification that permission gating is intact.
 ```
 
-## Agent 4: Final QA
+---
+
+## Agent 4: Quality Assurance Validation
 
 ```text
-You are Agent 4 for ElectroTrack. Execute docs/execution/05_PHASE_4_FINAL_QA_RELEASE.md only.
+You are Agent 4 tasked with executing QA validation for TechBill. Execute the tasks defined in docs/execution/05_PHASE_4_FINAL_QA_RELEASE.md.
 
-Rules:
-1. Test two tenants minimum.
-2. Test platform admin, tenant admin, and worker.
-3. Test password reset rules.
-4. Test permission matrix.
-5. Test no tenant data leak.
-6. Run backend and frontend builds.
+Operational Constraints:
+1. Conduct tests across a minimum of two tenants (one active, one suspended).
+2. Validate access flows using platform admin, tenant owner, and cashier profiles.
+3. Check password recovery boundaries (allowed for owners, blocked for cashiers).
+4. Run access attempts against the permissions matrix.
+5. Confirm zero cross-tenant data leaks.
+6. Execute final compilation checks.
 
-Deliverable:
-- QA checklist with pass/fail.
-- Known issues.
-- Release readiness summary.
+Deliverable Report:
+- QA checklist detailing pass/fail status per item.
+- Log of remaining known limitations or issues.
+- Handoff and release readiness summary.
 ```

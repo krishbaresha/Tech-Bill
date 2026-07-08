@@ -1,111 +1,92 @@
-# Permission Matrix
+# TechBill Permissions Matrix Specification
 
 ## Purpose
 
-Ye file exact permission keys define karti hai. Backend guards, frontend route checks, sidebar visibility, aur action buttons isi matrix ko follow karenge.
+This document defines the system-wide permissions schema. The backend guards, frontend route checkers, menu configurations, and action controls adhere to this matrix.
 
-## Permission Keys
+---
 
-1. `pos.read` - POS page open karna.
-2. `pos.sell` - Sale complete karna.
-3. `pos.discount` - Discount apply karna within allowed limit.
-4. `pos.void` - Sale void karna.
-5. `inventory.read` - Products and units dekhna.
-6. `inventory.write` - Products/units create or edit karna.
-7. `inventory.delete` - Product deactivate/delete karna.
-8. `suppliers.read` - Suppliers and purchase orders dekhna.
-9. `suppliers.write` - Suppliers, PO, GRN create/edit karna.
-10. `customers.read` - Customers dekhna.
-11. `customers.write` - Customer create/edit karna.
-12. `returns.read` - Returns dekhna.
-13. `returns.create` - Return request create karna.
-14. `returns.review` - Return approve/reject karna.
-15. `reports.read` - Reports dashboard dekhna.
-16. `reports.cash_reconciliation` - Cash reconciliation submit/review karna.
-17. `users.read` - Workers dekhna.
-18. `users.manage` - Workers create/edit/deactivate/reset password.
-19. `users.permissions` - Worker permissions assign karna.
-20. `settings.read` - Settings dekhna.
-21. `settings.manage` - Settings update karna.
-22. `audit.read` - Audit logs dekhna.
-23. `notifications.read` - Notifications dekhna.
-24. `notifications.manage` - Notifications mark/read/manage karna.
-25. `warranty.read` - Warranty checker use karna.
-26. `loyalty.read` - Loyalty data dekhna.
-27. `loyalty.manage` - Loyalty rules/points manage karna.
+## Permission Keys Reference
 
-## Default Templates
+| Permission Key | Description |
+|----------------|-------------|
+| `pos.read`     | Access the Checkout POS interface. |
+| `pos.sell`     | Finalize checkout sales transactions. |
+| `pos.discount` | Authorize cart discounts (within pre-OTP threshold limits). |
+| `pos.void`     | Void completed transactions. |
+| `inventory.read` | View the product catalog and serial directories. |
+| `inventory.write` | Register or edit product catalogs and serial configurations. |
+| `inventory.delete` | Deactivate or remove products from listing. |
+| `suppliers.read` | View supplier directories and purchase order lists. |
+| `suppliers.write` | Create suppliers, purchase orders, and Goods Received Notes. |
+| `customers.read` | View customer listings and purchase histories. |
+| `customers.write` | Create or update customer profiles. |
+| `returns.read` | View return logs and pending requests. |
+| `returns.create` | Initiate product return requests (flags unit as pending). |
+| `returns.review` | Approve or reject pending returns (authorized for owners/admins). |
+| `reports.read` | View analytics dashboards, charts, and summaries. |
+| `reports.cash_reconciliation` | Submit or review daily cash drawers. |
+| `users.read`   | View lists of workers and accounts. |
+| `users.manage` | Add, update, activate/deactivate worker accounts. |
+| `users.permissions` | Edit or override worker permission sets. |
+| `settings.read` | View tenant configurations and invoice branding parameters. |
+| `settings.manage` | Modify settings, thresholds, and invoice templates. |
+| `audit.read`   | View system audit log records. |
+| `notifications.read` | View alert feeds. |
+| `notifications.manage` | Clear or resolve alerts. |
+| `warranty.read` | Access the serial-number warranty lookup interface. |
+| `loyalty.read` | View customer loyalty details. |
+| `loyalty.manage` | Modify loyalty reward rules and points calculations. |
 
-### Tenant Owner/Admin
+---
 
-Default: all tenant permissions.
+## Role-Permission Templates
 
-### Cashier
+### 1. Tenant Owner / Admin
+*   Possesses all tenant-level permissions.
 
-1. `pos.read`
-2. `pos.sell`
-3. `customers.read`
-4. `customers.write`
-5. `returns.read`
-6. `returns.create`
-7. `notifications.read`
-8. `warranty.read`
+### 2. Cashier
+*   `pos.read`, `pos.sell`, `customers.read`, `customers.write`, `returns.read`, `returns.create`, `notifications.read`, `warranty.read`.
 
-### Inventory Manager
+### 3. Inventory Manager
+*   `pos.read`, `inventory.read`, `inventory.write`, `suppliers.read`, `suppliers.write`, `notifications.read`, `warranty.read`.
 
-1. `pos.read`
-2. `inventory.read`
-3. `inventory.write`
-4. `suppliers.read`
-5. `suppliers.write`
-6. `notifications.read`
-7. `warranty.read`
+### 4. Accountant
+*   `reports.read`, `reports.cash_reconciliation`, `customers.read`, `notifications.read`, `audit.read`.
 
-### Accountant
+### 5. Technician
+*   `inventory.read`, `warranty.read`, `returns.read`, `notifications.read`.
 
-1. `reports.read`
-2. `reports.cash_reconciliation`
-3. `customers.read`
-4. `notifications.read`
-5. `audit.read`
+---
 
-### Technician
+## Page Route Mapping Gating Rules
 
-1. `inventory.read`
-2. `warranty.read`
-3. `returns.read`
-4. `notifications.read`
+| Route Path | Required Permission Key |
+|------------|-------------------------|
+| `/pos`      | `pos.read` |
+| `/dashboard` | `reports.read` |
+| `/inventory` | `inventory.read` |
+| `/returns`  | `returns.read` |
+| `/reports`  | `reports.read` |
+| `/customers` | `customers.read` |
+| `/suppliers` | `suppliers.read` |
+| `/purchase-orders` | `suppliers.read` |
+| `/grn`      | `suppliers.write` |
+| `/users`    | `users.read` |
+| `/settings` | `settings.read` |
+| `/audit`    | `audit.read` |
+| `/warranty` | `warranty.read` |
+| `/loyalty`  | `loyalty.read` |
 
-## Page Mapping
+---
 
-1. `/pos` requires `pos.read`.
-2. `/dashboard` requires `reports.read`.
-3. `/inventory` requires `inventory.read`.
-4. `/returns` requires `returns.read`.
-5. `/reports` requires `reports.read`.
-6. `/customers` requires `customers.read`.
-7. `/suppliers` requires `suppliers.read`.
-8. `/purchase-orders` requires `suppliers.read`.
-9. `/grn` requires `suppliers.write`.
-10. `/users` requires `users.read`.
-11. `/settings` requires `settings.read`.
-12. `/audit` requires `audit.read`.
-13. `/warranty` requires `warranty.read`.
-14. `/loyalty` requires `loyalty.read`.
+## Action Mapping Gating Rules
 
-## Action Mapping
-
-1. Complete sale requires `pos.sell`.
-2. Apply discount requires `pos.discount`.
-3. Void sale requires `pos.void`.
-4. Add/edit product requires `inventory.write`.
-5. Delete/deactivate product requires `inventory.delete`.
-6. Approve/reject return requires `returns.review`.
-7. Create worker requires `users.manage`.
-8. Reset worker password requires `users.manage`.
-9. Assign worker permissions requires `users.permissions`.
-10. Update shop settings requires `settings.manage`.
-
-## Do Not Continue Until
-
-Backend and frontend use these exact keys or this file is updated before implementation.
+*   **Finalize Transactions**: Requires `pos.sell`.
+*   **Apply Discounts**: Requires `pos.discount`.
+*   **Void Sales**: Requires `pos.void`.
+*   **Add/Edit Product specs**: Requires `inventory.write`.
+*   **Remove Product specs**: Requires `inventory.delete`.
+*   **Process Returns**: Requires `returns.review`.
+*   **Manage Worker Accounts**: Requires `users.manage`.
+*   **Configure Shop Settings**: Requires `settings.manage`.

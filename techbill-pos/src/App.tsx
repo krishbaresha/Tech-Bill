@@ -35,6 +35,7 @@ import { can } from './lib/permissions';
 import type { Role, Permission } from './types';
 import LockOverlay from './components/auth/LockOverlay';
 import { useLockStore } from './store/lock.store';
+import ToastContainer from './components/common/ToastContainer';
 
 function RequireAuth({
   children,
@@ -168,6 +169,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <LockOverlay />
+      <ToastContainer />
       <Routes>
         {/* Public Routes */}
         <Route element={<PublicLayout />}>

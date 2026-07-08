@@ -1,107 +1,87 @@
-# Database Migration Plan
+# TechBill Database Migration & Backfill Plan
 
 ## Purpose
 
-Ye file single-tenant database ko shared-DB SaaS model mein migrate karne ka safe path define karti hai. Har tenant-owned record ko `tenantId` milega so data conflict na kare.
+This document outlines the systematic procedure to migrate the single-tenant relational database structure into a shared-schema multi-tenant SaaS model. The migration ensures logical data separation using the `tenantId` field and handles existing records through an automated backfill script.
 
-## Prisma Source Of Truth
+---
 
-Use `electrotrack-api/prisma/schema.prisma` as source of truth for API work.
+## Prisma Schema Source of Truth
 
-Root `prisma/schema.prisma` is legacy until intentionally merged or removed in a separate cleanup phase.
+*   **Active Schema**: `electrotrack-api/prisma/schema.prisma` is the singular active schema source.
+*   **Legacy Schema**: The root `prisma/schema.prisma` is archived.
 
-## New Models
+---
 
-1. `Tenant`
-   - `id`
-   - `name`
-   - `slug`
-   - `status`
-   - `plan`
-   - `trialEndsAt`
-   - `currentPeriodEnd`
-   - `maxUsers`
-   - `createdAt`
-   - `updatedAt`
-2. Optional `UserPermission`
-   - `id`
-   - `userId`
-   - `permission`
-3. Optional `PasswordResetOtp`
-   - `id`
-   - `userId`
-   - `codeHash`
-   - `expiresAt`
-   - `usedAt`
-   - `createdAt`
+## Entity Adjustments
 
-## Tenant Fields To Add
+### 1. New Core Models
+*   **`Tenant`**: Stores subscriber metadata (name, slug, billing plans, subscription status limits).
+*   **`RefreshToken`**: Session credentials associated with specific users.
+*   **`ShopSettings`**: Tenant configuration parameters (low-stock alarms, discount validation thresholds, return fraud windows).
 
-Add `tenantId` to:
-
-1. `User`
-2. `ShopSettings`
-3. `Product`
-4. `Supplier`
-5. `PurchaseOrder`
-6. `GoodsReceivedNote`
-7. `InventoryUnit`
-8. `Customer`
-9. `Sale`
+### 2. Tenant Scoping Fields
+Introduce `tenantId: String @db.Uuid` columns to all tenant-specific entities:
+1.  `User`
+2.  `ShopSettings`
+3.  `Product`
+4.  `Supplier`
+5.  `PurchaseOrder`
+6.  `GoodsReceivedNote`
+7.  `InventoryUnit`
+8.  `Customer`
+9.  `Sale`
 10. `Return`
 11. `CashReconciliation`
 12. `AuditLog`
 13. `Notification`
-14. Any future loyalty/warranty tables.
 
-Add optional direct `tenantId` to `SaleItem` and `PurchaseOrderItem` only if query performance or guard simplicity needs it. Otherwise scope through parent relations.
+---
 
-## Backfill Strategy
+## Database Constraints & Indexing Strategy
 
-1. Create one default tenant for current data:
-   - Name: `Default Shop`
-   - Slug: `default-shop`
-   - Status: `active`
-2. Assign every existing tenant-owned record to default tenant.
-3. Assign existing owner/cashier/inventory/accountant/technician users to default tenant.
-4. Create one platform admin with `tenantId = null`.
-5. Make `tenantId` required after backfill is complete.
-6. Add indexes:
-   - `@@index([tenantId])`
-   - compound indexes for common filters, e.g. `[tenantId, createdAt]`, `[tenantId, status]`, `[tenantId, serialNumber]`.
+To prevent collisions between different shops using identical sequential identifiers or local customer phone numbers, single-column constraints are refactored into compound constraints:
 
-## Migration Steps
+### Compound Constraints Updates
+*   **Customer Directory uniqueness**: Replace global uniqueness on phone number with:
+    ```prisma
+    @@unique([tenantId, phone])
+    ```
+*   **Inventory Serial tracking**: Define serial number uniqueness within the tenant scope:
+    ```prisma
+    @@unique([tenantId, serialNumber])
+    ```
+*   **Sales Invoice identifiers**: Replace global uniqueness on invoice numbers with:
+    ```prisma
+    @@unique([tenantId, invoiceNumber])
+    ```
 
-1. Backup database.
-2. Add `Tenant` and nullable `tenantId` fields.
-3. Run migration.
-4. Run backfill script.
-5. Verify counts by tenant.
-6. Alter tenant-owned `tenantId` fields to required.
-7. Add indexes and uniqueness updates.
-8. Regenerate Prisma client.
-9. Run backend build.
+### Recommended Indexing Mappings
+Ensure query speeds are maintained by introducing composite indexes:
+*   `@@index([tenantId])` on all tenant-owned models.
+*   `@@index([tenantId, createdAt])` for sales dashboards and financial histories.
+*   `@@index([tenantId, status])` for returns and inventory audits.
 
-## Unique Constraint Updates
+---
 
-1. User email remains globally unique for v1.
-2. Product names do not need global uniqueness.
-3. Customer phone should become unique per tenant:
-   - Replace `phone @unique` with `@@unique([tenantId, phone])`.
-4. Inventory serial number should become unique per tenant:
-   - Recommended v1: `@@unique([tenantId, serialNumber])`.
-5. Invoice number should become unique per tenant:
-   - `@@unique([tenantId, invoiceNumber])`.
+## Backfill Strategy for Production Data
 
-## Verification Checklist
+1.  **Initialize Default Tenant**: Create a default tenant row representing existing single-tenant stores:
+    *   `name`: "Default Shop"
+    *   `slug`: "default-shop"
+    *   `status`: "active"
+    *   `plan`: "trial"
+2.  **Backfill Records**: Run a migration script updating all database rows to set `tenantId = [default-tenant-uuid]`.
+3.  **Setup Platform Admins**: Provision super-admin users with `tenantId = null` to oversee the SaaS operations.
+4.  **Set Required Fields**: Alter the schema definition to change `tenantId` columns from nullable to required (`NOT NULL`).
+5.  **Enable Constraints**: Apply the compound constraints and indexes.
+6.  **Regenerate Client**: Rebuild the Prisma client using `npx prisma generate` and verify build compiles.
 
-1. Every tenant-owned table has tenant records populated.
-2. No tenant-owned row has null tenant after final migration.
-3. Tenant A and Tenant B can use same customer phone if compound unique is implemented.
-4. Tenant A and Tenant B can use same invoice sequence if compound unique is implemented.
-5. Backend build passes.
-6. Seed creates platform admin and sample tenant.
+---
 
-## Do Not Continue Until
+## Verification & Rollback Checklist
 
-Backfill verification proves every business row belongs to exactly one tenant.
+*   [ ] Validate that all rows are mapped to a valid tenant.
+*   [ ] Confirm compound constraints are active (e.g. Tenant A and Tenant B can register identical invoice sequences).
+*   [ ] Confirm platform admin accounts can act globally without tenant context filters.
+*   [ ] Verify the backend build compiles successfully.

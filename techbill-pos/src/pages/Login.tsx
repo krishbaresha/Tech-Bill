@@ -40,13 +40,22 @@ export default function Login() {
       setAuth(res.data.user, res.data.access_token, res.data.refresh_token);
       connectSocket(res.data.access_token);
       
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const u = encodeURIComponent(btoa(JSON.stringify(res.data.user)));
+
       if (res.data.user.role === 'platform_admin') {
-        const u = encodeURIComponent(btoa(JSON.stringify(res.data.user)));
-        window.location.href = `https://admin.techbill.app/tenants?token=${res.data.access_token}&refresh_token=${res.data.refresh_token || ''}&u=${u}`;
+        if (isLocalhost) {
+          window.location.href = `/tenants?token=${res.data.access_token}&refresh_token=${res.data.refresh_token || ''}&u=${u}`;
+        } else {
+          window.location.href = `https://admin.techbill.app/tenants?token=${res.data.access_token}&refresh_token=${res.data.refresh_token || ''}&u=${u}`;
+        }
       } else {
         const sub = res.data.subdomain || 'app';
-        const u = encodeURIComponent(btoa(JSON.stringify(res.data.user)));
-        window.location.href = `https://${sub}.techbill.app/dashboard?token=${res.data.access_token}&refresh_token=${res.data.refresh_token || ''}&u=${u}`;
+        if (isLocalhost) {
+          window.location.href = `/dashboard?token=${res.data.access_token}&refresh_token=${res.data.refresh_token || ''}&u=${u}`;
+        } else {
+          window.location.href = `https://${sub}.techbill.app/dashboard?token=${res.data.access_token}&refresh_token=${res.data.refresh_token || ''}&u=${u}`;
+        }
       }
     } catch (err: unknown) {
       const axiosErr = err as {

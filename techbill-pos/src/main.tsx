@@ -4,6 +4,7 @@ import './index.css';
 import App from './App';
 import { api } from './api/client';
 import { processPendingSales } from './db/offline.db';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 function syncOfflineSales() {
   processPendingSales((payload) => api.post('/sales', payload)).catch(() => {});
@@ -14,6 +15,8 @@ window.addEventListener('focus', syncOfflineSales);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 );

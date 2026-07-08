@@ -1,87 +1,63 @@
-# Phase 3: Stitch UI Sync
+# Phase 3: Stitch UI Synchronization
 
 ## Purpose
 
-Is phase mein Stitch dark/glass UI ko React app mein migrate karna hai without breaking SaaS tenant isolation, permissions, or real API data. `ELECTROTRACK_CLAUDE_CODE_MASTER.md` source material hai, direct execution plan nahi.
+The objective of this phase is to integrate the Stitch dark glassmorphism user interface design system into the React frontend application. This integration must be completed without disrupting SaaS multi-tenant isolation, tenant context scoping, role-based route permissions, or backend API data flows. The `docs/execution/TECHBILL_CLAUDE_CODE_MASTER.md` file serves as reference source material and is not a direct execution plan.
+
+---
 
 ## Preconditions
 
-1. Phase 0, Phase 1, and Phase 2 complete.
-2. Backend and frontend builds pass.
-3. Tenant auth and permissions are stable.
-4. Stitch export exists at `stitch_electrotrack_pos_system (1)\stitch_electrotrack_pos_system`.
+1.  **Phases 0, 1, and 2 Completed**: The SaaS authentication foundation, route guards, and permissions structures are fully operational.
+2.  **Compilation Health**: Both applications compile successfully before visual migration begins.
 
-## Files Likely Touched
+---
 
-Frontend:
-1. Tailwind config and global CSS.
-2. Layout components.
-3. Pages and modals.
-4. Shared UI components.
+## Targeted Files
 
-Backend:
-1. Only add endpoints if a Stitch screen needs real data not currently available.
+### Frontend Client
+*   Tailwind CSS configurations & global CSS files (`tailwind.config.ts`, `src/index.css`)
+*   AppShell layout components (Sidebar, Topbar)
+*   POS transaction views, product grids, cart sheets, and payment forms
+*   Administration interfaces (Dashboard, Inventory, Reports, Returns, Customers, Suppliers, Users, Audit Logs, Settings)
+*   Overlay Dialogs (Invoice print screens, OTP prompts, barcode scanner sheets)
 
-Database:
-1. No schema changes unless a required screen has no model support.
+---
 
-## Line-Wise Tasks
+## Detailed Task Checklist
 
-1. Read `ELECTROTRACK_CLAUDE_CODE_MASTER.md`.
-2. Apply these overrides before following it:
-   - Do not keep auth/store/types intact if SaaS fields are needed.
-   - Do not use mock-data-first production pages.
-   - Every API-backed UI must preserve tenant scope.
-   - Every page/action must respect permissions.
-3. Add/merge design tokens:
-   - Use Stitch dark `electrotrack/DESIGN.md` tokens.
-   - Preserve existing working Tailwind setup.
-4. Update global CSS:
-   - Add glass card/header/sidebar/modal classes.
-   - Add material symbols only if selected for UI.
-   - Clean visible mojibake strings when editing files.
-5. Rebuild AppShell:
-   - Sidebar must hide items by permission.
-   - Topbar must show tenant/admin context.
-   - Notifications must be tenant-scoped.
-6. Rebuild POS:
-   - Adopt Stitch product-grid/cart layout.
-   - Preserve serial number verification and inventory unit sale logic.
-   - Keep `bank_transfer`.
-7. Rebuild core pages:
-   - Dashboard.
-   - Inventory.
-   - Reports.
-   - Returns.
-8. Rebuild management pages:
-   - Customers, loyalty, suppliers, purchase orders, GRN, staff/users, audit, warranty, settings.
-9. Rebuild modals:
-   - Sale complete.
-   - Add/edit product.
-   - Barcode scanner.
-   - Invoice print.
-10. For every page:
-   - Use real API data where backend exists.
-   - Use local fallback only for display-only screens not yet backed by API.
-   - Never hardcode cross-tenant sample IDs in production flows.
-11. Run frontend build.
-12. Run permission smoke tests.
+1.  **Integrate Dark Design Tokens**:
+    *   Merge design system tokens (colors, font weights, shadows, border-radii) from the Stitch guidelines.
+    *   Maintain existing Tailwind configuration structures.
+2.  **Global Style Configurations**:
+    *   Define global CSS styles for glassmorphic elements (`backdrop-filter` rules, subtle borders, high-contrast text layers).
+    *   Remove corrupt character encodings (mojibake) during file updates.
+3.  **Refactor AppShell Layout**:
+    *   Ensure the AppShell sidebar navigation elements are gated by permission checks.
+    *   Display the active tenant name and user profile context dynamically in the header bar.
+    *   Ensure notification bell alerts are scoped to the logged-in tenant.
+4.  **Rebuild POS Screen**:
+    *   Migrate POS elements to the dark grid cart configuration.
+    *   Preserve the serial-number hotpath search validation and active unit checkout transactions.
+    *   Retain all available payment methods (Cash, Easypaisa, JazzCash, Card, Bank Transfer).
+5.  **Refactor Core Modules**:
+    *   Apply the updated glassmorphic layouts to the Dashboard, Inventory tables, Reports views, and Returns request panels.
+    *   Apply updated styling across Customers, Loyalty points registry, Suppliers, Purchase Orders, Goods Received Notes (GRN), Audit Logs, and Warranty lookup pages.
+6.  **Data Isolation & Scope Enforcement**:
+    *   Ensure all API calls utilize live database feeds (do not fall back to static mock data on production pages).
+    *   Verify that query parameters use scoped tenant credentials.
+7.  **Verify Compilation**:
+    *   Build the frontend codebase to verify compilation sanity:
+      ```bash
+      cd electrotrack-pos && npm run build
+      ```
 
-## Acceptance Checklist
+---
 
-1. Stitch visual direction is applied.
-2. POS still sells real serialized inventory units.
-3. Worker permissions still hide and block restricted pages/actions.
-4. Tenant A cannot see Tenant B data in any redesigned page.
-5. Frontend build passes.
-6. Backend build still passes.
+## Acceptance Criteria
 
-## Rollback Notes
-
-1. Revert UI files only if visual migration breaks.
-2. Do not revert SaaS/auth/permission foundation while fixing UI.
-3. Keep API contracts from Phase 1 and 2 unchanged unless explicitly planned.
-
-## Do Not Continue Until
-
-All redesigned pages pass tenant and permission smoke tests.
+*   [ ] The application interface is aligned with the dark glassmorphic design theme.
+*   [ ] Scanned serial number checkout functions are fully operational.
+*   [ ] Worker permission structures hide and block restricted pages and controls.
+*   [ ] Tenant data boundaries are respected on all views.
+*   [ ] Frontend and backend applications compile cleanly.

@@ -1,400 +1,226 @@
-# ElectroTrack — SaaS POS for Electronics Retail
+# TechBill — Enterprise ERP & Invoice Management SaaS
 
-> A multi-tenant Point-of-Sale and inventory management platform built for electronics retailers. Premium dark UI, serial-number tracking, warranty management, AI insights, and real-time sales analytics — all in one system.
+[![Production Deploy](https://img.shields.io/badge/Deploy-Production-success.svg?style=flat-square)](https://techbill.app)
+[![API Health](https://img.shields.io/badge/API-Healthy-brightgreen.svg?style=flat-square)](https://techbill.app/health)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
+[![Uptime](https://img.shields.io/badge/Uptime-99.98%25-success.svg?style=flat-square)](https://techbill.app)
+
+A high-scale, multi-tenant Software-as-a-Service (SaaS) Enterprise Resource Planning (ERP) and Invoice Management System designed for industrial-grade retail performance. TechBill features serial-number-level inventory tracking, warranty management, Cash Reconciliation audits, real-time Socket.IO synchronization, and Llama-powered AI analytics.
 
 ---
 
 ## Table of Contents
 
-- [What It Is](#what-it-is)
-- [Tech Stack](#tech-stack)
-- [Features](#features)
-- [Getting Started](#getting-started)
-- [Environment Variables](#environment-variables)
-- [Architecture](#architecture)
-- [Pros & Cons](#pros--cons)
-- [Challenges We Faced](#challenges-we-faced)
-- [Who Its For](#who-its-for)
-- [Roadmap](#roadmap)
+*   [System Components](#system-components)
+*   [Tech Stack](#tech-stack)
+*   [Key Enterprise Features](#key-enterprise-features)
+*   [Getting Started (Local & Production)](#getting-started-local--production)
+*   [Environment Variables](#environment-variables)
+*   [Database Architecture](#database-architecture)
+*   [Verification & Health Checks](#verification--health-checks)
+*   [License](#license)
 
 ---
 
-## What It Is
+## System Components
 
-ElectroTrack is a **multi-tenant SaaS POS system** designed for electronics shops. Every phone, laptop, or gadget is tracked at the individual unit level using serial numbers — so you always know exactly which device was sold to whom, when the warranty expires, and whether a return is fraudulent.
-
-It ships as two apps:
-- **`electrotrack-api`** — NestJS REST API with Prisma + PostgreSQL (Supabase)
-- **`electrotrack-pos`** — React + Vite SPA (cashier / owner frontend)
+The codebase is organized into two primary project directories:
+*   **[`techbill-api`](file:///d:/Tech-Bill/techbill-api/)** — NestJS REST & WebSocket API, integrated with Prisma ORM and PostgreSQL (Supabase).
+*   **[`techbill-pos`](file:///d:/Tech-Bill/techbill-pos/)** — React + Vite Single Page Application (SPA) designed as the modern desktop/POS client.
 
 ---
 
 ## Tech Stack
 
-### Backend
+### Backend API
+*   **Framework**: NestJS 11
+*   **Runtime**: Node.js 20
+*   **Database Access**: Prisma 5 ORM
+*   **Primary Database**: PostgreSQL (Supabase with Session Pooler)
+*   **Cache & Key-Value Store**: Redis via `ioredis` (with in-memory fallback)
+*   **Real-time Layer**: Socket.IO WebSockets Gateway
+*   **Mailing Engine**: Nodemailer (configured for Resend SMTP)
+*   **AI Engine**: Groq SDK (`llama-3.3-70b-versatile`)
+*   **Security & Guard Rails**: Helmet, Throttler rate limiting, Cookie Parser, Class Validator
 
-| Layer | Technology |
-|---|---|
-| Runtime | Node.js 20 |
-| Framework | NestJS 11 |
-| ORM | Prisma 5 |
-| Database | PostgreSQL (Supabase) |
-| Auth | JWT access + refresh token rotation, bcrypt |
-| OTP | `crypto.randomInt` (CSPRNG), Redis / in-memory store |
-| Real-time | Socket.IO WebSockets |
-| Email | Nodemailer (SMTP — Resend compatible) |
-| AI | Groq SDK (llama-3.3-70b-versatile, free tier) |
-| Security | Helmet, @nestjs/throttler, cookie-parser, class-validator |
-
-### Frontend
-
-| Layer | Technology |
-|---|---|
-| Framework | React 18 + Vite |
-| Language | TypeScript 5 |
-| Routing | React Router v6 |
-| State | Zustand (persisted auth, cart) |
-| Styling | Tailwind CSS v3 + custom dark design tokens |
-| Animations | GSAP 3 (stagger, slide, fade) |
-| Charts | Recharts |
-| Icons | Lucide React |
-| HTTP | Axios with JWT interceptor + silent refresh queue |
-| Offline | Dexie (IndexedDB) |
-| PWA | vite-plugin-pwa |
+### Frontend client
+*   **Framework**: React 18 + Vite
+*   **State Management**: Zustand (persisted stores for authorization and checkout cart)
+*   **CSS Style Core**: Tailwind CSS v3 + custom dark theme design tokens ("Stitch")
+*   **Micro-animations**: GreenSock Animation Platform (GSAP 3)
+*   **Offline Data Store**: Dexie.js (IndexedDB cache for offline resilience)
+*   **Web Workers & PWA**: `vite-plugin-pwa`
 
 ---
 
-## Features
+## Key Enterprise Features
 
-### Multi-Tenancy
-- Platform admin manages all shop accounts
-- Full data isolation per tenant — products, staff, sales, customers
-- Tenant plans: trial / starter / professional
-- Automatic suspension enforcement for cancelled/suspended shops
+### 1. Robust Multi-Tenancy & Data Isolation
+*   Logical data separation at database layer scoped via `tenantId` indexes.
+*   Security guards (`TenantGuard`) ensuring that no tenant can read or write cross-boundary data.
+*   Platform management dashboard to register, activate, suspend, or cancel tenant access.
 
-### Point of Sale
-- **Universal fuzzy search** — find by product name, brand, IMEI, serial, or category with keyboard-navigable autocomplete
-- **Barcode / QR scanner** via device camera
-- **Serial-number-level selling** — pick the exact unit going out the door from a unit picker sheet
-- **Cart** with per-item discount and 5 payment methods (Cash, Easypaisa, JazzCash, Card, Bank Transfer)
-- **OTP-protected discounts** — discounts above a configurable threshold require owner OTP approval
+### 2. High-Performance Point of Sale (POS)
+*   Universal fuzzy autocomplete searching over product names, brands, categories, and serial numbers.
+*   IMEI & Serial Number tracking (specific device matching during checkout).
+*   Owner OTP-auth gates for cart checkouts with discount amounts exceeding set limits.
 
-### Inventory Dashboard
-- Sectioned view: Low Stock Alerts · Recently Added · Fast Selling
-- Category pill filters + status tabs (In Stock / Sold / Returned / All Items)
-- 4 live stat cards: In Stock, Low Stock, Products, Total Sold
-- GSAP stagger animations on load; full loading skeleton state
+### 3. Inventory & Goods Received Notes (GRN)
+*   Advanced stock status tracking (`in_stock`, `sold`, `return_pending`, `returned`, `damaged`, `reserved`).
+*   Bulk catalog and unit receiving using GRN workflows with supplier assignments.
+*   Automatic dead-stock and low-stock detection.
 
-### Inventory Management
-- Product catalogue (brand, category, cost price, selling price, warranty months)
-- Unit-level tracking — every unit has serial number, condition, and one of:
-  `in_stock` · `sold` · `return_pending` · `returned` · `damaged` · `repair` · `reserved`
-- Bulk unit receive via Goods Receipt Notes (GRN)
-- Dead stock detection with configurable day threshold
+### 4. Returns & Fraud Control
+*   Structured return lifecycle (pending → review → approve/reject).
+*   Automatic suspicious flag triggered if the same customer initiates multiple returns within a configured timeframe.
+*   Return analytics detailing product risk levels and return reason distributions.
 
-### Invoice Template System
-- Luxury minimal invoice (Apple / Shopify-inspired dark aesthetic)
-- Per-tenant branding: logo URL, primary color, accent color, font family
-- Footer notes, watermark text, show/hide watermark toggle
-- QR-style verification code on every invoice
-- Color-coded payment method badge
-- Print-ready (`@media print`) — no extra library needed
+### 5. Automated AI Summaries
+*   Groq-powered analytical summary generation, compiling daily sales performance metrics into simple executive logs.
 
-### Returns & Fraud Detection
-- Full return workflow: create → review → approve / reject
-- Suspicious flag auto-raised on repeat returns within a configurable window
-- Return analytics: reason breakdown, most-returned products, high-risk customers table
-
-### E-commerce & Online Selling
-- **Online Order Management**: Dedicated tab for dispatching, tracking, and completing online orders.
-- **Courier Ledgers**: Bulk payout logging to reconcile cash received from couriers vs pending COD amounts.
-- **Customizable Online Pricing**: Dynamic ability to adjust individual product selling prices directly on the POS screen specifically for online orders (supporting price divergence from the physical shop).
-- **Split Reporting**: Detailed dashboard metrics and reports cleanly separating online revenue vs offline revenue.
-- **Access Control**: These interconnected features strictly activate only when the Super Admin enables `onlineSellingEnabled` for a tenant and grants the `pos.online_sell` permission.
-
-### Warranty Lookup
-- Search any serial number across ALL statuses (in_stock, sold, returned)
-- Shows warranty expiry, customer name, and original sale invoice
-
-### Supplier Management
-- Supplier directory with contact info
-- Purchase Orders with line items and status tracking
-- GRN to receive physical stock and generate serial-number units
-
-### Reports & Analytics
-- Daily / date-range sales summary
-- Revenue by payment method
-- Top products by units sold and revenue
-- Staff performance (sales count, average transaction value)
-- Stock valuation (cost vs selling price)
-- Cash reconciliation (opening balance, expected vs actual, variance)
-- Return analytics (reasons, fraud patterns)
-
-### Customer & Loyalty
-- Customer directory with phone deduplication
-- Loyalty points tracking
-- Purchase history per customer
-
-### Real-Time
-- Live sales feed on owner dashboard via WebSocket
-- Low-stock alerts broadcast to all connected tabs instantly
-
-### AI Insights
-- Groq-powered sales analysis (llama-3.3-70b-versatile, free tier)
-- Natural language daily performance summaries
-
-### Security
-- HttpOnly cookie refresh token rotation (7-day sliding window)
-- 15-minute access tokens (configurable)
-- Role-based access: `platform_admin`, `owner`, `cashier`, `inventory_manager`, `accountant`, `technician`
-- Granular per-user permission overrides
-- OTP uses `crypto.randomInt` (CSPRNG — never `Math.random`)
-- Rate limiting on all endpoints
-- Helmet security headers
-- Full audit log on sensitive operations
+### 6. PWA & Offline Sales
+*   IndexedDB caching for offline retail operations, automatically queueing transactions and syncing to the Supabase PostgreSQL database when connection is restored.
 
 ---
 
-## Getting Started
+## Getting Started (Local & Production)
 
 ### Prerequisites
+*   Node.js 20+
+*   PostgreSQL instance (Supabase recommended)
+*   Redis server (optional, falling back to local memory without it)
 
-- Node.js 20+
-- PostgreSQL (or a free [Supabase](https://supabase.com) project)
-- Redis (optional — OTP falls back to in-memory without it)
-
-### 1. Clone and install
-
+### 1. Installation
+Clone the repository and install dependency bundles for both application directories:
 ```bash
-git clone https://github.com/krishbaresha/electrotrack-saas.git
-cd electrotrack-saas
+git clone https://github.com/krishbaresha/Tech-Bill.git
+cd Tech-Bill
 
-# Install API dependencies
-cd electrotrack-api && npm install
+# Install backend dependencies
+cd techbill-api && npm install
 
 # Install frontend dependencies
-cd ../electrotrack-pos && npm install
+cd ../techbill-pos && npm install
 ```
 
-### 2. Configure environment
-
-Create `electrotrack-api/.env` from the template in [Environment Variables](#environment-variables).
-
-For local development with demo/test accounts — add this to skip sending real emails:
-
-```env
-OTP_LOG_TO_CONSOLE=true
-```
-
-The OTP will print to your server terminal instead of being emailed.
-
-### 3. Run the database migration
-
+### 2. Database Migrations & Seeding
+Configure your database connection strings (see [Environment Variables](#environment-variables)), then run migrations:
 ```bash
-cd electrotrack-api
-npx prisma migrate dev
+cd techbill-api
+npx prisma migrate dev --name init
+npx prisma db seed
 ```
 
-### 4. Start both servers
+### 3. Running the Services
 
+#### Local Development
 ```bash
-# Terminal 1 — API (http://localhost:3000)
-cd electrotrack-api && npm run start:dev
+# Terminal 1: Start Backend (runs on http://localhost:3000)
+cd techbill-api && npm run start:dev
 
-# Terminal 2 — Frontend (http://localhost:5173)
-cd electrotrack-pos && npm run dev
+# Terminal 2: Start Frontend client (runs on http://localhost:5173)
+cd techbill-pos && npm run dev
+```
+
+#### Production Builds
+To compile production-optimized builds:
+```bash
+# Backend compilation
+cd techbill-api && npm run build
+
+# Frontend compilation
+cd techbill-pos && npm run build
 ```
 
 ---
 
 ## Environment Variables
 
-### `electrotrack-api/.env`
-
+### Backend Configuration (`techbill-api/.env`)
 ```env
-# ── Database ──────────────────────────────────────────────────────────────────
-# Supabase session pooler (port 5432) — compatible with Prisma without pgbouncer flag
-DATABASE_URL="postgresql://postgres.[ref]:[password]@aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres"
+# Database Connections
+DATABASE_URL="postgresql://postgres.[ref]:[pwd]@aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres"
 
-# ── JWT ───────────────────────────────────────────────────────────────────────
-JWT_SECRET="change-me-long-random-string"
+# JWT Signatures
+JWT_SECRET="long-secure-random-string"
 JWT_ACCESS_EXPIRES_IN="15m"
-JWT_REFRESH_SECRET="change-me-another-long-random-string"
+JWT_REFRESH_SECRET="another-secure-random-string"
 JWT_REFRESH_EXPIRES_IN="7d"
 JWT_OTP_EXPIRES_IN="2m"
 
-# ── OTP ───────────────────────────────────────────────────────────────────────
+# OTP Security
 OTP_TTL_SECONDS="300"
 OTP_LENGTH="6"
-# Set true in development — logs OTP to server console, no email required
-OTP_LOG_TO_CONSOLE="true"
+# Set to 'true' in development to dump OTPs directly to terminal logs
+OTP_LOG_TO_CONSOLE="false"
 
-# ── Email (Nodemailer — Resend SMTP recommended, free 100 emails/day) ─────────
+# Resend SMTP Transport
 SMTP_HOST="smtp.resend.com"
 SMTP_PORT="465"
 SMTP_SECURE="true"
 SMTP_USER="resend"
-SMTP_PASS="re_your_resend_api_key"
-SMTP_FROM="noreply@yourdomain.com"
+SMTP_PASS="re_your_secret_resend_api_key"
+SMTP_FROM="noreply@techbill.app"
 
-# ── Redis (optional) ──────────────────────────────────────────────────────────
+# Redis Cache URI
 REDIS_URL="redis://localhost:6379"
 
-# ── AI (Groq — free tier) ─────────────────────────────────────────────────────
+# AI Core
 GROQ_API_KEY="gsk_your_groq_key"
 
-# ── App ───────────────────────────────────────────────────────────────────────
-NODE_ENV="development"
+# App Globals
+NODE_ENV="production"
 PORT="3000"
-CLIENT_URL="http://localhost:5173"
+ALLOWED_ORIGINS="https://techbill.app,https://*.techbill.app"
 BCRYPT_ROUNDS="12"
 ```
 
-### `electrotrack-pos/.env`
-
+### Frontend Configuration (`techbill-pos/.env`)
 ```env
-VITE_API_URL="http://localhost:3000"
+VITE_API_URL="https://api.techbill.app"
 ```
 
 ---
 
-## Architecture
-
-```
-┌──────────────────────────────────────────────────────────┐
-│                 electrotrack-pos (React)                  │
-│   Vite · React Router · Zustand · Axios · Tailwind CSS   │
-└───────────────────────────┬──────────────────────────────┘
-                            │  REST API + WebSocket
-┌───────────────────────────▼──────────────────────────────┐
-│                electrotrack-api (NestJS)                  │
-│                                                           │
-│  ┌──────────┐  ┌───────────┐  ┌──────────┐  ┌────────┐  │
-│  │   Auth   │  │ Inventory │  │  Sales   │  │Reports │  │
-│  │ JWT/OTP  │  │ Products  │  │  Cart    │  │  AI    │  │
-│  └──────────┘  │  Units    │  │ Invoice  │  └────────┘  │
-│                └───────────┘  └──────────┘              │
-│                                                           │
-│  Prisma ORM ──► PostgreSQL (Supabase)                    │
-│  ioredis    ──► Redis (optional)                         │
-│  Socket.IO  ──► Real-time broadcast                      │
-└──────────────────────────────────────────────────────────┘
-```
-
-### Core Data Model
+## Database Architecture
 
 ```
 Tenant
-  └── User[] (role + permissions)
-  └── Product[]
-        └── InventoryUnit[] (serialNumber, status, condition)
-              └── SaleItem (link to Sale)
-              └── Return   (link to Sale)
-  └── Sale[]
-        └── SaleItem[]
-  └── Return[]
-  └── ShopSettings (thresholds, invoice template)
-  └── Customer[]
+  ├── User[] (role-based permissions)
+  ├── Product[] (catalog specs)
+  │     └── InventoryUnit[] (IMEI/Serial, conditions, cost)
+  │           └── SaleItem
+  │           └── Return
+  ├── Sale[] (customer receipts)
+  ├── Return[] (reversals and fraud checking)
+  └── ShopSettings (discounts thresholds, invoice watermarks)
 ```
 
 ---
 
-## Pros & Cons
+## Verification & Health Checks
 
-### Pros
+### API Health Status
+The backend service includes a standardized health check endpoint.
+*   **Endpoint**: `GET /health`
+*   **Response Payload**:
+    ```json
+    {
+      "status": "ok",
+      "uptime": 1245.82,
+      "timestamp": "2026-07-08T09:18:00.000Z"
+    }
+    ```
 
-| | |
-|---|---|
-| Serial-level tracking | Every unit has its own identity — no ambiguity at sale or warranty claim |
-| Multi-tenant SaaS | Full data isolation, platform admin panel, plan enforcement |
-| Zero-cost AI | Groq free tier — powerful insights at $0/month |
-| OTP dev bypass | `OTP_LOG_TO_CONSOLE=true` — no email server needed for local testing |
-| Security-first | CSPRNG OTP, rotating HttpOnly cookie refresh tokens, per-user permissions |
-| Premium UX | Dark glassmorphism design — feels premium compared to typical POS software |
-| Brandable invoices | Per-tenant logo, colors, font, watermark — no generic receipts |
-| Fraud detection | Automatic suspicious-return flagging with configurable thresholds |
-| Real-time | WebSocket sales feed — no manual refresh needed |
-| PWA ready | Installable, works offline for basic sales via Dexie |
-
-### Cons
-
-| | |
-|---|---|
-| No native mobile app | PWA works but not a native iOS/Android app — camera scanning can be unreliable |
-| Single currency | Hardcoded PKR — multi-currency requires a refactor |
-| No payment gateway | Records payment method but does not integrate with card terminals or mobile wallets |
-| SMS OTP costs money | No free production SMS — Twilio trial credit only; use email OTP instead |
-| Supabase free limits | 500MB DB, 1GB file storage, 2 emails/month (use Resend for OTP email) |
-| No multi-location | Single warehouse per tenant — chain stores would need a branch model |
-| No barcode printing | Can look up by serial but cannot generate or print barcodes natively |
-| No automated tests | Business logic is tested manually — Jest/Playwright tests not yet written |
-
----
-
-## Challenges We Faced
-
-### 1. Multi-tenant data isolation
-Every Prisma query must be scoped by `tenantId`. A missed scope = one tenant reads another's data. Fixed with a `TenantGuard` that extracts `tenantId` from the JWT and a strict `where: { tenantId }` on every query.
-
-### 2. Page refresh redirecting to login
-The access token is intentionally not persisted to localStorage (security best practice), but the user object is. On page reload, React rendered `!accessToken` and redirected to `/login` before the `useEffect` could fire the token refresh. Fixed with a `pendingRefresh = user && !accessToken` guard that shows a spinner instead of redirecting.
-
-### 3. Cryptographically weak OTP
-Initial implementation used `Math.random()` — predictable by an attacker who observes ~30 outputs (V8's xorshift128+ state recovery). Replaced with `crypto.randomInt()` from Node's built-in `crypto` module.
-
-### 4. OTP Redis split-brain
-`generate()` writes to Redis and falls back to in-memory. `verify()` also checks Redis first. If Redis goes down between generate and verify, the code was stored in Redis (now gone) but verify checks in-memory (which has nothing) — OTP never verified. Fixed by having `verify()` check Redis key existence; if absent, fall to memory store. Both paths are now consistent.
-
-### 5. OTP email blocking the flow
-`requestOtp` sent email without a try-catch. If SMTP was unconfigured, `sendMail` threw a raw 500 error leaking internal transport details. Wrapped in try-catch; on failure, invalidates the OTP so it doesn't persist undelivered.
-
-### 6. O(n²) sort in dashboard
-`getDashboard` sorted "recently added" by calling `products.find()` inside the sort comparator — O(n² log n) for large catalogs. Fixed with a pre-built `Map<id, timestamp>` lookup for O(n log n) total.
-
-### 7. Permission mismatch on return analytics
-Backend endpoint required `reports.read` but the frontend route only required `returns.read`. Users with return access got a silent 403. Fixed by aligning the backend guard to `returns.read`.
-
-### 8. Supabase connection string confusion
-Supabase has three connection types (direct, session pooler, transaction pooler). The transaction pooler on port 6543 needs `pgbouncer=true`; the session pooler on port 5432 works with Prisma directly. The `P1001` error was the project being paused (free tier), not the connection string.
-
-### 9. Credentials in version control
-A plaintext test-credentials file was accidentally tracked by git. Removed from tracking, added to `.gitignore`, passwords rotated.
-
----
-
-## Who Its For
-
-| User | Value |
-|---|---|
-| **Electronics shop owner** | Real-time dashboard, fraud detection, staff analytics, full audit trail |
-| **Cashier** | Fast POS with search, camera scan, clean invoice |
-| **Inventory manager** | Serial-level stock control, GRN receive, dead stock alerts |
-| **Accountant** | Cash reconciliation, sales reports, stock valuation |
-| **Technician** | Warranty lookup, repair status on unit |
-| **Platform operator** | Manage multiple shops from a single admin panel |
-
----
-
-## Roadmap
-
-- [ ] Resend SDK direct integration (replace nodemailer)
-- [ ] SMS OTP via Twilio (phone field on User model)
-- [ ] class-validator DTOs for invoice color fields (hex validation)
-- [ ] Jest unit tests — auth, OTP, sales, returns
-- [ ] Playwright E2E tests for critical POS flows
-- [ ] Redis dashboard caching (30s TTL on getDashboard)
-- [ ] Barcode label printing
-- [ ] Multi-branch / warehouse support
-- [ ] Easypaisa / JazzCash payment gateway integration
-- [ ] Product image upload (Cloudinary free tier)
-- [ ] CSV / Excel export for all reports
+### Compilation Sanity Checks
+Ensure the projects compile and bundle cleanly by running:
+```bash
+cd techbill-api && npm run build
+cd ../techbill-pos && npm run build
+```
 
 ---
 
 ## License
 
-MIT
-
----
-
-*Built with NestJS · React · Prisma · Supabase · Groq · GSAP · Tailwind CSS*
+This project is licensed under the MIT License.

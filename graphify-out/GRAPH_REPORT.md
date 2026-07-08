@@ -1,4 +1,4 @@
-# Graph Report - .  (2026-07-01)
+﻿# Graph Report - .  (2026-07-01)
 
 ## Corpus Check
 - 358 files · ~491,878 words
@@ -13,10 +13,10 @@
 - [[_COMMUNITY_Ai Ai Controller Group|Ai Ai Controller Group]]
 - [[_COMMUNITY_Dto Bulk Create Units Dto Group|Dto Bulk Create Units Dto Group]]
 - [[_COMMUNITY_Dto Filter Reconciliation Group|Dto Filter Reconciliation Group]]
-- [[_COMMUNITY_Electrotrack Pos Package Group|Electrotrack Pos Package Group]]
-- [[_COMMUNITY_Electrotrack Api Agents S Group|Electrotrack Api Agents S Group]]
-- [[_COMMUNITY_Electrotrack Api Claude S Group|Electrotrack Api Claude S Group]]
-- [[_COMMUNITY_Electrotrack Api Package  Group|Electrotrack Api Package  Group]]
+- [[_COMMUNITY_Tech Bill Pos Package Group|Tech Bill Pos Package Group]]
+- [[_COMMUNITY_Tech Bill Api Agents S Group|Tech Bill Api Agents S Group]]
+- [[_COMMUNITY_Tech Bill Api Claude S Group|Tech Bill Api Claude S Group]]
+- [[_COMMUNITY_Tech Bill Api Package  Group|Tech Bill Api Package  Group]]
 - [[_COMMUNITY_Dto Create Return Dto Group|Dto Create Return Dto Group]]
 - [[_COMMUNITY_Auth Auth Controller Group|Auth Auth Controller Group]]
 - [[_COMMUNITY_Layout Appshell Group|Layout Appshell Group]]
@@ -24,80 +24,80 @@
 - [[_COMMUNITY_Auth Jwt Strategy Group|Auth Jwt Strategy Group]]
 - [[_COMMUNITY_Api Client Group|Api Client Group]]
 - [[_COMMUNITY_Audit Auditpage Group|Audit Auditpage Group]]
-- [[_COMMUNITY_Electrotrack Api Package  Group|Electrotrack Api Package  Group]]
+- [[_COMMUNITY_Tech Bill Api Package  Group|Tech Bill Api Package  Group]]
 - [[_COMMUNITY_Dto Create Po Dto Group|Dto Create Po Dto Group]]
 - [[_COMMUNITY_Dto Create User Dto Group|Dto Create User Dto Group]]
-- [[_COMMUNITY_Electrotrack Api Tsconfig Group|Electrotrack Api Tsconfig Group]]
+- [[_COMMUNITY_Tech Bill Api Tsconfig Group|Tech Bill Api Tsconfig Group]]
 - [[_COMMUNITY_Decorators Roles Decorato Group|Decorators Roles Decorato Group]]
-- [[_COMMUNITY_Electrotrack Pos Tsconfig Group|Electrotrack Pos Tsconfig Group]]
+- [[_COMMUNITY_Tech Bill Pos Tsconfig Group|Tech Bill Pos Tsconfig Group]]
 - [[_COMMUNITY_Package Group|Package Group]]
-- [[_COMMUNITY_Electrotrack Pos Tsconfig Group|Electrotrack Pos Tsconfig Group]]
-- [[_COMMUNITY_Electrotrack Api Agents S Group|Electrotrack Api Agents S Group]]
-- [[_COMMUNITY_Electrotrack Api Claude S Group|Electrotrack Api Claude S Group]]
+- [[_COMMUNITY_Tech Bill Pos Tsconfig Group|Tech Bill Pos Tsconfig Group]]
+- [[_COMMUNITY_Tech Bill Api Agents S Group|Tech Bill Api Agents S Group]]
+- [[_COMMUNITY_Tech Bill Api Claude S Group|Tech Bill Api Claude S Group]]
 - [[_COMMUNITY_Api Socket Group|Api Socket Group]]
 - [[_COMMUNITY_Auth Auth Module Group|Auth Auth Module Group]]
 - [[_COMMUNITY_Auth Protectedroute Group|Auth Protectedroute Group]]
 - [[_COMMUNITY_Inventory Inventorypage Group|Inventory Inventorypage Group]]
 - [[_COMMUNITY_Pos Posscreen Group|Pos Posscreen Group]]
-- [[_COMMUNITY_Electrotrack Api Package  Group|Electrotrack Api Package  Group]]
+- [[_COMMUNITY_Tech Bill Api Package  Group|Tech Bill Api Package  Group]]
 - [[_COMMUNITY_Pos Barcodescanner Group|Pos Barcodescanner Group]]
 - [[_COMMUNITY_Ai Ai Controller Aicontro Group|Ai Ai Controller Aicontro Group]]
 - [[_COMMUNITY_Db Offline Db Group|Db Offline Db Group]]
 - [[_COMMUNITY_Events Events Gateway Group|Events Events Gateway Group]]
 - [[_COMMUNITY_Public Manifest Group|Public Manifest Group]]
 - [[_COMMUNITY_Tsconfig Group|Tsconfig Group]]
-- [[_COMMUNITY_Electrotrack Api Agents S Group|Electrotrack Api Agents S Group]]
-- [[_COMMUNITY_Electrotrack Api Agents S Group|Electrotrack Api Agents S Group]]
-- [[_COMMUNITY_Electrotrack Api Claude S Group|Electrotrack Api Claude S Group]]
-- [[_COMMUNITY_Electrotrack Api Claude S Group|Electrotrack Api Claude S Group]]
+- [[_COMMUNITY_Tech Bill Api Agents S Group|Tech Bill Api Agents S Group]]
+- [[_COMMUNITY_Tech Bill Api Agents S Group|Tech Bill Api Agents S Group]]
+- [[_COMMUNITY_Tech Bill Api Claude S Group|Tech Bill Api Claude S Group]]
+- [[_COMMUNITY_Tech Bill Api Claude S Group|Tech Bill Api Claude S Group]]
 - [[_COMMUNITY_Pos Invoicemodal Group|Pos Invoicemodal Group]]
 - [[_COMMUNITY_Pos Productgrid Group|Pos Productgrid Group]]
 - [[_COMMUNITY_Returns Returnspage Group|Returns Returnspage Group]]
-- [[_COMMUNITY_Electrotrack Api Package Group|Electrotrack Api Package Group]]
-- [[_COMMUNITY_Electrotrack Api Package  Group|Electrotrack Api Package  Group]]
+- [[_COMMUNITY_Tech Bill Api Package Group|Tech Bill Api Package Group]]
+- [[_COMMUNITY_Tech Bill Api Package  Group|Tech Bill Api Package  Group]]
 - [[_COMMUNITY_Pos Carttable Group|Pos Carttable Group]]
 - [[_COMMUNITY_Src App Controller Group|Src App Controller Group]]
 - [[_COMMUNITY_Customers Loyaltypage Group|Customers Loyaltypage Group]]
 - [[_COMMUNITY_Prisma Seed Dha Product I Group|Prisma Seed Dha Product I Group]]
 - [[_COMMUNITY_Sales Invoicehistorypage Group|Sales Invoicehistorypage Group]]
 - [[_COMMUNITY_Settings Settings Control Group|Settings Settings Control Group]]
-- [[_COMMUNITY_Electrotrack Api Prisma S Group|Electrotrack Api Prisma S Group]]
+- [[_COMMUNITY_Tech Bill Api Prisma S Group|Tech Bill Api Prisma S Group]]
 - [[_COMMUNITY_Schemas Report Dto Group|Schemas Report Dto Group]]
 - [[_COMMUNITY_Customers Customerspage Group|Customers Customerspage Group]]
-- [[_COMMUNITY_Electrotrack Api Agents S Group|Electrotrack Api Agents S Group]]
-- [[_COMMUNITY_Electrotrack Api Claude S Group|Electrotrack Api Claude S Group]]
-- [[_COMMUNITY_Electrotrack Api Nest Cli Group|Electrotrack Api Nest Cli Group]]
-- [[_COMMUNITY_Electrotrack Api Src Main Group|Electrotrack Api Src Main Group]]
+- [[_COMMUNITY_Tech Bill Api Agents S Group|Tech Bill Api Agents S Group]]
+- [[_COMMUNITY_Tech Bill Api Claude S Group|Tech Bill Api Claude S Group]]
+- [[_COMMUNITY_Tech Bill Api Nest Cli Group|Tech Bill Api Nest Cli Group]]
+- [[_COMMUNITY_Tech Bill Api Src Main Group|Tech Bill Api Src Main Group]]
 - [[_COMMUNITY_Settings Settingspage Group|Settings Settingspage Group]]
-- [[_COMMUNITY_Electrotrack Api Agents S Group|Electrotrack Api Agents S Group]]
-- [[_COMMUNITY_Electrotrack Api Claude S Group|Electrotrack Api Claude S Group]]
-- [[_COMMUNITY_Electrotrack Api Tsconfig Group|Electrotrack Api Tsconfig Group]]
+- [[_COMMUNITY_Tech Bill Api Agents S Group|Tech Bill Api Agents S Group]]
+- [[_COMMUNITY_Tech Bill Api Claude S Group|Tech Bill Api Claude S Group]]
+- [[_COMMUNITY_Tech Bill Api Tsconfig Group|Tech Bill Api Tsconfig Group]]
 - [[_COMMUNITY_Notifications Notificatio Group|Notifications Notificatio Group]]
 - [[_COMMUNITY_Warranty Warrantypage Group|Warranty Warrantypage Group]]
 - [[_COMMUNITY_Db Offline Db Processpend Group|Db Offline Db Processpend Group]]
-- [[_COMMUNITY_Electrotrack Api Agents S Group|Electrotrack Api Agents S Group]]
-- [[_COMMUNITY_Electrotrack Api Agents S Group|Electrotrack Api Agents S Group]]
-- [[_COMMUNITY_Electrotrack Api Claude S Group|Electrotrack Api Claude S Group]]
-- [[_COMMUNITY_Electrotrack Api Claude S Group|Electrotrack Api Claude S Group]]
+- [[_COMMUNITY_Tech Bill Api Agents S Group|Tech Bill Api Agents S Group]]
+- [[_COMMUNITY_Tech Bill Api Agents S Group|Tech Bill Api Agents S Group]]
+- [[_COMMUNITY_Tech Bill Api Claude S Group|Tech Bill Api Claude S Group]]
+- [[_COMMUNITY_Tech Bill Api Claude S Group|Tech Bill Api Claude S Group]]
 - [[_COMMUNITY_Returns Returnanalyticspa Group|Returns Returnanalyticspa Group]]
-- [[_COMMUNITY_Electrotrack Api Agents S Group|Electrotrack Api Agents S Group]]
-- [[_COMMUNITY_Electrotrack Api Agents S Group|Electrotrack Api Agents S Group]]
-- [[_COMMUNITY_Electrotrack Api Agents S Group|Electrotrack Api Agents S Group]]
-- [[_COMMUNITY_Electrotrack Api Claude S Group|Electrotrack Api Claude S Group]]
-- [[_COMMUNITY_Electrotrack Api Claude S Group|Electrotrack Api Claude S Group]]
-- [[_COMMUNITY_Electrotrack Api Claude S Group|Electrotrack Api Claude S Group]]
-- [[_COMMUNITY_Electrotrack Api Src Modu Group|Electrotrack Api Src Modu Group]]
-- [[_COMMUNITY_Electrotrack Pos Tsconfig Group|Electrotrack Pos Tsconfig Group]]
-- [[_COMMUNITY_D Electrotrack Saas Elect Group|D Electrotrack Saas Elect Group]]
-- [[_COMMUNITY_D Electrotrack Saas Elect Group|D Electrotrack Saas Elect Group]]
-- [[_COMMUNITY_D Electrotrack Saas Elect Group|D Electrotrack Saas Elect Group]]
-- [[_COMMUNITY_D Electrotrack Saas Elect Group|D Electrotrack Saas Elect Group]]
-- [[_COMMUNITY_D Electrotrack Saas Elect Group|D Electrotrack Saas Elect Group]]
-- [[_COMMUNITY_D Electrotrack Saas Elect Group|D Electrotrack Saas Elect Group]]
+- [[_COMMUNITY_Tech Bill Api Agents S Group|Tech Bill Api Agents S Group]]
+- [[_COMMUNITY_Tech Bill Api Agents S Group|Tech Bill Api Agents S Group]]
+- [[_COMMUNITY_Tech Bill Api Agents S Group|Tech Bill Api Agents S Group]]
+- [[_COMMUNITY_Tech Bill Api Claude S Group|Tech Bill Api Claude S Group]]
+- [[_COMMUNITY_Tech Bill Api Claude S Group|Tech Bill Api Claude S Group]]
+- [[_COMMUNITY_Tech Bill Api Claude S Group|Tech Bill Api Claude S Group]]
+- [[_COMMUNITY_Tech Bill Api Src Modu Group|Tech Bill Api Src Modu Group]]
+- [[_COMMUNITY_Tech Bill Pos Tsconfig Group|Tech Bill Pos Tsconfig Group]]
+- [[_COMMUNITY_D Tech Bill Saas Elect Group|D Tech Bill Saas Elect Group]]
+- [[_COMMUNITY_D Tech Bill Saas Elect Group|D Tech Bill Saas Elect Group]]
+- [[_COMMUNITY_D Tech Bill Saas Elect Group|D Tech Bill Saas Elect Group]]
+- [[_COMMUNITY_D Tech Bill Saas Elect Group|D Tech Bill Saas Elect Group]]
+- [[_COMMUNITY_D Tech Bill Saas Elect Group|D Tech Bill Saas Elect Group]]
+- [[_COMMUNITY_D Tech Bill Saas Elect Group|D Tech Bill Saas Elect Group]]
 - [[_COMMUNITY_Dto Approve Return Dto Group|Dto Approve Return Dto Group]]
 - [[_COMMUNITY_Dto Reject Return Dto Group|Dto Reject Return Dto Group]]
 - [[_COMMUNITY_Dto Request Otp Dto Group|Dto Request Otp Dto Group]]
-- [[_COMMUNITY_Electrotrack Api Src Comm Group|Electrotrack Api Src Comm Group]]
+- [[_COMMUNITY_Tech Bill Api Src Comm Group|Tech Bill Api Src Comm Group]]
 - [[_COMMUNITY_Mcp Group|Mcp Group]]
 - [[_COMMUNITY_Public Sw Group|Public Sw Group]]
 - [[_COMMUNITY_Reports Reports Scheduler Group|Reports Reports Scheduler Group]]
@@ -143,19 +143,19 @@ Nodes (9): BulkCreateUnitsDto, CreateProductDto, CreateUnitDto, FilterUnitsDto, 
 Cohesion: 0.07
 Nodes (6): FilterReconciliationDto, ReconciliationDto, SalesSummaryQueryDto, ReportsController, ReportsModule, ReportsService
 
-### Community 3 - "Electrotrack Pos Package Group"
+### Community 3 - "Tech Bill Pos Package Group"
 Cohesion: 0.06
 Nodes (35): dependencies, axios, clsx, date-fns, dexie, gsap, @hookform/resolvers, lucide-react (+27 more)
 
-### Community 4 - "Electrotrack Api Agents S Group"
+### Community 4 - "Tech Bill Api Agents S Group"
 Cohesion: 0.10
 Nodes (31): AllStats, autoDetectTailwind(), buildHead(), camelToKebab(), createLimiter(), CssUrlRef, embedImages(), escapeRegExp() (+23 more)
 
-### Community 5 - "Electrotrack Api Claude S Group"
+### Community 5 - "Tech Bill Api Claude S Group"
 Cohesion: 0.10
 Nodes (31): AllStats, autoDetectTailwind(), buildHead(), camelToKebab(), createLimiter(), CssUrlRef, embedImages(), escapeRegExp() (+23 more)
 
-### Community 6 - "Electrotrack Api Package  Group"
+### Community 6 - "Tech Bill Api Package  Group"
 Cohesion: 0.06
 Nodes (32): dependencies, bcrypt, class-transformer, class-validator, cookie-parser, groq-sdk, helmet, ioredis (+24 more)
 
@@ -187,7 +187,7 @@ Nodes (14): api, failedQueue, InsightResponse, formatPKR(), OwnerDashboard(), Da
 Cohesion: 0.10
 Nodes (18): AuditMeta, StockAlerts(), formatPKR(), ReportsPage(), Tab, CreateTenantForm, PLAN_COLORS, ALL_PERMISSIONS (+10 more)
 
-### Community 14 - "Electrotrack Api Package  Group"
+### Community 14 - "Tech Bill Api Package  Group"
 Cohesion: 0.08
 Nodes (25): devDependencies, eslint, eslint-config-prettier, @eslint/eslintrc, @eslint/js, eslint-plugin-prettier, globals, jest (+17 more)
 
@@ -199,7 +199,7 @@ Nodes (5): CreatePoDto, PoItemDto, CreateSupplierDto, SuppliersController, Suppl
 Cohesion: 0.13
 Nodes (5): CreateUserDto, UpdateUserDto, UsersController, UsersModule, UsersService
 
-### Community 17 - "Electrotrack Api Tsconfig Group"
+### Community 17 - "Tech Bill Api Tsconfig Group"
 Cohesion: 0.09
 Nodes (22): compilerOptions, allowSyntheticDefaultImports, baseUrl, declaration, emitDecoratorMetadata, esModuleInterop, experimentalDecorators, forceConsistentCasingInFileNames (+14 more)
 
@@ -207,7 +207,7 @@ Nodes (22): compilerOptions, allowSyntheticDefaultImports, baseUrl, declaration,
 Cohesion: 0.12
 Nodes (5): Roles(), RolesGuard, TenantsController, ALL_PERMISSIONS, TenantsService
 
-### Community 19 - "Electrotrack Pos Tsconfig Group"
+### Community 19 - "Tech Bill Pos Tsconfig Group"
 Cohesion: 0.10
 Nodes (19): compilerOptions, allowImportingTsExtensions, isolatedModules, jsx, lib, module, moduleDetection, moduleResolution (+11 more)
 
@@ -215,15 +215,15 @@ Nodes (19): compilerOptions, allowImportingTsExtensions, isolatedModules, jsx, l
 Cohesion: 0.11
 Nodes (18): dependencies, bcrypt, @prisma/client, devDependencies, prisma, ts-node, @types/bcrypt, @types/node (+10 more)
 
-### Community 21 - "Electrotrack Pos Tsconfig Group"
+### Community 21 - "Tech Bill Pos Tsconfig Group"
 Cohesion: 0.11
 Nodes (17): compilerOptions, allowImportingTsExtensions, isolatedModules, lib, module, moduleDetection, moduleResolution, noEmit (+9 more)
 
-### Community 22 - "Electrotrack Api Agents S Group"
+### Community 22 - "Tech Bill Api Agents S Group"
 Cohesion: 0.18
 Nodes (14): AllStats, CssUrlRef, extractCssUrls(), FileStats, getMime(), inlineImages(), InlineStats, main() (+6 more)
 
-### Community 23 - "Electrotrack Api Claude S Group"
+### Community 23 - "Tech Bill Api Claude S Group"
 Cohesion: 0.18
 Nodes (14): AllStats, CssUrlRef, extractCssUrls(), FileStats, getMime(), inlineImages(), InlineStats, main() (+6 more)
 
@@ -247,7 +247,7 @@ Nodes (11): AddProductForm, AddUnitForm, InventoryPage(), ProductWithStock, Stoc
 Cohesion: 0.14
 Nodes (11): DashboardData, formatPKR(), InventoryUnit, PillProps, ProductCard, SectionedGridProps, StatCardProps, STATUS_LABELS (+3 more)
 
-### Community 29 - "Electrotrack Api Package  Group"
+### Community 29 - "Tech Bill Api Package  Group"
 Cohesion: 0.14
 Nodes (14): scripts, build, db:seed, format, lint, start, start:debug, start:dev (+6 more)
 
@@ -261,7 +261,7 @@ Nodes (4): AiController, AiModule, AiService, InventoryModule
 
 ### Community 32 - "Db Offline Db Group"
 Cohesion: 0.18
-Nodes (8): db, ElectroTrackDB, PendingSale, queueSale(), formatPKR(), FormData, PaymentForm(), schema
+Nodes (8): db, Tech BillDB, PendingSale, queueSale(), formatPKR(), FormData, PaymentForm(), schema
 
 ### Community 34 - "Public Manifest Group"
 Cohesion: 0.15
@@ -271,19 +271,19 @@ Nodes (12): background_color, categories, description, display, icons, lang, nam
 Cohesion: 0.15
 Nodes (12): compilerOptions, esModuleInterop, lib, module, outDir, rootDir, skipLibCheck, strict (+4 more)
 
-### Community 36 - "Electrotrack Api Agents S Group"
+### Community 36 - "Tech Bill Api Agents S Group"
 Cohesion: 0.17
 Nodes (11): dependencies, @swc/core, description, engines, node, name, scripts, fetch (+3 more)
 
-### Community 37 - "Electrotrack Api Agents S Group"
+### Community 37 - "Tech Bill Api Agents S Group"
 Cohesion: 0.24
 Nodes (11): Any, Path, build_screen_request(), call_batch_create_screens(), encode_file(), main(), parse_args(), Build a CreateScreenRequest dict from a file.    For images, the file is set a (+3 more)
 
-### Community 38 - "Electrotrack Api Claude S Group"
+### Community 38 - "Tech Bill Api Claude S Group"
 Cohesion: 0.17
 Nodes (11): dependencies, @swc/core, description, engines, node, name, scripts, fetch (+3 more)
 
-### Community 39 - "Electrotrack Api Claude S Group"
+### Community 39 - "Tech Bill Api Claude S Group"
 Cohesion: 0.24
 Nodes (11): Any, Path, build_screen_request(), call_batch_create_screens(), encode_file(), main(), parse_args(), Build a CreateScreenRequest dict from a file.    For images, the file is set a (+3 more)
 
@@ -299,11 +299,11 @@ Nodes (5): AVATAR_PALETTE, ProductCard, Props, SPEC_ICONS, ProductSpecifications
 Cohesion: 0.18
 Nodes (7): OtpModalProps, RETURN_TYPES, ReturnsPage(), SaleItem, SaleLookup, STATUS_STYLES, ReturnItem
 
-### Community 43 - "Electrotrack Api Package Group"
+### Community 43 - "Tech Bill Api Package Group"
 Cohesion: 0.22
 Nodes (8): author, description, license, name, prisma, seed, private, version
 
-### Community 44 - "Electrotrack Api Package  Group"
+### Community 44 - "Tech Bill Api Package  Group"
 Cohesion: 0.22
 Nodes (9): jest, collectCoverageFrom, coverageDirectory, moduleFileExtensions, rootDir, testEnvironment, testRegex, transform (+1 more)
 
@@ -323,7 +323,7 @@ Nodes (6): DHA_PRODUCT_IDS, GULBERG_PRODUCT_IDS, TECH_PERMISSIONS, ALL_PERMISSIO
 Cohesion: 0.25
 Nodes (4): PAYMENT_LABELS, SaleDetail, SaleListItem, STATUS_STYLE
 
-### Community 51 - "Electrotrack Api Prisma S Group"
+### Community 51 - "Tech Bill Api Prisma S Group"
 Cohesion: 0.29
 Nodes (5): ALL_PERMISSIONS, CASHIER_PERMISSIONS, prisma, INVENTORY_MANAGER_PERMISSIONS, TECHNICIAN_PERMISSIONS
 
@@ -335,11 +335,11 @@ Nodes (6): CashReconciliationDto, DailySalesSummaryDto, LowStockItem, LowStockLi
 Cohesion: 0.33
 Nodes (3): Customer, SALE_STATUS, SaleRow
 
-### Community 56 - "Electrotrack Api Nest Cli Group"
+### Community 56 - "Tech Bill Api Nest Cli Group"
 Cohesion: 0.33
 Nodes (5): collection, compilerOptions, deleteOutDir, $schema, sourceRoot
 
-### Community 57 - "Electrotrack Api Src Main Group"
+### Community 57 - "Tech Bill Api Src Main Group"
 Cohesion: 0.47
 Nodes (4): AppModule, bootstrap(), cookieParser, helmet
 
@@ -347,15 +347,15 @@ Nodes (4): AppModule, bootstrap(), cookieParser, helmet
 Cohesion: 0.33
 Nodes (4): FieldGroupProps, FONT_OPTIONS, SettingsForm, SettingsPage()
 
-### Community 59 - "Electrotrack Api Agents S Group"
+### Community 59 - "Tech Bill Api Agents S Group"
 Cohesion: 0.40
 Nodes (3): columns, data, User
 
-### Community 60 - "Electrotrack Api Claude S Group"
+### Community 60 - "Tech Bill Api Claude S Group"
 Cohesion: 0.40
 Nodes (3): columns, data, User
 
-### Community 61 - "Electrotrack Api Tsconfig Group"
+### Community 61 - "Tech Bill Api Tsconfig Group"
 Cohesion: 0.40
 Nodes (4): compilerOptions, declaration, exclude, extends
 
@@ -393,3 +393,4 @@ _Questions this graph is uniquely positioned to answer:_
   _Cohesion score 0.06140350877192982 - nodes in this community are weakly interconnected._
 - **Should `Dto Filter Reconciliation Group` be split into smaller, more focused modules?**
   _Cohesion score 0.06923076923076923 - nodes in this community are weakly interconnected._
+

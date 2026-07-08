@@ -11,6 +11,8 @@ import { useAuthStore } from '../../store/auth.store';
 import { api } from '../../api/client';
 import { usePosStore } from '../../store/pos.store';
 import type { Sale, ShopSettings, ProductCard, DashboardData } from '../../types';
+import { useToastStore } from '../../store/toast.store';
+import { CardSkeleton, StatsSkeleton } from '../../components/common/Skeleton';
 
 
 interface InventoryUnit {
@@ -36,6 +38,7 @@ const STATUS_LABELS: Record<StatusFilter, string> = {
 const formatPKR = (n: number): string => `₨ ${n.toLocaleString('en-PK')}`;
 
 export default function PosScreen() {
+  const toast = useToastStore();
   const dashboard = usePosStore((s) => s.dashboardData);
   const syncPosDashboard = usePosStore((s) => s.syncPosDashboard);
   const deltaSync = usePosStore((s) => s.deltaSync);
@@ -48,7 +51,6 @@ export default function PosScreen() {
   const [unitPickerUnits, setUnitPickerUnits] = useState<InventoryUnit[]>([]);
   const [unitPickerLoading, setUnitPickerLoading] = useState(false);
   const [completedSale, setCompletedSale] = useState<Sale | null>(null);
-  const [serialAlert, setSerialAlert] = useState<{ serial: string; status: string } | null>(null);
   const [now, setNow] = useState(new Date());
 
   const [mobileView, setMobileView] = useState<'browse' | 'cart'>('browse');
@@ -155,7 +157,10 @@ export default function PosScreen() {
   const handleAddUnit = useCallback((unit: InventoryUnit) => {
     setViewingProduct((prev) => {
       if (!prev) return prev;
-      if (items.some((i) => i.serialNumber === unit.serialNumber)) return prev;
+      if (items.some((i) => i.serialNumber === unit.serialNumber)) {
+        toast.info(`"${unit.serialNumber}" is already in your cart.`);
+        return prev;
+      }
       addItem({
         serialNumber: unit.serialNumber,
         productId: prev.id,
@@ -163,10 +168,11 @@ export default function PosScreen() {
         brand: prev.brand,
         sellingPrice: unit.sellingPrice ?? prev.sellingPrice,
       });
+      toast.success(`Added ${prev.name} (${unit.serialNumber}) to cart.`);
       return prev;
     });
     setUnitPickerUnits((prev) => prev.filter((u) => u.serialNumber !== unit.serialNumber));
-  }, [items, addItem]);
+  }, [items, addItem, toast]);
 
   // Memoized handlers passed down to SectionedGrid / ProductGrid
   // to prevent prop-identity churn on every cart state update.
@@ -202,34 +208,35 @@ export default function PosScreen() {
       const unit = units[0];
 
       if (!unit) {
-        setSerialAlert({ serial, status: 'not_found' });
-        setTimeout(() => setSerialAlert(null), 3000);
+        toast.error(`Serial number "${serial}" not found in inventory.`);
         return;
       }
       if (unit.status === 'in_stock') {
-        if (!items.some((i) => i.serialNumber === unit.serialNumber)) {
-          addItem({
-            serialNumber: unit.serialNumber,
-            productId: unit.productId,
-            productName: unit.productName ?? 'Unknown',
-            brand: unit.brand ?? null,
-            sellingPrice: unit.sellingPrice,
-          });
+        if (items.some((i) => i.serialNumber === unit.serialNumber)) {
+          toast.info(`"${unit.serialNumber}" is already in your cart.`);
+          return;
         }
+        addItem({
+          serialNumber: unit.serialNumber,
+          productId: unit.productId,
+          productName: unit.productName ?? 'Unknown',
+          brand: unit.brand ?? null,
+          sellingPrice: unit.sellingPrice,
+        });
+        toast.success(`Added ${unit.productName ?? 'product'} (${unit.serialNumber}) to cart.`);
       } else {
-        setSerialAlert({ serial: unit.serialNumber, status: unit.status });
-        setTimeout(() => setSerialAlert(null), 4000);
+        toast.warning(`Serial "${unit.serialNumber}" cannot be sold (status: ${unit.status.replace(/_/g, ' ')}).`);
       }
     } catch {
-      setSerialAlert({ serial, status: 'error' });
-      setTimeout(() => setSerialAlert(null), 3000);
+      toast.error(`Failed to look up serial "${serial}".`);
     }
-  }, [items, addItem]);
+  }, [items, addItem, toast]);
 
   const closeInvoice = useCallback(() => {
     setCompletedSale(null);
     clearCart();
-  }, [clearCart]);
+    toast.success('Sale transaction cleared.');
+  }, [clearCart, toast]);
 
   const dateStr = now.toLocaleDateString('en-PK', { weekday: 'short', day: '2-digit', month: 'short' });
   const timeStr = now.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' });
@@ -268,27 +275,19 @@ export default function PosScreen() {
         <div className={`flex-1 flex flex-col min-h-0 overflow-y-auto px-3 sm:px-6 py-4 sm:py-5 gap-4 sm:gap-5 ${mobileView === 'cart' ? 'hidden lg:flex' : 'flex'}`}>
           <UniversalSearch onSerialAdd={handleSerialAdd} onProductSelect={handleProductSelect} />
 
-          {serialAlert && (
-            <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-amber-400/30 bg-amber-500/10 text-amber-300 text-sm">
-              <AlertTriangle size={14} className="shrink-0" />
-              <span>
-                <span className="font-mono font-semibold">{serialAlert.serial}</span>
-                {serialAlert.status === 'not_found'
-                  ? ' — not found in inventory'
-                  : serialAlert.status === 'error'
-                  ? ' — lookup failed'
-                  : ` — status: ${serialAlert.status.replace(/_/g, ' ')}`}
-              </span>
-            </div>
-          )}
+          {/* Notifications handled globally via ToastContainer */}
 
           {/* Stats Row */}
-          <div ref={statsRef} className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard icon={<Package size={15} />} label="In Stock" value={dashboard?.stats.totalInStock ?? 0} accent="blue" loading={dashboardLoading} />
-            <StatCard icon={<AlertTriangle size={15} />} label="Low Stock" value={dashboard?.stats.totalLowStock ?? 0} accent={dashboard && dashboard.stats.totalLowStock > 0 ? 'red' : 'green'} loading={dashboardLoading} />
-            <StatCard icon={<Layers size={15} />} label="Products" value={dashboard?.stats.totalProducts ?? 0} accent="purple" loading={dashboardLoading} />
-            <StatCard icon={<TrendingUp size={15} />} label="Total Sold" value={dashboard?.stats.totalSold ?? 0} accent="teal" loading={dashboardLoading} />
-          </div>
+          {dashboardLoading ? (
+            <StatsSkeleton />
+          ) : (
+            <div ref={statsRef} className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatCard icon={<Package size={15} />} label="In Stock" value={dashboard?.stats.totalInStock ?? 0} accent="blue" loading={false} />
+              <StatCard icon={<AlertTriangle size={15} />} label="Low Stock" value={dashboard?.stats.totalLowStock ?? 0} accent={dashboard && dashboard.stats.totalLowStock > 0 ? 'red' : 'green'} loading={false} />
+              <StatCard icon={<Layers size={15} />} label="Products" value={dashboard?.stats.totalProducts ?? 0} accent="purple" loading={false} />
+              <StatCard icon={<TrendingUp size={15} />} label="Total Sold" value={dashboard?.stats.totalSold ?? 0} accent="teal" loading={false} />
+            </div>
+          )}
 
           {/* Category Pills */}
           <div ref={pillsRef} className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-thin">
@@ -317,7 +316,7 @@ export default function PosScreen() {
           {/* Product Grid */}
           <div ref={gridWrapRef} className="flex-1 min-h-0 pb-20 lg:pb-4">
             {dashboardLoading ? (
-              <ProductGrid products={[]} loading={true} onAddToCart={() => {}} onViewUnits={() => {}} selectedCategory={null} />
+              <CardSkeleton count={8} />
             ) : filteredProducts.length === 0 && !(selectedCategory === null && statusFilter === 'in_stock') ? (
               <div className="flex flex-col items-center justify-center py-16 text-center gap-2">
                 <Package size={32} className="text-stitch-on-surface-variant/30" />
@@ -381,7 +380,7 @@ export default function PosScreen() {
             ) : (
               <>
                 <div className="min-h-[180px]"><CartTable /></div>
-                <PaymentForm onSaleComplete={(sale: Sale) => setCompletedSale(sale)} shopSettings={shopSettings} />
+                <PaymentForm onSaleComplete={(sale: Sale) => { setCompletedSale(sale); toast.success('Invoice Generated Successfully!'); }} shopSettings={shopSettings} />
               </>
             )}
           </div>

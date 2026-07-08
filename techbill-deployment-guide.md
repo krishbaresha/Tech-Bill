@@ -1,49 +1,86 @@
-# TechBill Deployment Guide
+# TechBill Production Deployment Checklist
 
-Here are the complete, step-by-step manual instructions to get your new TechBill multi-tenant architecture fully live in production. 
-
-> [!NOTE]
-> **Regarding your Render `.env` file:** 
-> I just pushed another update that makes the WebSockets and the standard API automatically trust **any** `*.techbill.app` and `techbill.app` origin. Because of this dynamic code, **you do NOT strictly need to update the `ALLOWED_ORIGINS` variable in Render anymore!** However, for cleanliness, it is best practice to eventually update it or remove the old Vercel URL.
+This document provides a concise, step-by-step checklist to deploy the TechBill multi-tenant architecture into a production environment.
 
 ---
 
 ## 1. Domain Configuration (Name.com)
-You need to point your domain traffic to Vercel so that Vercel can handle the frontend routing.
 
-1. Log into Name.com and navigate to the DNS Management page for `techbill.app`.
-2. Add a **CNAME Record** for the wildcard subdomain:
-   - **Type:** `CNAME`
-   - **Host:** `*`
-   - **Answer/Value:** `cname.vercel-dns.com`
-3. Add a **CNAME Record** (or ALIAS/ANAME) for the root domain:
-   - **Type:** `CNAME` (or `ALIAS`)
-   - **Host:** `@` (or leave blank for root)
-   - **Answer/Value:** `cname.vercel-dns.com` (or Vercel's provided A-record IP if Name.com requires an A record for root domains).
+Configure DNS records to point your custom domain traffic to Vercel and Render.
 
-## 2. Frontend Configuration (Vercel)
-Vercel needs to know to accept traffic for your new domains and issue SSL certificates.
-
-1. Log into your Vercel Dashboard and click on the **TechBill (formerly ElectroTrack)** project.
-2. Go to **Settings** > **Domains**.
-3. Type in `techbill.app` and click Add.
-4. Type in `*.techbill.app` and click Add.
-5. Vercel will automatically verify the DNS (from Step 1) and issue wildcard SSL certificates.
-6. **Environment Variables**: Go to **Settings** > **Environment Variables**. Ensure that your `VITE_API_URL` correctly points to your live Render backend URL (e.g., `https://your-api.onrender.com`).
-
-## 3. Backend Configuration (Render)
-As mentioned above, the backend code handles CORS dynamically now, so changes here are optional but recommended for cleanliness.
-
-1. Log into your Render Dashboard and select your Web Service (the API).
-2. Go to **Environment**.
-3. (Optional) Update `ALLOWED_ORIGINS` to: `https://techbill.app`
-4. Make sure your database connection strings (`DATABASE_URL`) are still correct.
-5. **No further action is required**. Render automatically rebuilds and deploys every time you push to GitHub.
+*   [ ] Log into your **Name.com** account and select the **`techbill.app`** domain.
+*   [ ] Add a wildcard subdomain **CNAME Record**:
+    *   **Type**: `CNAME`
+    *   **Host**: `*`
+    *   **Value**: `cname.vercel-dns.com`
+*   [ ] Add a root domain **CNAME / ALIAS Record**:
+    *   **Type**: `CNAME` (or `ALIAS`)
+    *   **Host**: `@`
+    *   **Value**: `cname.vercel-dns.com`
+*   [ ] Add a backend sub-domain **CNAME Record**:
+    *   **Type**: `CNAME`
+    *   **Host**: `api`
+    *   **Value**: *Your Render API URL* (e.g. `techbill-api.onrender.com`)
 
 ---
 
-### Verification
-Once Vercel shows the domains as "Valid" (green checkmarks) and Render finishes its latest deployment, you can test the system:
-1. Go to `https://techbill.app/login`.
-2. Log in with an owner or staff account.
-3. You should be automatically redirected to `https://[your-shop-name].techbill.app/dashboard` with a secure, valid session!
+## 2. Frontend Configuration (Vercel)
+
+*   [ ] Import the **`krishbaresha/Tech-Bill`** repository into Vercel.
+*   [ ] Configure Project Settings:
+    *   **Framework Preset**: `Vite`
+    *   **Root Directory**: `techbill-pos`
+    *   **Build Command**: `npm run build`
+    *   **Output Directory**: `dist`
+    *   **Install Command**: `npm install`
+*   [ ] Add Environment Variables:
+    *   `VITE_API_URL` = `https://api.techbill.app`
+*   [ ] Attach domains under Settings > Domains:
+    *   Add `techbill.app`
+    *   Add `*.techbill.app`
+*   [ ] Trigger a production build.
+
+---
+
+## 3. Backend Configuration (Render)
+
+*   [ ] Create a new **Web Service** pointing to the **`krishbaresha/Tech-Bill`** repo.
+*   [ ] Configure Settings:
+    *   **Name**: `techbill-api`
+    *   **Root Directory**: `techbill-api`
+    *   **Runtime**: `Node`
+    *   **Build Command**: `npm install && npx prisma generate && npm run build`
+    *   **Start Command**: `node dist/main`
+*   [ ] Add Environment Variables:
+    *   `DATABASE_URL` = *Your Supabase PostgreSQL Transaction Connection URL*
+    *   `JWT_SECRET` = *Secure JWT key*
+    *   `JWT_REFRESH_SECRET` = *Secure refresh token key*
+    *   `SMTP_HOST` = `smtp.resend.com`
+    *   `SMTP_PORT` = `465`
+    *   `SMTP_SECURE` = `true`
+    *   `SMTP_USER` = `resend`
+    *   `SMTP_PASS` = *Resend API Key*
+    *   `SMTP_FROM` = `TechBill <noreply@techbill.app>`
+    *   `ALLOWED_ORIGINS` = `https://techbill.app,https://*.techbill.app`
+    *   `GROQ_API_KEY` = *Groq API Key*
+*   [ ] Launch the Web Service.
+
+> [!NOTE]
+> The backend server dynamically matches CORS origins ending with `.techbill.app` or equal to `https://techbill.app`. Setting `ALLOWED_ORIGINS` is best practice for fallback configurations.
+
+---
+
+## 4. Database Setup & Verification
+
+*   [ ] Access the Render terminal and apply database schemas:
+    ```bash
+    npx prisma migrate deploy
+    ```
+*   [ ] Seed the base system data (tenants, roles, and platform administrator accounts):
+    ```bash
+    npx prisma db seed
+    ```
+*   [ ] Verify the health-check endpoint:
+    ```bash
+    curl -I https://api.techbill.app/health
+    ```
