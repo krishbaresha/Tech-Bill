@@ -115,7 +115,7 @@ export const usePosStore = create<PosState>()(
        * Merges changed rows into the current cached dashboard silently.
        */
       deltaSync: async () => {
-        if (!supabase) return; // Supabase not configured â€” skip gracefully
+        if (!supabase) return; // Supabase not configured — skip gracefully
 
         const { lastSyncedAt, dashboardData } = get();
 
@@ -142,7 +142,7 @@ export const usePosStore = create<PosState>()(
           }
 
           if (!deltaRows || deltaRows.length === 0) {
-            // Nothing changed â€” just bump the heartbeat timestamp
+            // Nothing changed — just bump the heartbeat timestamp
             set({ lastSyncedAt: new Date().toISOString() });
             return;
           }
@@ -150,7 +150,7 @@ export const usePosStore = create<PosState>()(
           // Merge deltas: if we already have a full snapshot, patch it;
           // otherwise build a full snapshot from the new rows alone.
           if (dashboardData && lastSyncedAt) {
-            // Rebuild from full snapshot â€” fetch all in this case since we don't
+            // Rebuild from full snapshot — fetch all in this case since we don't
             // have a local full dataset to patch against. Trigger a full sync instead.
             const { data: allRows, error: allErr } = await supabase
               .from('products')
@@ -190,7 +190,7 @@ export const usePosStore = create<PosState>()(
     }),
     {
       name: 'techbill-pos-cache',
-      // Only persist the snapshot + heartbeat â€” not transient sync flags
+      // Only persist the snapshot + heartbeat — not transient sync flags
       partialize: (state) => ({
         dashboardData: state.dashboardData,
         lastSyncedAt: state.lastSyncedAt,

@@ -7,7 +7,7 @@
 import { PrismaService } from '../../prisma/prisma.service';
 
 /**
- * Public controller â€” no auth required.
+ * Public controller — no auth required.
  * Exposes a single endpoint to fetch a sale by its UUID for the QR code
  * verification flow. Uses non-guessable UUIDs, preventing IDOR attacks.
  */

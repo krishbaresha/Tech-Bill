@@ -141,7 +141,7 @@ export default function LockOverlay() {
             {user?.name || 'Store Operator'}
           </h2>
           <p className="text-xs text-stitch-on-surface-variant mt-1 uppercase tracking-wider font-mono">
-            {user?.tenantName || 'TechBill'} â€” {user?.role?.replace('_', ' ')}
+            {user?.tenantName || 'TechBill'} — {user?.role?.replace('_', ' ')}
           </p>
         </div>
 

@@ -55,11 +55,11 @@ export default function Login() {
       };
       const status = axiosErr.response?.status;
       const raw = axiosErr.response?.data?.message;
-      // NestJS validation errors return message as string[] â€” join them
+      // NestJS validation errors return message as string[] — join them
       const msg = Array.isArray(raw) ? raw.join('. ') : raw;
 
       if (!axiosErr.response || axiosErr.code === 'ERR_NETWORK') {
-        setServerError('Cannot connect to API â€” run: cd techbill-api && npm run start:dev');
+        setServerError('Cannot connect to API — run: cd techbill-api && npm run start:dev');
       } else if (status === 401) {
         setServerError('Invalid email or password.');
       } else if (status === 403) {
@@ -67,7 +67,7 @@ export default function Login() {
       } else if (typeof msg === 'string' && msg.length > 0) {
         setServerError(msg);
       } else {
-        setServerError(`Server error (${status ?? 'unknown'}) â€” check the API terminal for details.`);
+        setServerError(`Server error (${status ?? 'unknown'}) — check the API terminal for details.`);
       }
     }
   };
@@ -128,7 +128,7 @@ export default function Login() {
             <button type="submit" disabled={isSubmitting}
               className="w-full bg-stitch-primary hover:bg-stitch-primary/90 text-stitch-on-primary font-bold rounded-lg py-2.5 text-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 mt-2">
               {isSubmitting ? (
-                <><span className="w-4 h-4 border-2 border-stitch-on-primary/30 border-t-stitch-on-primary rounded-full animate-spin" /> Signing inâ€¦</>
+                <><span className="w-4 h-4 border-2 border-stitch-on-primary/30 border-t-stitch-on-primary rounded-full animate-spin" /> Signing in...</>
               ) : 'Sign in to Terminal'}
             </button>
           </form>

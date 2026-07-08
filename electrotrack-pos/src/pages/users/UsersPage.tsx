@@ -394,7 +394,7 @@ export default function UsersPage() {
               </button>
               <button type="submit" disabled={loading}
                 className="px-4 py-2 text-sm bg-stitch-primary text-stitch-on-primary font-bold rounded-lg hover:bg-stitch-primary/90 disabled:opacity-50 transition-all active:scale-95">
-                {loading ? 'Creatingâ€¦' : 'Create User'}
+                {loading ? 'Creating...' : 'Create User'}
               </button>
             </div>
           </form>
@@ -441,7 +441,7 @@ export default function UsersPage() {
                   {!canAssignPermissions && <span className="text-stitch-error font-normal normal-case ml-2">(Requires users.permissions)</span>}
                 </p>
                 {editingUser.role === 'owner' ? (
-                  <p className="text-xs text-stitch-primary/70 italic">Owner has full operational bypass â€” individual toggles do not apply.</p>
+                  <p className="text-xs text-stitch-primary/70 italic">Owner has full operational bypass — individual toggles do not apply.</p>
                 ) : (
                   <PermissionGrid permissions={editForm.permissions} canAssign={canAssignPermissions}
                     onToggle={(p) => handlePermissionToggle(p, true)} />
@@ -455,7 +455,7 @@ export default function UsersPage() {
                 </button>
                 <button type="submit" disabled={loading}
                   className="px-4 py-2 text-sm bg-stitch-primary text-stitch-on-primary font-bold rounded-lg hover:bg-stitch-primary/90 disabled:opacity-50 transition-all active:scale-95">
-                  {loading ? 'Savingâ€¦' : 'Save Changes'}
+                  {loading ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>
@@ -491,7 +491,7 @@ export default function UsersPage() {
                 </button>
                 <button type="submit" disabled={loading || newPassword.length < 8}
                   className="px-4 py-2 text-sm bg-amber-500 text-white font-bold rounded-lg hover:bg-amber-600 disabled:opacity-50 transition-all active:scale-95">
-                  {loading ? 'Updatingâ€¦' : 'Set Password'}
+                  {loading ? 'Updating...' : 'Set Password'}
                 </button>
               </div>
             </form>

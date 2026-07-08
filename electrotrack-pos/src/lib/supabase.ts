@@ -13,14 +13,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 /**
  * Global Supabase client instance.
- * Uses the anon key â€” safe to expose in the browser.
+ * Uses the anon key — safe to expose in the browser.
  * Only used for read-only delta-sync operations against
  * the products table, bypassing the Render NestJS layer.
  */
 export const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
-        // Disable auth persistence â€” this client is read-only for cache sync only
+        // Disable auth persistence — this client is read-only for cache sync only
         persistSession: false,
         autoRefreshToken: false,
         detectSessionInUrl: false,

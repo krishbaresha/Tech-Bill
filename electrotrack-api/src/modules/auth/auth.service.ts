@@ -212,7 +212,7 @@ export class AuthService {
 
     // Dev bypass: set OTP_LOG_TO_CONSOLE=true in .env to skip email during development
     if (this.configService.get('OTP_LOG_TO_CONSOLE') === 'true') {
-      console.log(`[DEV OTP] ${user.email} â†’ ${code} (valid ${ttl}s)`);
+      console.log(`[DEV OTP] ${user.email} → ${code} (valid ${ttl}s)`);
       return;
     }
 
@@ -220,14 +220,14 @@ export class AuthService {
       await this.mailer.sendMail({
         from: this.configService.get('SMTP_FROM'),
         to: user.email,
-        subject: 'TechBill â€” Your OTP Code',
+        subject: 'TechBill — Your OTP Code',
         text: `Your OTP is: ${code}\n\nValid for ${ttl} seconds. Do not share this code.`,
         html: `<p>Your OTP is: <strong style="font-size:24px;letter-spacing:4px">${code}</strong></p><p>Valid for ${ttl} seconds.</p>`,
       });
     } catch {
       // Invalidate the generated OTP so it doesn't persist without delivery
       await this.otpService.invalidate(userId);
-      throw new BadRequestException('Failed to send OTP â€” please try again');
+      throw new BadRequestException('Failed to send OTP — please try again');
     }
   }
 
@@ -251,7 +251,7 @@ export class AuthService {
     return { otpToken };
   }
 
-  // â”€â”€â”€ Password Reset (admin/owner self-reset via OTP) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Password Reset (admin/owner self-reset via OTP) ──────────────────────
 
   async requestPasswordReset(email: string) {
     // Always return generic message to prevent enumeration
@@ -272,7 +272,7 @@ export class AuthService {
           text: `Your password reset OTP is: ${code}. Valid for ${this.configService.get('OTP_TTL_SECONDS', '300')} seconds.`,
         });
       } catch {
-        // Silently fail â€” don't reveal email delivery status
+        // Silently fail — don't reveal email delivery status
       }
     }
 
