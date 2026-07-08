@@ -21,6 +21,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { TenantGuard } from '../../common/guards/tenant.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
+import { SubscriptionGuard } from '../../common/guards/subscription.guard';
 
 interface RequestWithUser extends Request {
   user: {
@@ -68,6 +69,7 @@ export class SalesController {
 
   @Post()
   @Permissions('pos.sell')
+  @UseGuards(SubscriptionGuard)
   @HttpCode(HttpStatus.CREATED)
   createSale(@Body() dto: CreateSaleDto, @Req() req: RequestWithUser) {
     return this.salesService.createSale(dto, req.user.id, req.user.tenantId);

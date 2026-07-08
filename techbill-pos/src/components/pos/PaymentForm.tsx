@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { CreditCard, AlertTriangle } from 'lucide-react';
 import { api } from '../../api/client';
 import { useCartStore } from '../../store/cart.store';
+import { useAuthStore } from '../../store/auth.store';
 import { queueSale } from '../../db/offline.db';
 import { useCan } from '../../lib/permissions';
 import type { Sale, ShopSettings } from '../../types';
@@ -31,6 +32,14 @@ export default function PaymentForm({ onSaleComplete, shopSettings }: { onSaleCo
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { isOnlineOrder, setIsOnlineOrder, items } = useCartStore();
   const canSellOnline = useCan('pos.online_sell') && shopSettings?.tenant?.onlineSellingEnabled;
+  const user = useAuthStore((s) => s.user);
+
+  // Check if subscription has expired
+  const isSubscriptionExpired = (() => {
+    const periodEnd = user?.currentPeriodEnd;
+    if (!periodEnd) return false;
+    return new Date(periodEnd) < new Date();
+  })();
 
   const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -183,15 +192,24 @@ export default function PaymentForm({ onSaleComplete, shopSettings }: { onSaleCo
           </p>
         )}
 
+        {isSubscriptionExpired && (
+          <div className="p-2.5 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <p className="text-xs text-red-400 font-semibold flex items-center gap-1.5">
+              <AlertTriangle size={12} />
+              Subscription expired — sales are disabled. Contact your platform admin to renew.
+            </p>
+          </div>
+        )}
+
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || isSubscriptionExpired}
           className="w-full bg-stitch-primary hover:bg-stitch-primary/90 text-stitch-on-primary font-bold rounded-lg py-2.5 text-sm transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2"
         >
           {isSubmitting ? (
             <span className="w-4 h-4 border-2 border-stitch-on-primary/30 border-t-stitch-on-primary rounded-full animate-spin" />
           ) : null}
-          {isSubmitting ? 'Processing…' : `Confirm Sale — ${formatPKR(total)}`}
+          {isSubscriptionExpired ? 'Sales Disabled — Subscription Expired' : isSubmitting ? 'Processing…' : `Confirm Sale — ${formatPKR(total)}`}
         </button>
       </form>
     </div>
