@@ -253,13 +253,29 @@ export default function TenantsPage() {
       </div>
 
       {error && (
-        <div className="glass-card rounded-xl p-3 border-l-4 border-stitch-error/50">
-          <p className="text-sm text-stitch-error">{error}</p>
+        <div className="fixed top-6 right-6 z-[9999] bg-stitch-surface-container-high/90 backdrop-blur-xl rounded-xl p-4 border border-stitch-error/30 border-l-4 border-l-stitch-error shadow-2xl min-w-[300px]">
+          <div className="flex justify-between items-start gap-4">
+            <div className="flex gap-3 items-center">
+              <ShieldAlert size={18} className="text-stitch-error shrink-0" />
+              <p className="text-sm text-stitch-error font-medium leading-relaxed">{error}</p>
+            </div>
+            <button onClick={() => setError('')} className="text-stitch-error/70 hover:text-stitch-error shrink-0 pt-0.5">
+              <X size={16} />
+            </button>
+          </div>
         </div>
       )}
       {successMsg && (
-        <div className="glass-card rounded-xl p-3 border-l-4 border-green-500/50">
-          <p className="text-sm text-green-400">{successMsg}</p>
+        <div className="fixed top-6 right-6 z-[9999] bg-stitch-surface-container-high/90 backdrop-blur-xl rounded-xl p-4 border border-green-500/30 border-l-4 border-l-green-500 shadow-2xl min-w-[300px]">
+          <div className="flex justify-between items-start gap-4">
+            <div className="flex gap-3 items-center">
+              <CheckCircle size={18} className="text-green-400 shrink-0" />
+              <p className="text-sm text-green-400 font-medium leading-relaxed">{successMsg}</p>
+            </div>
+            <button onClick={() => setSuccessMsg('')} className="text-green-400/70 hover:text-green-400 shrink-0 pt-0.5">
+              <X size={16} />
+            </button>
+          </div>
         </div>
       )}
 
