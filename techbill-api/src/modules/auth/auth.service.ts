@@ -77,7 +77,7 @@ export class AuthService {
     }
 
     // Block mobile app login if tenant does not have app access
-    if (isMobile) {
+    if (isMobile && user.role !== Role.platform_admin) {
       if (!user.tenant || !user.tenant.appAccessEnabled) {
         throw new UnauthorizedException(
           "You don't have an app subscription. Please contact the platform admin.",
@@ -387,5 +387,32 @@ export class AuthService {
       return false;
     }
     return bcrypt.compare(password, user.passwordHash);
+  }
+
+  async getProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        tenant: true,
+      },
+    });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    return {
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      permissions: user.permissions,
+      appAccessEnabled: user.tenant?.appAccessEnabled ?? false,
+      status: user.isActive ? 'active' : 'inactive',
+      currentPeriodEnd: user.tenant?.currentPeriodEnd?.toISOString() ?? null,
+      tenant: user.tenant
+        ? {
+            onlineSellingEnabled: user.tenant.onlineSellingEnabled,
+            businessName: user.tenant.name,
+          }
+        : null,
+    };
   }
 }

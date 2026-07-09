@@ -24,5 +24,5 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false
   },
-  "exclude": ["node_modules", "test", "dist", "**/*spec.ts", "prisma", "query_db.ts"]
+  "exclude": ["node_modules", "test", "dist", "**/*spec.ts", "prisma", "query_db.ts", "activate_sub.ts", "*.ts"]
 }
