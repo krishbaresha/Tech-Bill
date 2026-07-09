@@ -2,13 +2,10 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { PrismaClient } from '@prisma/client';
 
 /**
- * Prisma connection pool timeout (P2024) mitigation:
+ * Prisma Database Connection:
  *
- *  - pool parameters are set via DATABASE_URL query-string flags
- *    (`connection_limit` & `pool_timeout`) so they propagate to every
- *    PrismaClient instance without touching constructor options.
  *  - onModuleInit retries $connect() up to MAX_RETRIES times with
- *    exponential back-off to survive transient Supabase pooler warm-up.
+ *    exponential back-off to ensure database is ready.
  *  - All errors are logged with structured context so the root cause is
  *    immediately visible in the terminal instead of an opaque 500.
  */
@@ -67,7 +64,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           this.logger.error(
             '🔴 All database connection attempts failed. ' +
               'The application will start in a degraded state. ' +
-              'Check DATABASE_URL, Supabase project status, and pool limits.',
+              'Check DATABASE_URL and database service status.',
             error.stack,
           );
         }
