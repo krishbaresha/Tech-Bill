@@ -129,11 +129,12 @@ export default function AppShell() {
     } catch (e) {
       // ignore
     }
-    clearAuth();
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     if (!isLocalhost && window.location.hostname !== 'techbill.app' && window.location.hostname !== 'test-techbill.vercel.app') {
-      window.location.href = 'https://techbill.app/login?logout=true';
-    } else {
+      window.history.replaceState(null, '', '?action=logout');
+    }
+    clearAuth();
+    if (isLocalhost || window.location.hostname === 'techbill.app' || window.location.hostname === 'test-techbill.vercel.app') {
       navigate('/login', { replace: true });
     }
   };
