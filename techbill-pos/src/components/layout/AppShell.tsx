@@ -129,14 +129,19 @@ export default function AppShell() {
     } catch (e) {
       // ignore
     }
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    if (!isLocalhost && window.location.hostname !== 'techbill.app' && window.location.hostname !== 'test-techbill.vercel.app') {
-      window.history.replaceState(null, '', '?action=logout');
+    
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+    const isMainDomain = hostname === 'techbill.app' || hostname === 'admin.techbill.app' || hostname === 'test-techbill.vercel.app';
+    
+    if (!isLocalhost && !isMainDomain) {
+      clearAuth();
+      window.location.href = 'https://techbill.app/login?logout=true';
+      return;
     }
+    
     clearAuth();
-    if (isLocalhost || window.location.hostname === 'techbill.app' || window.location.hostname === 'test-techbill.vercel.app') {
-      navigate('/login', { replace: true });
-    }
+    navigate('/login', { replace: true });
   };
 
   const navClass = ({ isActive }: { isActive: boolean }) =>

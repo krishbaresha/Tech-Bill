@@ -63,12 +63,6 @@ function RequireAuth({
     );
   }
   if (!accessToken || !user) {
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    if (!isLocalhost && window.location.hostname !== 'techbill.app' && window.location.hostname !== 'test-techbill.vercel.app') {
-      const isLoggingOut = window.location.search.includes('action=logout');
-      window.location.href = isLoggingOut ? 'https://techbill.app/login?logout=true' : 'https://techbill.app/login';
-      return null;
-    }
     return <Navigate to="/login" replace />;
   }
 
