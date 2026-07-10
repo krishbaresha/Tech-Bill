@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/auth.store';
+import { getRootDomain, isMainDomain } from '../lib/domain';
 
 export const api = axios.create({
   baseURL: (import.meta.env.VITE_API_URL as string | undefined) ?? 'https://electrotrack-saas.onrender.com',
@@ -69,9 +70,11 @@ api.interceptors.response.use(
       } catch (refreshErr) {
         processQueue(refreshErr, null);
         useAuthStore.getState().clearAuth();
-        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        if (!isLocalhost && window.location.hostname !== 'techbill.app' && window.location.hostname !== 'test-techbill.vercel.app') {
-          window.location.href = 'https://techbill.app/login?logout=true';
+        const hostname = window.location.hostname;
+        if (!isMainDomain(hostname)) {
+          const root = getRootDomain(hostname);
+          const protocol = root.includes('localhost') ? 'http:' : 'https:';
+          window.location.href = `${protocol}//${root}/login?logout=true`;
         } else {
           window.location.href = '/login';
         }

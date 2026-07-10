@@ -11,6 +11,7 @@ import { useLockStore } from '../../store/lock.store';
 import { disconnectSocket } from '../../api/socket';
 import { api } from '../../api/client';
 import { useCan } from '../../lib/permissions';
+import { getRootDomain, isMainDomain } from '../../lib/domain';
 import type { Notification } from '../../types';
 
 export default function AppShell() {
@@ -131,12 +132,11 @@ export default function AppShell() {
     }
     
     const hostname = window.location.hostname;
-    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-    const isMainDomain = hostname === 'techbill.app' || hostname === 'admin.techbill.app' || hostname === 'test-techbill.vercel.app';
     
-    if (!isLocalhost && !isMainDomain) {
+    if (!isMainDomain(hostname)) {
       clearAuth();
-      window.location.href = 'https://techbill.app/login?logout=true';
+      const protocol = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.localhost') ? 'http:' : 'https:';
+      window.location.href = `${protocol}//${getRootDomain(hostname)}/login?logout=true`;
       return;
     }
     

@@ -10,6 +10,7 @@ import { connectSocket } from '../api/socket';
 import type { User } from '../types';
 import gsap from 'gsap';
 import { useNavigate } from 'react-router-dom';
+import { getRootDomain } from '../lib/domain';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -52,15 +53,17 @@ export default function Login() {
       const qs = `?token=${accessToken}&refresh_token=${refreshToken || ''}&u=${u}`;
 
       if (user.role === 'platform_admin') {
-        if (!isLocalhost && window.location.hostname !== 'admin.techbill.app') {
-          window.location.href = `https://admin.techbill.app/tenants${qs}`;
+        if (!isLocalhost && window.location.hostname !== `admin.${getRootDomain()}`) {
+          window.location.href = `https://admin.${getRootDomain()}/tenants${qs}`;
         } else {
           navigate('/tenants', { replace: true });
         }
       } else {
         const targetPath = user.role === 'cashier' ? '/pos' : '/dashboard';
-        if (!isLocalhost && user.subdomain && window.location.hostname !== `${user.subdomain}.techbill.app`) {
-          window.location.href = `https://${user.subdomain}.techbill.app${targetPath}${qs}`;
+        if (!isLocalhost && user.subdomain && window.location.hostname !== `${user.subdomain}.${getRootDomain()}`) {
+          const root = getRootDomain();
+          const protocol = root.includes('localhost') ? 'http:' : 'https:';
+          window.location.href = `${protocol}//${user.subdomain}.${root}${targetPath}${qs}`;
         } else {
           navigate(targetPath, { replace: true });
         }
@@ -131,7 +134,7 @@ export default function Login() {
         if (isLocalhost) {
           window.location.href = `/tenants?token=${res.data.access_token}&refresh_token=${res.data.refresh_token || ''}&u=${u}`;
         } else {
-          window.location.href = `https://admin.techbill.app/tenants?token=${res.data.access_token}&refresh_token=${res.data.refresh_token || ''}&u=${u}`;
+          window.location.href = `https://admin.${getRootDomain()}/tenants?token=${res.data.access_token}&refresh_token=${res.data.refresh_token || ''}&u=${u}`;
         }
       } else {
         const targetPath = res.data.user.role === 'cashier' ? '/pos' : '/dashboard';
@@ -139,7 +142,9 @@ export default function Login() {
         if (isLocalhost) {
           window.location.href = `${targetPath}?token=${res.data.access_token}&refresh_token=${res.data.refresh_token || ''}&u=${u}`;
         } else {
-          window.location.href = `https://${sub}.techbill.app${targetPath}?token=${res.data.access_token}&refresh_token=${res.data.refresh_token || ''}&u=${u}`;
+          const root = getRootDomain();
+          const protocol = root.includes('localhost') ? 'http:' : 'https:';
+          window.location.href = `${protocol}//${sub}.${root}${targetPath}?token=${res.data.access_token}&refresh_token=${res.data.refresh_token || ''}&u=${u}`;
         }
       }
     } catch (err: unknown) {

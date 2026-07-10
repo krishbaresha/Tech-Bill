@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth.store';
 import { api } from './api/client';
+import { getRootDomain } from './lib/domain';
 
 const Login = lazy(() => import('./pages/Login'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -72,23 +73,29 @@ function RequireAuth({
     if (!user.subdomain) {
       // Legacy session without subdomain claim: force logout so they re-authenticate and get a valid token payload
       useAuthStore.getState().clearAuth();
-      window.location.href = 'https://techbill.app/login?logout=true';
+      const root = getRootDomain();
+      const protocol = root.includes('localhost') ? 'http:' : 'https:';
+      window.location.href = `${protocol}//${root}/login?logout=true`;
       return null;
     }
-    if (window.location.hostname !== `${user.subdomain}.techbill.app`) {
+    if (window.location.hostname !== `${user.subdomain}.${getRootDomain()}`) {
       const u = encodeURIComponent(btoa(JSON.stringify(user)));
       const qs = `?token=${accessToken}&refresh_token=${refreshToken || ''}&u=${u}`;
-      window.location.href = `https://${user.subdomain}.techbill.app${window.location.pathname}${qs}`;
+      const root = getRootDomain();
+      const protocol = root.includes('localhost') ? 'http:' : 'https:';
+      window.location.href = `${protocol}//${user.subdomain}.${root}${window.location.pathname}${qs}`;
       return null;
     }
   }
 
   // Platform Admin enforcement
   if (!isLocalhost && user.role === 'platform_admin') {
-    if (window.location.hostname !== 'admin.techbill.app') {
+    if (window.location.hostname !== `admin.${getRootDomain()}`) {
       const u = encodeURIComponent(btoa(JSON.stringify(user)));
       const qs = `?token=${accessToken}&refresh_token=${refreshToken || ''}&u=${u}`;
-      window.location.href = `https://admin.techbill.app${window.location.pathname}${qs}`;
+      const root = getRootDomain();
+      const protocol = root.includes('localhost') ? 'http:' : 'https:';
+      window.location.href = `${protocol}//admin.${root}${window.location.pathname}${qs}`;
       return null;
     }
   }
