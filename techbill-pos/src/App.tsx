@@ -50,7 +50,7 @@ function RequireAuth({
   roles?: Role[];
   permission?: Permission;
 }) {
-  const { user, accessToken, isHydrating, _hasHydrated } = useAuthStore();
+  const { user, accessToken, refreshToken, isHydrating, _hasHydrated } = useAuthStore();
   // user restored from localStorage but token not yet refreshed — wait for App effect
   const pendingRefresh = !!user && !accessToken;
   const hasUrlAuth = new URLSearchParams(window.location.search).has('token');
@@ -81,7 +81,9 @@ function RequireAuth({
       return null;
     }
     if (window.location.hostname !== `${user.subdomain}.techbill.app`) {
-      window.location.href = `https://${user.subdomain}.techbill.app${window.location.pathname}${window.location.search}`;
+      const u = encodeURIComponent(btoa(JSON.stringify(user)));
+      const qs = `?token=${accessToken}&refresh_token=${refreshToken || ''}&u=${u}`;
+      window.location.href = `https://${user.subdomain}.techbill.app${window.location.pathname}${qs}`;
       return null;
     }
   }
@@ -89,7 +91,9 @@ function RequireAuth({
   // Platform Admin enforcement
   if (!isLocalhost && user.role === 'platform_admin') {
     if (window.location.hostname !== 'admin.techbill.app') {
-      window.location.href = `https://admin.techbill.app${window.location.pathname}${window.location.search}`;
+      const u = encodeURIComponent(btoa(JSON.stringify(user)));
+      const qs = `?token=${accessToken}&refresh_token=${refreshToken || ''}&u=${u}`;
+      window.location.href = `https://admin.techbill.app${window.location.pathname}${qs}`;
       return null;
     }
   }

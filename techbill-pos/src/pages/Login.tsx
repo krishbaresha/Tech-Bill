@@ -33,23 +33,27 @@ export default function Login() {
   const { register, handleSubmit, formState: { errors, isSubmitting } } =
     useForm<LoginFormData>({ resolver: zodResolver(loginSchema) });
 
-  const { setAuth, user, accessToken, isHydrating, _hasHydrated } = useAuthStore();
+  const { setAuth, user, accessToken, refreshToken, isHydrating, _hasHydrated } = useAuthStore();
   const navigate = useNavigate();
 
   // If the user navigates to /login but is already authenticated, redirect them seamlessly
   useEffect(() => {
-    if (_hasHydrated && !isHydrating && user && accessToken) {
+    if (user && accessToken && _hasHydrated) {
       const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      
+      const u = encodeURIComponent(btoa(JSON.stringify(user)));
+      const qs = `?token=${accessToken}&refresh_token=${refreshToken || ''}&u=${u}`;
+
       if (user.role === 'platform_admin') {
         if (!isLocalhost && window.location.hostname !== 'admin.techbill.app') {
-          window.location.href = 'https://admin.techbill.app/tenants';
+          window.location.href = `https://admin.techbill.app/tenants${qs}`;
         } else {
           navigate('/tenants', { replace: true });
         }
       } else {
         const targetPath = user.role === 'cashier' ? '/pos' : '/dashboard';
         if (!isLocalhost && user.subdomain && window.location.hostname !== `${user.subdomain}.techbill.app`) {
-          window.location.href = `https://${user.subdomain}.techbill.app${targetPath}`;
+          window.location.href = `https://${user.subdomain}.techbill.app${targetPath}${qs}`;
         } else {
           navigate(targetPath, { replace: true });
         }
