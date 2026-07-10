@@ -1,5 +1,6 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, All, Req, Res } from '@nestjs/common';
 import { AppService } from './app.service';
+import { Request, Response } from 'express';
 
 @Controller()
 export class AppController {
@@ -17,5 +18,14 @@ export class AppController {
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
     };
+  }
+
+  @All('*')
+  catchAll(@Req() req: Request, @Res() res: Response) {
+    return res.status(404).json({
+      statusCode: 404,
+      message: `Cannot ${req.method} ${req.url}`,
+      error: 'Not Found'
+    });
   }
 }
