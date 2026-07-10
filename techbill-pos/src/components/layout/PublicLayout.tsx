@@ -121,14 +121,29 @@ export default function PublicLayout() {
 
   const getDashboardUrl = () => {
     if (!user) return '/login';
-    if (user.role === 'platform_admin') return '/tenants';
-    if (can('pos.read')) return '/pos';
-    if (can('reports.read')) return '/dashboard';
-    return '/pos';
+
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    let base = '';
+
+    if (user.role === 'platform_admin') {
+      if (!isLocalhost && window.location.hostname !== 'admin.techbill.app') {
+        base = 'https://admin.techbill.app';
+      }
+      return `${base}/tenants`;
+    }
+
+    if (!isLocalhost && user.subdomain && window.location.hostname !== `${user.subdomain}.techbill.app`) {
+      base = `https://${user.subdomain}.techbill.app`;
+    }
+
+    if (can('pos.read')) return `${base}/pos`;
+    if (can('reports.read')) return `${base}/dashboard`;
+    return `${base}/pos`;
   };
 
   const dashboardUrl = getDashboardUrl();
   const isLoggedIn = !!user;
+  const isAbsoluteUrl = dashboardUrl.startsWith('http');
 
   const handleNavClick = (sectionId: string) => {
     setMobileMenuOpen(false);
@@ -198,13 +213,23 @@ export default function PublicLayout() {
                   {isDark ? <Sun size={18} className="text-[#2fd9f4]" /> : <Moon size={18} className="text-indigo-600" />}
                 </button>
 
-                <Link
-                  to={dashboardUrl}
-                  className="inline-flex items-center justify-center px-4 py-2 text-sm font-bold rounded-lg transition-all active:scale-[0.98] bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-[#c0c1ff] dark:text-[#1000a9] dark:hover:bg-[#c0c1ff]/90 shadow-md shadow-indigo-600/10 dark:shadow-none"
-                >
-                  {isLoggedIn ? 'Go to Dashboard' : 'Login Portal'}
-                  <ArrowRight size={14} className="ml-1.5" />
-                </Link>
+                {isAbsoluteUrl ? (
+                  <a
+                    href={dashboardUrl}
+                    className="inline-flex items-center justify-center px-4 py-2 text-sm font-bold rounded-lg transition-all active:scale-[0.98] bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-[#c0c1ff] dark:text-[#1000a9] dark:hover:bg-[#c0c1ff]/90 shadow-md shadow-indigo-600/10 dark:shadow-none"
+                  >
+                    {isLoggedIn ? 'Go to Dashboard' : 'Login Portal'}
+                    <ArrowRight size={14} className="ml-1.5" />
+                  </a>
+                ) : (
+                  <Link
+                    to={dashboardUrl}
+                    className="inline-flex items-center justify-center px-4 py-2 text-sm font-bold rounded-lg transition-all active:scale-[0.98] bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-[#c0c1ff] dark:text-[#1000a9] dark:hover:bg-[#c0c1ff]/90 shadow-md shadow-indigo-600/10 dark:shadow-none"
+                  >
+                    {isLoggedIn ? 'Go to Dashboard' : 'Login Portal'}
+                    <ArrowRight size={14} className="ml-1.5" />
+                  </Link>
+                )}
               </div>
 
               {/* Mobile Menu button */}
@@ -241,14 +266,25 @@ export default function PublicLayout() {
                 Architects
               </button>
               <div className="pt-2 border-t border-slate-200 dark:border-white/5">
-                <Link
-                  to={dashboardUrl}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="w-full inline-flex items-center justify-center px-4 py-2.5 text-base font-bold rounded-lg bg-indigo-600 text-white dark:bg-[#c0c1ff] dark:text-[#1000a9] hover:opacity-95"
-                >
-                  {isLoggedIn ? 'Go to Dashboard' : 'Login Portal'}
-                  <ArrowRight size={16} className="ml-2" />
-                </Link>
+                {isAbsoluteUrl ? (
+                  <a
+                    href={dashboardUrl}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full inline-flex items-center justify-center px-4 py-2.5 text-base font-bold rounded-lg bg-indigo-600 text-white dark:bg-[#c0c1ff] dark:text-[#1000a9] hover:opacity-95"
+                  >
+                    {isLoggedIn ? 'Go to Dashboard' : 'Login Portal'}
+                    <ArrowRight size={16} className="ml-2" />
+                  </a>
+                ) : (
+                  <Link
+                    to={dashboardUrl}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full inline-flex items-center justify-center px-4 py-2.5 text-base font-bold rounded-lg bg-indigo-600 text-white dark:bg-[#c0c1ff] dark:text-[#1000a9] hover:opacity-95"
+                  >
+                    {isLoggedIn ? 'Go to Dashboard' : 'Login Portal'}
+                    <ArrowRight size={16} className="ml-2" />
+                  </Link>
+                )}
               </div>
             </div>
           )}
