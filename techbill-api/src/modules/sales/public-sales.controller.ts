@@ -1,4 +1,4 @@
-﻿import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 /**
@@ -74,6 +74,8 @@ export class PublicSalesController {
       paymentMethod: sale.paymentMethod,
       subtotal: Number(sale.subtotal),
       discountAmount: Number(sale.discountAmount),
+      additionalCharges: Number(sale.additionalCharges ?? 0),
+      description: sale.description,
       totalAmount: Number(sale.totalAmount),
       status: sale.status,
       shippingStatus: sale.shippingStatus,

@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ShieldCheck, ShieldX, Clock, Package, CheckCircle } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+const API_BASE = (import.meta.env.VITE_API_URL ?? 'http://localhost:3000').replace(/\/+$/, '');
 
 interface PublicItem {
   id: string;
@@ -23,6 +23,8 @@ interface PublicInvoice {
   paymentMethod: string;
   subtotal: number;
   discountAmount: number;
+  additionalCharges?: number;
+  description?: string;
   totalAmount: number;
   status: string;
   shippingStatus?: string;
@@ -207,6 +209,17 @@ export default function PublicInvoicePage() {
               <div className="flex justify-between text-sm text-rose-400">
                 <span>Discount</span>
                 <span className="tabular-nums">− {formatPKR(invoice.discountAmount)}</span>
+              </div>
+            )}
+            {Number(invoice.additionalCharges) > 0 && (
+              <div className="flex justify-between text-sm text-emerald-400">
+                <span>Additional Charges</span>
+                <span className="tabular-nums">+ {formatPKR(Number(invoice.additionalCharges))}</span>
+              </div>
+            )}
+            {invoice.description && (
+              <div className="text-xs text-white/40 mt-1 italic">
+                Note: {invoice.description}
               </div>
             )}
             <div className="h-px bg-white/10 my-2" />
