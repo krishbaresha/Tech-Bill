@@ -152,7 +152,7 @@ export default function TenantsPage() {
   const handleDeleteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tenantToDelete) return;
-    if (deleteConfirmation !== 'Delete') {
+    if (deleteConfirmation.trim().toLowerCase() !== 'delete') {
       setError('You must type exactly "Delete" to confirm.');
       return;
     }
@@ -460,7 +460,7 @@ export default function TenantsPage() {
                     className="px-4 py-2 text-sm text-stitch-on-surface-variant border border-white/10 rounded-lg hover:bg-white/5 transition-colors">
                     Cancel
                   </button>
-                  <button type="submit" disabled={loading || deleteConfirmation !== 'Delete'}
+                  <button type="submit" disabled={loading || deleteConfirmation.trim().toLowerCase() !== 'delete'}
                     className="px-4 py-2 text-sm bg-stitch-error text-white font-bold rounded-lg hover:bg-red-600 disabled:opacity-50 transition-all active:scale-95">
                     {loading ? 'Deleting…' : 'Confirm Delete'}
                   </button>
