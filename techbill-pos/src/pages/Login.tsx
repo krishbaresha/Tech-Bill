@@ -9,6 +9,7 @@ import { useAuthStore } from '../store/auth.store';
 import { connectSocket } from '../api/socket';
 import type { User } from '../types';
 import gsap from 'gsap';
+import { useNavigate } from 'react-router-dom';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -32,11 +33,19 @@ export default function Login() {
   const { register, handleSubmit, formState: { errors, isSubmitting } } =
     useForm<LoginFormData>({ resolver: zodResolver(loginSchema) });
 
-  const setAuth = useAuthStore((s) => s.setAuth);
-  const clearAuth = useAuthStore((s) => s.clearAuth);
+  const { setAuth, clearAuth, user, accessToken, isHydrating, _hasHydrated } = useAuthStore();
+  const navigate = useNavigate();
 
-  // Clear any stale persisted auth state when the login page mounts
-  useEffect(() => { clearAuth(); }, [clearAuth]);
+  // If the user navigates to /login but is already authenticated, redirect them seamlessly
+  useEffect(() => {
+    if (_hasHydrated && !isHydrating && user && accessToken) {
+      if (user.role === 'platform_admin') {
+        navigate('/tenants', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
+    }
+  }, [_hasHydrated, isHydrating, user, accessToken, navigate]);
 
   // Background ping to wake up the Render API (Cold Start Prevention)
   useEffect(() => {
@@ -134,6 +143,15 @@ export default function Login() {
       }
     }
   };
+
+  // Prevent flashing the login form if we are hydrating or about to redirect
+  if (!_hasHydrated || isHydrating || (user && accessToken)) {
+    return (
+      <div className="min-h-screen bg-[#07080d] flex items-center justify-center">
+        <span className="w-8 h-8 border-2 border-stitch-primary/30 border-t-stitch-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div ref={containerRef} className="min-h-screen flex items-center justify-center bg-[#07080d] relative overflow-hidden font-sans">
