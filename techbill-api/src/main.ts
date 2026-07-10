@@ -14,7 +14,9 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
   );
-  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') ?? ['http://localhost:5173'];
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') ?? [
+    'http://localhost:5173',
+  ];
   app.enableCors({
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps or curl requests)
@@ -22,18 +24,24 @@ async function bootstrap() {
         callback(null, true);
         return;
       }
-      const isAllowed = allowedOrigins.some((allowed) => {
-        if (allowed === origin) return true;
-        try {
-          const allowedUrl = new URL(allowed);
-          const originUrl = new URL(origin);
-          const allowedHost = allowedUrl.hostname;
-          const originHost = originUrl.hostname;
-          return originHost === allowedHost || originHost.endsWith('.' + allowedHost);
-        } catch {
-          return false;
-        }
-      }) || origin.endsWith('.techbill.app') || origin === 'https://techbill.app';
+      const isAllowed =
+        allowedOrigins.some((allowed) => {
+          if (allowed === origin) return true;
+          try {
+            const allowedUrl = new URL(allowed);
+            const originUrl = new URL(origin);
+            const allowedHost = allowedUrl.hostname;
+            const originHost = originUrl.hostname;
+            return (
+              originHost === allowedHost ||
+              originHost.endsWith('.' + allowedHost)
+            );
+          } catch {
+            return false;
+          }
+        }) ||
+        origin.endsWith('.techbill.app') ||
+        origin === 'https://techbill.app';
       if (isAllowed) {
         callback(null, true);
       } else {

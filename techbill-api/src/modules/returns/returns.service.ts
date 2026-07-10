@@ -185,7 +185,12 @@ export class ReturnsService {
     return ret;
   }
 
-  async approveReturn(id: string, dto: ReviewReturnDto, userId: string, tenantId: string) {
+  async approveReturn(
+    id: string,
+    dto: ReviewReturnDto,
+    userId: string,
+    tenantId: string,
+  ) {
     const ret = await this.prisma.return.findFirst({ where: { id, tenantId } });
     if (!ret) throw new NotFoundException(`Return ${id} not found`);
     if (ret.status !== ReturnStatus.pending) {
@@ -222,7 +227,12 @@ export class ReturnsService {
     return updated;
   }
 
-  async rejectReturn(id: string, dto: ReviewReturnDto, userId: string, tenantId: string) {
+  async rejectReturn(
+    id: string,
+    dto: ReviewReturnDto,
+    userId: string,
+    tenantId: string,
+  ) {
     const ret = await this.prisma.return.findFirst({ where: { id, tenantId } });
     if (!ret) throw new NotFoundException(`Return ${id} not found`);
     if (ret.status !== ReturnStatus.pending) {

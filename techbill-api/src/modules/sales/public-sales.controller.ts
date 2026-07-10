@@ -1,9 +1,4 @@
-﻿import {
-  Controller,
-  Get,
-  Param,
-  NotFoundException,
-} from '@nestjs/common';
+﻿import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 /**
@@ -53,7 +48,9 @@ export class PublicSalesController {
 
       if (warrantyMonths > 0) {
         warrantyExpiresAt = new Date(saleDate);
-        warrantyExpiresAt.setMonth(warrantyExpiresAt.getMonth() + warrantyMonths);
+        warrantyExpiresAt.setMonth(
+          warrantyExpiresAt.getMonth() + warrantyMonths,
+        );
         const msLeft = warrantyExpiresAt.getTime() - Date.now();
         warrantyDaysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
       }

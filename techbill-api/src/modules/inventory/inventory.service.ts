@@ -404,7 +404,11 @@ export class InventoryService {
     return unit;
   }
 
-  async bulkCreateUnits(dto: BulkCreateUnitsDto, userId: string, tenantId: string) {
+  async bulkCreateUnits(
+    dto: BulkCreateUnitsDto,
+    userId: string,
+    tenantId: string,
+  ) {
     const serials = dto.units.map((u) => u.serialNumber);
     const duplicates = serials.filter((s, i) => serials.indexOf(s) !== i);
     if (duplicates.length > 0) {
@@ -451,7 +455,12 @@ export class InventoryService {
     return { created: createdUnits.length };
   }
 
-  async updateUnit(id: string, dto: UpdateUnitDto, userId: string, tenantId: string) {
+  async updateUnit(
+    id: string,
+    dto: UpdateUnitDto,
+    userId: string,
+    tenantId: string,
+  ) {
     const unit = await this.prisma.inventoryUnit.findFirst({
       where: { id, tenantId },
     });

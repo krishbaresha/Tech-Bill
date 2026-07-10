@@ -68,7 +68,9 @@ export class UsersController {
     // Handle both field names to be robust
     const newPwd = body.newPassword || body.password;
     if (!newPwd || newPwd.length < 8) {
-      throw new BadRequestException('Password must be at least 8 characters long');
+      throw new BadRequestException(
+        'Password must be at least 8 characters long',
+      );
     }
     return this.usersService.resetPassword(id, newPwd, req.user.tenantId);
   }

@@ -54,3 +54,7 @@ pas
 # ── Test coverage ─────────────────────────────────────────────────────────────
 coverage/
 .nyc_output/
+
+# ── Scratch Files (Contains sensitive scripts/credentials) ───────────
+scratch/
+tech-bill-*.json

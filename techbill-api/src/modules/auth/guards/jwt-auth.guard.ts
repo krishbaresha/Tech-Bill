@@ -6,7 +6,9 @@ import { Observable } from 'rxjs';
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
   // Optionally override canActivate for extra checks
-  canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
+  canActivate(
+    context: ExecutionContext,
+  ): boolean | Promise<boolean> | Observable<boolean> {
     // default behavior
     return super.canActivate(context);
   }

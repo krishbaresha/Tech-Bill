@@ -29,8 +29,6 @@ export class SalesService {
     );
   }
 
-
-
   async createSale(dto: CreateSaleDto, userId: string, tenantId: string) {
     const uniqueSerials = [...new Set(dto.serials)];
     if (uniqueSerials.length !== dto.serials.length) {
@@ -120,72 +118,78 @@ export class SalesService {
 
     const invoiceNumber = this.generateInvoiceNumber();
 
-    const sale = await this.prisma.$transaction(async (tx) => {
-      // 1. Strict Concurrency Verification inside transaction lock
-      const txUnits = await tx.inventoryUnit.findMany({
-        where: {
-          tenantId,
-          id: { in: units.map((u) => u.id) },
-        },
-      });
-
-      const unavailableTx = txUnits.filter((u) => u.status !== UnitStatus.in_stock);
-      if (unavailableTx.length > 0) {
-        throw new ConflictException(
-          `Transaction aborted. Serial numbers already sold: ${unavailableTx.map((u) => u.serialNumber).join(', ')}`,
-        );
-      }
-
-      const created = await tx.sale.create({
-        data: {
-          invoiceNumber,
-          customerId: resolvedCustomerId,
-          soldById: userId,
-          paymentMethod: dto.paymentMethod,
-          subtotal,
-          discountAmount: discount,
-          totalAmount: total,
-          tenantId,
-          isOnline: dto.isOnline ?? false,
-          customerCity: dto.customerCity,
-          trackingId: dto.trackingId,
-          deliveryCharge,
-          advanceAmount: dto.advanceAmount ?? 0,
-          codAmount: dto.codAmount ?? 0,
-          items: {
-            create: units.map((u) => ({
-              inventoryUnitId: u.id,
-              sellingPrice: dto.customPrices?.[u.serialNumber] ?? u.product.sellingPrice,
-              discount: 0,
-            })),
+    const sale = await this.prisma.$transaction(
+      async (tx) => {
+        // 1. Strict Concurrency Verification inside transaction lock
+        const txUnits = await tx.inventoryUnit.findMany({
+          where: {
+            tenantId,
+            id: { in: units.map((u) => u.id) },
           },
-        },
-        include: {
-          items: {
-            include: {
-              inventoryUnit: {
-                select: {
-                  serialNumber: true,
-                  product: { select: { name: true, brand: true } },
+        });
+
+        const unavailableTx = txUnits.filter(
+          (u) => u.status !== UnitStatus.in_stock,
+        );
+        if (unavailableTx.length > 0) {
+          throw new ConflictException(
+            `Transaction aborted. Serial numbers already sold: ${unavailableTx.map((u) => u.serialNumber).join(', ')}`,
+          );
+        }
+
+        const created = await tx.sale.create({
+          data: {
+            invoiceNumber,
+            customerId: resolvedCustomerId,
+            soldById: userId,
+            paymentMethod: dto.paymentMethod,
+            subtotal,
+            discountAmount: discount,
+            totalAmount: total,
+            tenantId,
+            isOnline: dto.isOnline ?? false,
+            customerCity: dto.customerCity,
+            trackingId: dto.trackingId,
+            deliveryCharge,
+            advanceAmount: dto.advanceAmount ?? 0,
+            codAmount: dto.codAmount ?? 0,
+            items: {
+              create: units.map((u) => ({
+                inventoryUnitId: u.id,
+                sellingPrice:
+                  dto.customPrices?.[u.serialNumber] ?? u.product.sellingPrice,
+                discount: 0,
+              })),
+            },
+          },
+          include: {
+            items: {
+              include: {
+                inventoryUnit: {
+                  select: {
+                    serialNumber: true,
+                    product: { select: { name: true, brand: true } },
+                  },
                 },
               },
             },
+            customer: { select: { id: true, name: true, phone: true } },
+            soldBy: { select: { id: true, name: true } },
           },
-          customer: { select: { id: true, name: true, phone: true } },
-          soldBy: { select: { id: true, name: true } },
-        },
-      });
+        });
 
-      await tx.inventoryUnit.updateMany({
-        where: {
-          tenantId,
-          id: { in: units.map((u) => u.id) },
-        },
-        data: { status: UnitStatus.sold },
-      });
+        await tx.inventoryUnit.updateMany({
+          where: {
+            tenantId,
+            id: { in: units.map((u) => u.id) },
+          },
+          data: { status: UnitStatus.sold },
+        });
 
-      return created;
-    }, { maxWait: 10000, timeout: 20000 });
+        return created;
+      },
+      { maxWait: 10000, timeout: 20000 },
+    );
 
     this.eventEmitter.emit('sale.created', {
       saleId: sale.id,
@@ -230,7 +234,18 @@ export class SalesService {
   }
 
   async listSales(dto: FilterSalesDto, tenantId: string) {
-    const { search, status, isOnline, shippingStatus, soldById, customerId, from, to, page = 1, limit = 50 } = dto;
+    const {
+      search,
+      status,
+      isOnline,
+      shippingStatus,
+      soldById,
+      customerId,
+      from,
+      to,
+      page = 1,
+      limit = 50,
+    } = dto;
     const skip = (page - 1) * limit;
 
     const conditions: Prisma.SaleWhereInput[] = [{ tenantId }];
@@ -263,7 +278,11 @@ export class SalesService {
       conditions.push({
         OR: [
           { invoiceNumber: { contains: search, mode: 'insensitive' as const } },
-          { customer: { name: { contains: search, mode: 'insensitive' as const } } },
+          {
+            customer: {
+              name: { contains: search, mode: 'insensitive' as const },
+            },
+          },
           { customer: { phone: { contains: search } } },
         ],
       });
@@ -435,7 +454,12 @@ export class SalesService {
     return `INV-${date}-${tick}`;
   }
 
-  async dispatchSale(id: string, trackingId: string, tenantId: string, userId: string) {
+  async dispatchSale(
+    id: string,
+    trackingId: string,
+    tenantId: string,
+    userId: string,
+  ) {
     const sale = await this.prisma.sale.findFirst({
       where: { id, tenantId },
     });
@@ -516,7 +540,12 @@ export class SalesService {
     });
   }
 
-  async returnOnlineOrder(id: string, refundLossAmount: number, tenantId: string, userId: string) {
+  async returnOnlineOrder(
+    id: string,
+    refundLossAmount: number,
+    tenantId: string,
+    userId: string,
+  ) {
     const sale = await this.prisma.sale.findFirst({
       where: { id, tenantId },
       include: { items: true },

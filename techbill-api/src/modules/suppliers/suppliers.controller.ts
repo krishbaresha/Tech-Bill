@@ -38,7 +38,10 @@ export class SuppliersController {
 
   @Get('suppliers')
   @Permissions('suppliers.read')
-  listSuppliers(@Query('search') search: string | undefined, @Req() req: RequestWithUser) {
+  listSuppliers(
+    @Query('search') search: string | undefined,
+    @Req() req: RequestWithUser,
+  ) {
     return this.suppliersService.listSuppliers(search, req.user.tenantId);
   }
 
@@ -73,7 +76,10 @@ export class SuppliersController {
     @Query('supplierId') supplierId: string | undefined,
     @Req() req: RequestWithUser,
   ) {
-    return this.suppliersService.listPurchaseOrders(supplierId, req.user.tenantId);
+    return this.suppliersService.listPurchaseOrders(
+      supplierId,
+      req.user.tenantId,
+    );
   }
 
   @Get('purchase-orders/:id')
@@ -85,10 +91,11 @@ export class SuppliersController {
   @Post('purchase-orders')
   @Permissions('suppliers.write')
   @HttpCode(HttpStatus.CREATED)
-  createPurchaseOrder(
-    @Body() dto: CreatePoDto,
-    @Req() req: RequestWithUser,
-  ) {
-    return this.suppliersService.createPurchaseOrder(dto, req.user.id, req.user.tenantId);
+  createPurchaseOrder(@Body() dto: CreatePoDto, @Req() req: RequestWithUser) {
+    return this.suppliersService.createPurchaseOrder(
+      dto,
+      req.user.id,
+      req.user.tenantId,
+    );
   }
 }

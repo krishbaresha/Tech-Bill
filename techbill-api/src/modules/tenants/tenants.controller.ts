@@ -42,7 +42,7 @@ export class TenantsController {
    * Response: { isWarehouseEnabled: boolean, role: string }
    */
   @Get('me/config')
-  @Roles()                    // Empty @Roles() overrides the class-level platform_admin restriction
+  @Roles() // Empty @Roles() overrides the class-level platform_admin restriction
   @HttpCode(HttpStatus.OK)
   async getMyConfig(@Req() req: Request) {
     const user = (req as Request & { user: AuthUser }).user;
@@ -122,7 +122,10 @@ export class TenantsController {
 
   @Post(':id/reset-owner-password')
   @HttpCode(HttpStatus.OK)
-  resetOwnerPassword(@Param('id') id: string, @Body('password') password: string) {
+  resetOwnerPassword(
+    @Param('id') id: string,
+    @Body('password') password: string,
+  ) {
     return this.tenantsService.resetOwnerPassword(id, password);
   }
 

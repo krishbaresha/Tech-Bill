@@ -99,15 +99,17 @@ export class SalesController {
     @Body('trackingId') trackingId: string,
     @Req() req: RequestWithUser,
   ) {
-    return this.salesService.dispatchSale(id, trackingId, req.user.tenantId, req.user.id);
+    return this.salesService.dispatchSale(
+      id,
+      trackingId,
+      req.user.tenantId,
+      req.user.id,
+    );
   }
 
   @Patch(':id/deliver')
   @Permissions('pos.online_sell')
-  markDelivered(
-    @Param('id') id: string,
-    @Req() req: RequestWithUser,
-  ) {
+  markDelivered(@Param('id') id: string, @Req() req: RequestWithUser) {
     return this.salesService.markDelivered(id, req.user.tenantId);
   }
 
@@ -141,6 +143,11 @@ export class SalesController {
     @Body('refundLossAmount') refundLossAmount: number,
     @Req() req: RequestWithUser,
   ) {
-    return this.salesService.returnOnlineOrder(id, Number(refundLossAmount) || 0, req.user.tenantId, req.user.id);
+    return this.salesService.returnOnlineOrder(
+      id,
+      Number(refundLossAmount) || 0,
+      req.user.tenantId,
+      req.user.id,
+    );
   }
 }

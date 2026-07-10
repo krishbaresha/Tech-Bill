@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SalesSummaryQueryDto } from './dto/sales-summary-query.dto';
@@ -102,7 +106,10 @@ export class ReportsService {
 
     let totalCost = 0;
     for (const item of items) {
-      const cost = item.inventoryUnit.purchasePrice ?? item.inventoryUnit.product.costPrice ?? 0;
+      const cost =
+        item.inventoryUnit.purchasePrice ??
+        item.inventoryUnit.product.costPrice ??
+        0;
       totalCost += Number(cost);
     }
     const salesList = await this.prisma.sale.findMany({
@@ -139,13 +146,13 @@ export class ReportsService {
     const payouts = await this.prisma.courierPayout.aggregate({
       where: {
         tenantId,
-        date: { gte: start, lte: end }
+        date: { gte: start, lte: end },
       },
       _sum: { amount: true },
     });
     const courierPayouts = Number(payouts._sum.amount ?? 0);
     onlineRevenue += courierPayouts;
-    
+
     totalRevenue = offlineRevenue + onlineRevenue;
 
     const totalGrossProfit = totalRevenue - totalCost;
@@ -156,7 +163,7 @@ export class ReportsService {
         isOnline: true,
         shippingStatus: 'pending',
         createdAt: { gte: start, lte: end },
-      }
+      },
     });
 
     return {
@@ -300,7 +307,9 @@ export class ReportsService {
       where: { tenantId, date: { lt: start } },
       orderBy: { date: 'desc' },
     });
-    const defaultOpeningBalance = lastRecon?.actualCash ? Number(lastRecon.actualCash) : 0;
+    const defaultOpeningBalance = lastRecon?.actualCash
+      ? Number(lastRecon.actualCash)
+      : 0;
 
     // 2. Get today's cash sales
     const cashSales = await this.prisma.sale.aggregate({
@@ -370,7 +379,9 @@ export class ReportsService {
       where: { tenantId, date: { lt: start } },
       orderBy: { date: 'desc' },
     });
-    const prevClosing = lastRecon?.actualCash ? Number(lastRecon.actualCash) : 0;
+    const prevClosing = lastRecon?.actualCash
+      ? Number(lastRecon.actualCash)
+      : 0;
 
     if (dto.openingBalance < prevClosing) {
       await this.prisma.expense.create({

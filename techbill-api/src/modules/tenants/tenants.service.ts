@@ -1,4 +1,9 @@
-import { Injectable, ConflictException, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
@@ -7,16 +12,34 @@ import { PrismaService } from '../../prisma/prisma.service';
 const BCRYPT_ROUNDS = 12;
 
 const ALL_PERMISSIONS = [
-  'pos.read', 'pos.sell', 'pos.discount', 'pos.void', 'pos.online_sell',
-  'inventory.read', 'inventory.write', 'inventory.delete',
-  'suppliers.read', 'suppliers.write',
-  'customers.read', 'customers.write',
-  'returns.read', 'returns.create', 'returns.review',
-  'reports.read', 'reports.cash_reconciliation',
-  'users.read', 'users.manage', 'users.permissions',
-  'settings.read', 'settings.manage',
-  'audit.read', 'notifications.read', 'notifications.manage',
-  'warranty.read', 'loyalty.read', 'loyalty.manage'
+  'pos.read',
+  'pos.sell',
+  'pos.discount',
+  'pos.void',
+  'pos.online_sell',
+  'inventory.read',
+  'inventory.write',
+  'inventory.delete',
+  'suppliers.read',
+  'suppliers.write',
+  'customers.read',
+  'customers.write',
+  'returns.read',
+  'returns.create',
+  'returns.review',
+  'reports.read',
+  'reports.cash_reconciliation',
+  'users.read',
+  'users.manage',
+  'users.permissions',
+  'settings.read',
+  'settings.manage',
+  'audit.read',
+  'notifications.read',
+  'notifications.manage',
+  'warranty.read',
+  'loyalty.read',
+  'loyalty.manage',
 ];
 
 @Injectable()
@@ -28,21 +51,21 @@ export class TenantsService {
       orderBy: { createdAt: 'desc' },
       include: {
         _count: {
-          select: { users: true }
+          select: { users: true },
         },
         users: {
           where: { role: Role.owner },
           select: { email: true },
-          take: 1
-        }
-      }
+          take: 1,
+        },
+      },
     });
 
-    return tenants.map(t => {
+    return tenants.map((t) => {
       const { users, ...rest } = t;
       return {
         ...rest,
-        ownerEmail: users[0]?.email
+        ownerEmail: users[0]?.email,
       };
     });
   }
@@ -65,20 +88,23 @@ export class TenantsService {
 
     // 1. Check if tenant slug or owner email already exists
     const existingTenant = await this.prisma.tenant.findUnique({
-      where: { slug }
+      where: { slug },
     });
     if (existingTenant) {
       throw new ConflictException(`Tenant slug "${slug}" is already in use`);
     }
 
     const existingUser = await this.prisma.user.findUnique({
-      where: { email: ownerEmail }
+      where: { email: ownerEmail },
     });
     if (existingUser) {
       throw new ConflictException(`Email "${ownerEmail}" is already in use`);
     }
 
-    const passwordHash = await bcrypt.hash(dto.ownerPasswordHashOrText, BCRYPT_ROUNDS);
+    const passwordHash = await bcrypt.hash(
+      dto.ownerPasswordHashOrText,
+      BCRYPT_ROUNDS,
+    );
 
     // Create tenant, initial owner user, and default shop settings inside a transaction
     return this.prisma.$transaction(async (tx) => {
@@ -92,7 +118,7 @@ export class TenantsService {
           subscriptionExpiresAt: dto.subscriptionExpiresAt
             ? new Date(dto.subscriptionExpiresAt)
             : null,
-        }
+        },
       });
 
       const owner = await tx.user.create({
@@ -109,8 +135,8 @@ export class TenantsService {
           name: true,
           email: true,
           role: true,
-          createdAt: true
-        }
+          createdAt: true,
+        },
       });
 
       // Seed default shop settings for the new tenant
@@ -119,7 +145,7 @@ export class TenantsService {
           tenantId: tenant.id,
           shopName: dto.name,
           maxDiscountWithoutOtp: 500,
-        }
+        },
       });
 
       return { tenant, owner };
@@ -136,7 +162,7 @@ export class TenantsService {
       appAccessEnabled?: boolean;
       isWarehouseEnabled?: boolean;
       subscriptionExpiresAt?: string | null;
-    }
+    },
   ) {
     const tenant = await this.prisma.tenant.findUnique({ where: { id } });
     if (!tenant) {
@@ -151,9 +177,13 @@ export class TenantsService {
         ...rest,
         // Only include subscriptionExpiresAt in the update payload if it was explicitly provided
         ...(subscriptionExpiresAt !== undefined
-          ? { subscriptionExpiresAt: subscriptionExpiresAt ? new Date(subscriptionExpiresAt) : null }
+          ? {
+              subscriptionExpiresAt: subscriptionExpiresAt
+                ? new Date(subscriptionExpiresAt)
+                : null,
+            }
           : {}),
-      }
+      },
     });
   }
 
@@ -167,10 +197,10 @@ export class TenantsService {
             name: true,
             email: true,
             role: true,
-            isActive: true
-          }
-        }
-      }
+            isActive: true,
+          },
+        },
+      },
     });
     if (!tenant) {
       throw new NotFoundException(`Tenant with ID "${id}" not found`);
@@ -182,7 +212,10 @@ export class TenantsService {
    * Returns the dynamic feature-flag configuration for the calling user's tenant.
    * Used by GET /tenants/me/config — accessible by any authenticated tenant user.
    */
-  async getTenantConfig(tenantId: string, userRole: string): Promise<{ isWarehouseEnabled: boolean; role: string }> {
+  async getTenantConfig(
+    tenantId: string,
+    userRole: string,
+  ): Promise<{ isWarehouseEnabled: boolean; role: string }> {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
       select: { isWarehouseEnabled: true, subscriptionExpiresAt: true },

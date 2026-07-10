@@ -52,7 +52,11 @@ export class SuppliersService {
     });
   }
 
-  async updateSupplier(id: string, dto: Partial<CreateSupplierDto>, tenantId: string) {
+  async updateSupplier(
+    id: string,
+    dto: Partial<CreateSupplierDto>,
+    tenantId: string,
+  ) {
     await this.getSupplier(id, tenantId);
     return this.prisma.supplier.update({ where: { id }, data: dto });
   }
@@ -70,8 +74,8 @@ export class SuppliersService {
         createdBy: { select: { id: true, name: true } },
         _count: { select: { items: true } },
         items: {
-          include: { product: { select: { id: true, name: true } } }
-        }
+          include: { product: { select: { id: true, name: true } } },
+        },
       },
       orderBy: { createdAt: 'desc' },
       take: 100,
@@ -100,7 +104,11 @@ export class SuppliersService {
     return po;
   }
 
-  async createPurchaseOrder(dto: CreatePoDto, userId: string, tenantId: string) {
+  async createPurchaseOrder(
+    dto: CreatePoDto,
+    userId: string,
+    tenantId: string,
+  ) {
     const totalAmount = dto.items.reduce(
       (sum, item) => sum + item.quantityOrdered * item.unitCostPrice,
       0,

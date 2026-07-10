@@ -1,4 +1,12 @@
-import { Controller, Get, Param, Query, Res, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  Res,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import type { Response, Request } from 'express';
 import { AuditService } from './audit.service';
 import { FilterAuditLogsDto } from './dto/filter-audit-logs.dto';
@@ -63,6 +71,10 @@ export class AuditController {
     @Param('entityId') entityId: string,
     @Req() req: RequestWithUser,
   ) {
-    return this.auditService.findByEntity(entityType, entityId, req.user.tenantId);
+    return this.auditService.findByEntity(
+      entityType,
+      entityId,
+      req.user.tenantId,
+    );
   }
 }

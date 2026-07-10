@@ -119,7 +119,10 @@ export class AuthController {
   @Post('verify-password')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  async verifyPassword(@Req() req: Request, @Body() body: { password?: string }) {
+  async verifyPassword(
+    @Req() req: Request,
+    @Body() body: { password?: string },
+  ) {
     const user = (req as unknown as { user: { id: string } }).user;
     if (!body.password) {
       return { valid: false };

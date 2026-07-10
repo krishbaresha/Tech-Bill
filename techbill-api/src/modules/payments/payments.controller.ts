@@ -45,11 +45,16 @@ export class PaymentsController {
       this.logger.log('Payment gateway webhook callback received.');
 
       // Validate webhook secret signature/token if configured in environment
-      const webhookSecret = this.configService.get<string>('PAYMENT_WEBHOOK_SECRET');
+      const webhookSecret = this.configService.get<string>(
+        'PAYMENT_WEBHOOK_SECRET',
+      );
       if (webhookSecret) {
-        const signature = req.headers['x-webhook-signature'] || req.query['token'];
+        const signature =
+          req.headers['x-webhook-signature'] || req.query['token'];
         if (signature !== webhookSecret) {
-          this.logger.error('[Webhook Security] Unauthorized callback attempt. Signature or token mismatch.');
+          this.logger.error(
+            '[Webhook Security] Unauthorized callback attempt. Signature or token mismatch.',
+          );
           return { processed: false, error: 'Unauthorized signature mismatch' };
         }
       }
@@ -64,7 +69,10 @@ export class PaymentsController {
       return { processed: true, transactionId: result.transactionId };
     } catch (err: any) {
       // Keep app crash-free and return 200 OK to the gateway even on server processing failure
-      this.logger.error('Unexpected error processing webhook callback', err?.stack);
+      this.logger.error(
+        'Unexpected error processing webhook callback',
+        err?.stack,
+      );
       return { processed: false, error: 'Internal processing error' };
     }
   }

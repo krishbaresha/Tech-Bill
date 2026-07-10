@@ -11,7 +11,11 @@ export class PaymentsService {
   /**
    * Inserts a new transaction record with status PENDING.
    */
-  async createPendingTransaction(orderId: string, amount: number, tenantId: string) {
+  async createPendingTransaction(
+    orderId: string,
+    amount: number,
+    tenantId: string,
+  ) {
     this.logger.log(
       `[Tenant: ${tenantId}] Creating pending transaction for Order ID: ${orderId}, Amount: ${amount}`,
     );
@@ -21,7 +25,9 @@ export class PaymentsService {
       where: { orderId },
     });
     if (existing) {
-      throw new ConflictException(`Transaction with Order ID ${orderId} already exists`);
+      throw new ConflictException(
+        `Transaction with Order ID ${orderId} already exists`,
+      );
     }
 
     return this.prisma.transaction.create({
@@ -39,7 +45,9 @@ export class PaymentsService {
    * updates status to SUCCESS or FAILED, and logs with tenant context.
    */
   async handleWebhook(payload: any) {
-    this.logger.log(`Received payment webhook payload: ${JSON.stringify(payload)}`);
+    this.logger.log(
+      `Received payment webhook payload: ${JSON.stringify(payload)}`,
+    );
 
     // Flexible extraction of webhook fields
     const orderId = payload?.order_id || payload?.orderId;
@@ -47,7 +55,8 @@ export class PaymentsService {
     const amount = payload?.amount || payload?.payment_amount;
 
     if (!orderId) {
-      const errorMsg = 'Webhook processing failed: orderId is missing in payload';
+      const errorMsg =
+        'Webhook processing failed: orderId is missing in payload';
       this.logger.error(errorMsg);
       return { success: false, error: errorMsg };
     }
@@ -97,7 +106,11 @@ export class PaymentsService {
     const normalizedStatus = String(status).toUpperCase();
     let finalStatus: TransactionStatus = TransactionStatus.FAILED;
 
-    if (['SUCCESS', 'SUCCESSFUL', 'PAID', 'COMPLETED', 'APPROVED', 'OK'].includes(normalizedStatus)) {
+    if (
+      ['SUCCESS', 'SUCCESSFUL', 'PAID', 'COMPLETED', 'APPROVED', 'OK'].includes(
+        normalizedStatus,
+      )
+    ) {
       finalStatus = TransactionStatus.SUCCESS;
     }
 

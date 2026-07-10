@@ -41,8 +41,6 @@ export default function PosScreen() {
   const toast = useToastStore();
   const dashboard = usePosStore((s) => s.dashboardData);
   const syncPosDashboard = usePosStore((s) => s.syncPosDashboard);
-  const deltaSync = usePosStore((s) => s.deltaSync);
-
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [shopSettings, setShopSettings] = useState<ShopSettings | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -89,13 +87,6 @@ export default function PosScreen() {
     })();
     return () => { mounted = false; };
   }, [syncPosDashboard]);
-
-  // Background delta-sync: runs every 5 minutes to silently patch the local
-  // cache with changed rows from Supabase, bypassing the NestJS backend.
-  useEffect(() => {
-    const id = setInterval(() => { deltaSync(); }, 5 * 60 * 1000);
-    return () => clearInterval(id);
-  }, [deltaSync]);
 
   useEffect(() => {
     if (!dashboard) return;

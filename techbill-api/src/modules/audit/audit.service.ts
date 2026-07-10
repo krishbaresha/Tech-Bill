@@ -39,9 +39,9 @@ export class AuditService {
         entityId: data.entityId,
         ipAddress: data.ipAddress,
         deviceInfo: data.deviceInfo,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         oldValue: data.oldValue as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         newValue: data.newValue as any,
         tenantId: resolvedTenantId || null,
       },

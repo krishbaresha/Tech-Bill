@@ -112,7 +112,11 @@ export class InventoryController {
   @Post('units')
   @Permissions('inventory.write')
   createUnit(@Body() dto: CreateUnitDto, @Req() req: RequestWithUser) {
-    return this.inventoryService.createUnit(dto, req.user.id, req.user.tenantId);
+    return this.inventoryService.createUnit(
+      dto,
+      req.user.id,
+      req.user.tenantId,
+    );
   }
 
   @Post('units/bulk')
@@ -121,7 +125,11 @@ export class InventoryController {
     @Body() dto: BulkCreateUnitsDto,
     @Req() req: RequestWithUser,
   ) {
-    return this.inventoryService.bulkCreateUnits(dto, req.user.id, req.user.tenantId);
+    return this.inventoryService.bulkCreateUnits(
+      dto,
+      req.user.id,
+      req.user.tenantId,
+    );
   }
 
   @Patch('units/:id')
@@ -131,7 +139,12 @@ export class InventoryController {
     @Body() dto: UpdateUnitDto,
     @Req() req: RequestWithUser,
   ) {
-    return this.inventoryService.updateUnit(id, dto, req.user.id, req.user.tenantId);
+    return this.inventoryService.updateUnit(
+      id,
+      dto,
+      req.user.id,
+      req.user.tenantId,
+    );
   }
 
   @Post('products/:id/enrich')

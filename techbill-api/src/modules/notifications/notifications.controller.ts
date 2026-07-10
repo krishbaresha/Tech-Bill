@@ -32,20 +32,30 @@ export class NotificationsController {
   @Get()
   @Permissions('notifications.read')
   list(@Req() req: RequestWithUser) {
-    return this.notificationsService.listForUser(req.user.id, req.user.tenantId);
+    return this.notificationsService.listForUser(
+      req.user.id,
+      req.user.tenantId,
+    );
   }
 
   @Patch('read-all')
   @Permissions('notifications.manage')
   @HttpCode(HttpStatus.OK)
   markAllRead(@Req() req: RequestWithUser) {
-    return this.notificationsService.markAllRead(req.user.id, req.user.tenantId);
+    return this.notificationsService.markAllRead(
+      req.user.id,
+      req.user.tenantId,
+    );
   }
 
   @Patch(':id/read')
   @Permissions('notifications.manage')
   @HttpCode(HttpStatus.OK)
   markRead(@Param('id') id: string, @Req() req: RequestWithUser) {
-    return this.notificationsService.markRead(id, req.user.id, req.user.tenantId);
+    return this.notificationsService.markRead(
+      id,
+      req.user.id,
+      req.user.tenantId,
+    );
   }
 }

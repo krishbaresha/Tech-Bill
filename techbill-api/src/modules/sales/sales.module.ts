@@ -21,4 +21,3 @@ import { OtpGuard } from '../../common/guards/otp.guard';
   exports: [SalesService],
 })
 export class SalesModule {}
-

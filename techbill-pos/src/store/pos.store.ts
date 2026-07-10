@@ -6,9 +6,9 @@ import type { DashboardData } from '../types';
 interface PosState {
   dashboardData: DashboardData | null;
   isSyncing: boolean;
+  /** ISO timestamp of the last successful sync */
   lastSyncedAt: string | null;
   syncPosDashboard: () => Promise<void>;
-  deltaSync: () => Promise<void>;
 }
 
 export const usePosStore = create<PosState>()(
@@ -18,6 +18,9 @@ export const usePosStore = create<PosState>()(
       isSyncing: false,
       lastSyncedAt: null,
 
+      /**
+       * Full sync: calls the NestJS backend to load the dashboard.
+       */
       syncPosDashboard: async () => {
         set({ isSyncing: true });
         try {
@@ -31,11 +34,6 @@ export const usePosStore = create<PosState>()(
         } finally {
           set({ isSyncing: false });
         }
-      },
-
-      deltaSync: async () => {
-        // Delta sync via Supabase has been entirely removed as part of the migration
-        // to a standalone PostgreSQL + NestJS architecture.
       },
     }),
     {

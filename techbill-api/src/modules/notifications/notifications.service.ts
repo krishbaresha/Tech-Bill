@@ -12,15 +12,18 @@ export class NotificationsService {
         orderBy: { createdAt: 'desc' },
         take: 50,
       }),
-      this.prisma.notification.count({ where: { userId, tenantId, isRead: false } }),
+      this.prisma.notification.count({
+        where: { userId, tenantId, isRead: false },
+      }),
     ]);
     return { notifications, unreadCount };
   }
 
   async markRead(id: string, userId: string, tenantId: string) {
-    const n = await this.prisma.notification.findFirst({ where: { id, userId, tenantId } });
-    if (!n)
-      throw new NotFoundException(`Notification ${id} not found`);
+    const n = await this.prisma.notification.findFirst({
+      where: { id, userId, tenantId },
+    });
+    if (!n) throw new NotFoundException(`Notification ${id} not found`);
     return this.prisma.notification.update({
       where: { id },
       data: { isRead: true },
@@ -44,7 +47,10 @@ export class NotificationsService {
   ) {
     let resolvedTenantId = tenantId;
     if (!resolvedTenantId) {
-      const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { tenantId: true } });
+      const u = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { tenantId: true },
+      });
       resolvedTenantId = u?.tenantId ?? undefined;
     }
 

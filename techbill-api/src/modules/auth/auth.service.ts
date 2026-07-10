@@ -61,7 +61,10 @@ export class AuthService {
     });
 
     if (!user || !user.isActive) {
-      this.eventEmitter.emit('user.failed_login', { email: dto.email, ipAddress });
+      this.eventEmitter.emit('user.failed_login', {
+        email: dto.email,
+        ipAddress,
+      });
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -87,7 +90,10 @@ export class AuthService {
 
     const passwordValid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!passwordValid) {
-      this.eventEmitter.emit('user.failed_login', { email: dto.email, ipAddress });
+      this.eventEmitter.emit('user.failed_login', {
+        email: dto.email,
+        ipAddress,
+      });
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -110,7 +116,9 @@ export class AuthService {
       ? '3650d'
       : this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d');
 
-    const accessToken = this.jwtService.sign(payload, { expiresIn: accessTokenExpiry });
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: accessTokenExpiry,
+    });
     const refreshToken = this.jwtService.sign(payload, {
       secret: this.configService.get('JWT_REFRESH_SECRET'),
       expiresIn: refreshTokenExpiry,
@@ -139,7 +147,8 @@ export class AuthService {
     const now = new Date();
     const warehouseEnabled =
       (user.tenant?.isWarehouseEnabled ?? false) &&
-      (!user.tenant?.subscriptionExpiresAt || user.tenant.subscriptionExpiresAt > now);
+      (!user.tenant?.subscriptionExpiresAt ||
+        user.tenant.subscriptionExpiresAt > now);
 
     return {
       accessToken,

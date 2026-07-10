@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 /**
@@ -10,7 +15,10 @@ import { PrismaClient } from '@prisma/client';
  *    immediately visible in the terminal instead of an opaque 500.
  */
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger(PrismaService.name);
   private static readonly MAX_RETRIES = 3;
   private static readonly BASE_BACKOFF_MS = 1500; // 1.5 s → 3 s → 6 s
@@ -34,12 +42,18 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private async connectWithRetry(): Promise<void> {
     for (let attempt = 1; attempt <= PrismaService.MAX_RETRIES; attempt++) {
       try {
-        this.logger.log(`[Attempt ${attempt}/${PrismaService.MAX_RETRIES}] Connecting to database …`);
+        this.logger.log(
+          `[Attempt ${attempt}/${PrismaService.MAX_RETRIES}] Connecting to database …`,
+        );
         await this.$connect();
         this.logger.log('✅ Database connection established successfully.');
         return;
       } catch (err: unknown) {
-        const error = err as { code?: string; message?: string; stack?: string };
+        const error = err as {
+          code?: string;
+          message?: string;
+          stack?: string;
+        };
         const isPoolTimeout = error.code === 'P2024';
 
         this.logger.error(
@@ -49,7 +63,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         );
 
         if (attempt < PrismaService.MAX_RETRIES) {
-          const backoffMs = PrismaService.BASE_BACKOFF_MS * Math.pow(2, attempt - 1);
+          const backoffMs =
+            PrismaService.BASE_BACKOFF_MS * Math.pow(2, attempt - 1);
           this.logger.warn(
             isPoolTimeout
               ? `P2024 pool timeout — connection pool exhausted. ` +

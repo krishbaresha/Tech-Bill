@@ -31,7 +31,9 @@ export class UsersService {
   }
 
   async createUser(dto: CreateUserDto, tenantId: string) {
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
     if (!tenant) throw new NotFoundException('Tenant not found');
 
     const email = `${dto.username}@${tenant.slug}.techbill.app`;
@@ -39,8 +41,7 @@ export class UsersService {
     const existing = await this.prisma.user.findUnique({
       where: { email },
     });
-    if (existing)
-      throw new ConflictException(`Email ${email} already in use`);
+    if (existing) throw new ConflictException(`Email ${email} already in use`);
 
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
     return this.prisma.user.create({
@@ -94,7 +95,9 @@ export class UsersService {
     const user = await this.findOrThrow(id, tenantId);
 
     if (user.role === 'owner') {
-      throw new ForbiddenException('Cannot reset the password of the shop owner/admin.');
+      throw new ForbiddenException(
+        'Cannot reset the password of the shop owner/admin.',
+      );
     }
 
     const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
