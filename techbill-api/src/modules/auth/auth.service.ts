@@ -166,6 +166,7 @@ export class AuthService {
         subdomain: user.tenant?.slug ?? null,
         onlineSellingEnabled: user.tenant?.onlineSellingEnabled ?? false,
         currentPeriodEnd: user.tenant?.currentPeriodEnd ?? null,
+        tenantStatus: user.tenant?.status ?? 'active',
         isWarehouseEnabled: warehouseEnabled,
       },
     };
@@ -417,6 +418,7 @@ export class AuthService {
       appAccessEnabled: user.tenant?.appAccessEnabled ?? false,
       status: user.isActive ? 'active' : 'inactive',
       currentPeriodEnd: user.tenant?.currentPeriodEnd?.toISOString() ?? null,
+      tenantStatus: user.tenant?.status ?? 'active',
       tenant: user.tenant
         ? {
             onlineSellingEnabled: user.tenant.onlineSellingEnabled,

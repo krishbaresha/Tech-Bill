@@ -10,7 +10,7 @@ export const SubscriptionBanner: React.FC = () => {
   const now = new Date();
   const periodEnd = user.currentPeriodEnd ? new Date(user.currentPeriodEnd) : null;
   
-  const isExpired = (periodEnd && periodEnd < now) || user.tenantStatus !== 'active';
+  const isExpired = (periodEnd && periodEnd < now) || (user.tenantStatus !== undefined && user.tenantStatus !== 'active');
 
   if (!isExpired) return null;
 
