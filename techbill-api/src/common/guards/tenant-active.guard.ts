@@ -37,8 +37,8 @@ export class TenantActiveGuard implements CanActivate {
       throw new ForbiddenException('Subscription has expired.');
     }
 
-    if (tenant.currentPeriodEnd && tenant.currentPeriodEnd < now) {
-      throw new ForbiddenException('Current billing period has ended. Please renew subscription.');
+    if (!tenant.currentPeriodEnd || tenant.currentPeriodEnd < now) {
+      throw new ForbiddenException('Current billing period has ended or not activated. Please renew subscription.');
     }
 
     return true;

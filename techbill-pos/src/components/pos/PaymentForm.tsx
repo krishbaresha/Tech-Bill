@@ -40,7 +40,7 @@ export default function PaymentForm({ onSaleComplete, shopSettings }: { onSaleCo
   const isSubscriptionExpired = (() => {
     if (user?.tenantStatus !== undefined && user?.tenantStatus !== 'active') return true;
     const periodEnd = user?.currentPeriodEnd;
-    if (!periodEnd) return false;
+    if (!periodEnd) return true; // NOT ACTIVATED = EXPIRED
     return new Date(periodEnd) < new Date();
   })();
 

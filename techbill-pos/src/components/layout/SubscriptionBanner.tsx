@@ -15,6 +15,8 @@ export const SubscriptionBanner: React.FC = () => {
   if (periodEnd) {
     const diffMs = periodEnd.getTime() - now.getTime();
     daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  } else {
+    daysLeft = 0; // NOT ACTIVATED = EXPIRED
   }
 
   const isExpired = daysLeft <= 0 || isInactive;
