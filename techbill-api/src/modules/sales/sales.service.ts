@@ -53,17 +53,30 @@ export class SalesService {
       }
 
       // 2. Scenario C: Session validation
-      if (dto.sessionId) {
+      let resolvedSessionId = dto.sessionId;
+
+      if (!resolvedSessionId && !dto.isOnline) {
+        let activeSession = await this.prisma.cashDrawerSession.findFirst({
+          where: { userId, tenantId, status: 'OPEN' },
+        });
+        
+        if (!activeSession) {
+          activeSession = await this.prisma.cashDrawerSession.create({
+            data: {
+              userId,
+              tenantId,
+              status: 'OPEN',
+              openedAt: new Date(),
+            },
+          });
+        }
+        resolvedSessionId = activeSession.id;
+      } else if (resolvedSessionId) {
         const session = await this.prisma.cashDrawerSession.findUnique({
-          where: { id: dto.sessionId },
+          where: { id: resolvedSessionId },
         });
         if (!session || session.status !== 'OPEN' || session.tenantId !== tenantId) {
           throw new BadRequestException('Active open cash drawer session required.');
-        }
-      } else {
-        // Enforce session if it's a standard POS transaction
-        if (!dto.isOnline) {
-          throw new BadRequestException('Cash drawer session ID is required for POS sales.');
         }
       }
 
@@ -153,7 +166,7 @@ export class SalesService {
             data: {
               invoiceNumber,
               idempotencyKey: dto.idempotencyKey,
-              sessionId: dto.sessionId,
+              sessionId: resolvedSessionId,
               customerId: resolvedCustomerId,
               soldById: userId,
               paymentMethod: dto.paymentMethod,
