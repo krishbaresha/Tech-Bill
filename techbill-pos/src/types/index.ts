@@ -47,6 +47,7 @@ export interface User {
   subdomain?: string | null;
   onlineSellingEnabled?: boolean;
   currentPeriodEnd?: string | null;
+  tenantStatus?: string;
 }
 
 export interface StaffUser {

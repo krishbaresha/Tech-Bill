@@ -23,6 +23,8 @@ import { AiModule } from './modules/ai/ai.module';
 import { ExpensesModule } from './modules/expenses/expenses.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 
+import { TenantActiveGuard } from './common/guards/tenant-active.guard';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -47,6 +49,10 @@ import { PaymentsModule } from './modules/payments/payments.module';
     PaymentsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [
+    AppService,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: TenantActiveGuard },
+  ],
 })
 export class AppModule {}

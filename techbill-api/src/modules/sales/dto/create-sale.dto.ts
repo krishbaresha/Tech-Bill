@@ -83,4 +83,12 @@ export class CreateSaleDto {
   @IsOptional()
   @Type(() => Number)
   codAmount?: number;
+
+  @IsString()
+  @IsOptional()
+  idempotencyKey?: string;
+
+  @IsUUID()
+  @IsOptional()
+  sessionId?: string;
 }

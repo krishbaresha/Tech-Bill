@@ -25,3 +25,11 @@ export const useCartStore = create<CartStore>()((set) => ({
     })),
   clearCart: () => set({ items: [], isOnlineOrder: false }),
 }));
+
+export function generateIdempotencyKey(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for insecure contexts (HTTP)
+  return 'fallback-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 10);
+}

@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { CreditCard, AlertTriangle } from 'lucide-react';
 import { api } from '../../api/client';
-import { useCartStore } from '../../store/cart.store';
+import { useCartStore, generateIdempotencyKey } from '../../store/cart.store';
 import { useAuthStore } from '../../store/auth.store';
 import { queueSale } from '../../db/offline.db';
 import { useCan } from '../../lib/permissions';
@@ -38,6 +38,7 @@ export default function PaymentForm({ onSaleComplete, shopSettings }: { onSaleCo
 
   // Check if subscription has expired
   const isSubscriptionExpired = (() => {
+    if (user?.tenantStatus !== 'active') return true;
     const periodEnd = user?.currentPeriodEnd;
     if (!periodEnd) return false;
     return new Date(periodEnd) < new Date();
@@ -81,6 +82,7 @@ export default function PaymentForm({ onSaleComplete, shopSettings }: { onSaleCo
       ...(isOnlineOrder && data.deliveryCharge > 0 && { deliveryCharge: data.deliveryCharge }),
       ...(isOnlineOrder && data.advanceAmount > 0 && { advanceAmount: data.advanceAmount }),
       ...(isOnlineOrder && { codAmount }),
+      idempotencyKey: generateIdempotencyKey(),
     };
     try {
       const res = await api.post<Sale>('/sales', payload);

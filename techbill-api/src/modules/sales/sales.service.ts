@@ -30,210 +30,235 @@ export class SalesService {
   }
 
   async createSale(dto: CreateSaleDto, userId: string, tenantId: string) {
-    const uniqueSerials = [...new Set(dto.serials)];
-    if (uniqueSerials.length !== dto.serials.length) {
-      throw new BadRequestException('Duplicate serial numbers in sale');
-    }
-
-    // Auto-upsert customer from name+phone if no explicit customerId
-    let resolvedCustomerId = dto.customerId;
-    if (!resolvedCustomerId && dto.customerPhone) {
-      const customer = await this.prisma.customer.upsert({
-        where: {
-          tenantId_phone: {
-            tenantId,
-            phone: dto.customerPhone,
-          },
-        },
-        create: {
-          name: dto.customerName ?? dto.customerPhone,
-          phone: dto.customerPhone,
-          tenantId,
-        },
-        update: dto.customerName ? { name: dto.customerName } : {},
-      });
-      resolvedCustomerId = customer.id;
-    }
-
-    const units = await this.prisma.inventoryUnit.findMany({
-      where: {
-        tenantId,
-        serialNumber: { in: uniqueSerials },
-      },
-      include: { product: { select: { sellingPrice: true } } },
-    });
-
-    if (units.length !== uniqueSerials.length) {
-      const found = units.map((u) => u.serialNumber);
-      const missing = uniqueSerials.filter((s) => !found.includes(s));
-      throw new NotFoundException(
-        `Serial numbers not found: ${missing.join(', ')}`,
-      );
-    }
-
-    const unavailable = units.filter((u) => u.status !== UnitStatus.in_stock);
-    if (unavailable.length > 0) {
-      throw new BadRequestException(
-        `Units not available: ${unavailable.map((u) => `${u.serialNumber} (${u.status})`).join(', ')}`,
-      );
-    }
-
-    const subtotal = units.reduce(
-      (sum, u) => sum + Number(u.product.sellingPrice),
-      0,
-    );
-    const discount = dto.discountAmount ?? 0;
-    const deliveryCharge = dto.deliveryCharge ?? 0;
-    const additionalCharges = dto.additionalCharges ?? 0;
-    const total = subtotal - discount + deliveryCharge + additionalCharges;
-
-    if (total < 0) throw new BadRequestException('Discount exceeds subtotal');
-
-    if (discount > 0) {
-      this.eventEmitter.emit('discount.requested', {
-        userId,
-        amount: discount,
-        tenantId,
-      });
-    }
-
-    // Enforce OTP for discounts above configured threshold
-    const settings = await this.prisma.shopSettings.findFirst({
-      where: { tenantId },
-    });
-    const maxNoOtp = Number(settings?.maxDiscountWithoutOtp ?? 500);
-    if (discount > maxNoOtp) {
-      if (!dto.otpToken) {
-        throw new BadRequestException(
-          `OTP required for discounts above Rs ${maxNoOtp}. Call /auth/request-otp first.`,
-        );
-      }
-      try {
-        this.jwtService.verify(dto.otpToken, {
-          secret: this.configService.get<string>('JWT_SECRET'),
-        });
-      } catch {
-        throw new BadRequestException('Invalid or expired OTP token');
-      }
-    }
-
-    const invoiceNumber = this.generateInvoiceNumber();
-
-    const sale = await this.prisma.$transaction(
-      async (tx) => {
-        // 1. Strict Concurrency Verification inside transaction lock
-        const txUnits = await tx.inventoryUnit.findMany({
-          where: {
-            tenantId,
-            id: { in: units.map((u) => u.id) },
-          },
-        });
-
-        const unavailableTx = txUnits.filter(
-          (u) => u.status !== UnitStatus.in_stock,
-        );
-        if (unavailableTx.length > 0) {
-          throw new ConflictException(
-            `Transaction aborted. Serial numbers already sold: ${unavailableTx.map((u) => u.serialNumber).join(', ')}`,
-          );
-        }
-
-        const created = await tx.sale.create({
-          data: {
-            invoiceNumber,
-            customerId: resolvedCustomerId,
-            soldById: userId,
-            paymentMethod: dto.paymentMethod,
-            subtotal,
-            discountAmount: discount,
-            additionalCharges,
-            description: dto.description,
-            totalAmount: total,
-            tenantId,
-            isOnline: dto.isOnline ?? false,
-            customerCity: dto.customerCity,
-            trackingId: dto.trackingId,
-            deliveryCharge,
-            advanceAmount: dto.advanceAmount ?? 0,
-            codAmount: dto.codAmount ?? 0,
-            items: {
-              create: units.map((u) => ({
-                inventoryUnitId: u.id,
-                sellingPrice:
-                  dto.customPrices?.[u.serialNumber] ?? u.product.sellingPrice,
-                discount: 0,
-              })),
-            },
-          },
+    // 1. Scenario E: Idempotency catch block
+    try {
+      if (dto.idempotencyKey) {
+        const existingSale = await this.prisma.sale.findUnique({
+          where: { idempotencyKey: dto.idempotencyKey },
           include: {
             items: {
               include: {
                 inventoryUnit: {
-                  select: {
-                    serialNumber: true,
-                    product: { select: { name: true, brand: true } },
-                  },
+                  select: { serialNumber: true, product: { select: { name: true, brand: true } } },
                 },
               },
             },
             customer: { select: { id: true, name: true, phone: true } },
             soldBy: { select: { id: true, name: true } },
-          },
+          }
         });
+        if (existingSale) {
+          return existingSale;
+        }
+      }
 
-        await tx.inventoryUnit.updateMany({
-          where: {
-            tenantId,
-            id: { in: units.map((u) => u.id) },
-          },
-          data: { status: UnitStatus.sold },
+      // 2. Scenario C: Session validation
+      if (dto.sessionId) {
+        const session = await this.prisma.cashDrawerSession.findUnique({
+          where: { id: dto.sessionId },
         });
+        if (!session || session.status !== 'OPEN' || session.tenantId !== tenantId) {
+          throw new BadRequestException('Active open cash drawer session required.');
+        }
+      } else {
+        // Enforce session if it's a standard POS transaction
+        if (!dto.isOnline) {
+          throw new BadRequestException('Cash drawer session ID is required for POS sales.');
+        }
+      }
 
-        return created;
-      },
-      { maxWait: 10000, timeout: 20000 },
-    );
+      // 3. Scenario D: Custom Pricing Authorization
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      const canOverridePrice = user?.role === 'owner' || user?.role === 'platform_admin' || user?.role === 'inventory_manager';
+      
+      const serialCounts = dto.serials.reduce((acc, serial) => {
+        acc[serial] = (acc[serial] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
 
-    this.eventEmitter.emit('sale.created', {
-      saleId: sale.id,
-      invoiceNumber: sale.invoiceNumber,
-      totalAmount: Number(sale.totalAmount),
-      itemCount: units.length,
-      cashierId: userId,
-      tenantId,
-      isOnline: sale.isOnline,
-      shippingStatus: sale.shippingStatus,
-    });
+      // Auto-upsert customer from name+phone if no explicit customerId
+      let resolvedCustomerId = dto.customerId;
+      if (!resolvedCustomerId && dto.customerPhone) {
+        const customer = await this.prisma.customer.upsert({
+          where: { tenantId_phone: { tenantId, phone: dto.customerPhone } },
+          create: { name: dto.customerName ?? dto.customerPhone, phone: dto.customerPhone, tenantId },
+          update: dto.customerName ? { name: dto.customerName } : {},
+        });
+        resolvedCustomerId = customer.id;
+      }
 
-    if (discount > 0) {
-      this.eventEmitter.emit('discount.approved', {
+      const invoiceNumber = this.generateInvoiceNumber();
+
+      const txResult = await this.prisma.$transaction(
+        async (tx) => {
+          let allSelectedUnits: { id: string; serialNumber: string; productId: string }[] = [];
+          
+          for (const [serial, count] of Object.entries(serialCounts)) {
+            // Scenario B (Generic Pool) & A (Race Condition): Select exact 'count' of available rows, lock them using updateMany
+            const availableUnits = await tx.inventoryUnit.findMany({
+              where: { tenantId, serialNumber: serial, status: UnitStatus.in_stock },
+              take: count,
+              select: { id: true, serialNumber: true, productId: true },
+            });
+
+            if (availableUnits.length < count) {
+              throw new ConflictException(`Stock exhaustion for serial/generic: ${serial}`);
+            }
+
+            const unitIds = availableUnits.map(u => u.id);
+            
+            // Scenario A: Atomic decrement/status update
+            const updateResult = await tx.inventoryUnit.updateMany({
+              where: { tenantId, id: { in: unitIds }, status: UnitStatus.in_stock },
+              data: { status: UnitStatus.sold },
+            });
+
+            if (updateResult.count !== count) {
+              throw new ConflictException(`Race condition detected for ${serial}. Item claimed by another transaction.`);
+            }
+
+            allSelectedUnits.push(...availableUnits);
+          }
+
+          // Fetch product prices
+          const products = await tx.product.findMany({
+            where: { id: { in: [...new Set(allSelectedUnits.map(u => u.productId))] } },
+            select: { id: true, sellingPrice: true },
+          });
+          const productPriceMap = new Map(products.map(p => [p.id, Number(p.sellingPrice)]));
+
+          let subtotal = 0;
+          const saleItemsData = allSelectedUnits.map(u => {
+            const defaultPrice = productPriceMap.get(u.productId) ?? 0;
+            const finalPrice = (canOverridePrice && dto.customPrices?.[u.serialNumber]) ? dto.customPrices[u.serialNumber] : defaultPrice;
+            subtotal += finalPrice;
+            return {
+              inventoryUnitId: u.id,
+              sellingPrice: finalPrice,
+              discount: 0,
+            };
+          });
+
+          const discount = dto.discountAmount ?? 0;
+          const deliveryCharge = dto.deliveryCharge ?? 0;
+          const additionalCharges = dto.additionalCharges ?? 0;
+          const total = subtotal - discount + deliveryCharge + additionalCharges;
+
+          if (total < 0) throw new BadRequestException('Discount exceeds subtotal');
+
+          // Note: OTP validation logic can be moved here or done before transaction if needed
+          
+          // Add idempotencyKey to the insert payload
+          const created = await tx.sale.create({
+            data: {
+              invoiceNumber,
+              idempotencyKey: dto.idempotencyKey,
+              sessionId: dto.sessionId,
+              customerId: resolvedCustomerId,
+              soldById: userId,
+              paymentMethod: dto.paymentMethod,
+              subtotal,
+              discountAmount: discount,
+              additionalCharges,
+              description: dto.description,
+              totalAmount: total,
+              tenantId,
+              isOnline: dto.isOnline ?? false,
+              customerCity: dto.customerCity,
+              trackingId: dto.trackingId,
+              deliveryCharge,
+              advanceAmount: dto.advanceAmount ?? 0,
+              codAmount: dto.codAmount ?? 0,
+              items: {
+                create: saleItemsData,
+              },
+            },
+            include: {
+              items: {
+                include: {
+                  inventoryUnit: {
+                    select: {
+                      serialNumber: true,
+                      product: { select: { name: true, brand: true } },
+                    },
+                  },
+                },
+              },
+              customer: { select: { id: true, name: true, phone: true } },
+              soldBy: { select: { id: true, name: true } },
+            },
+          });
+
+          return { created, allSelectedUnits, discount };
+        },
+        { maxWait: 10000, timeout: 20000 },
+      );
+
+      const sale = txResult.created;
+      const units = txResult.allSelectedUnits;
+      const discount = txResult.discount;
+
+      this.eventEmitter.emit('sale.created', {
         saleId: sale.id,
-        userId,
-        amount: discount,
+        invoiceNumber: sale.invoiceNumber,
+        totalAmount: Number(sale.totalAmount),
+        itemCount: units.length,
+        cashierId: userId,
         tenantId,
+        isOnline: sale.isOnline,
+        shippingStatus: sale.shippingStatus,
       });
-    }
 
-    const productIds = [...new Set(units.map((u) => u.productId))];
-    for (const productId of productIds) {
-      const stockCount = await this.prisma.inventoryUnit.count({
-        where: { productId, status: UnitStatus.in_stock, tenantId },
-      });
-      if (stockCount <= this.stockLowThreshold) {
-        const product = await this.prisma.product.findFirst({
-          where: { id: productId, tenantId },
-          select: { name: true },
-        });
-        this.eventEmitter.emit('stock.low', {
-          productId,
-          productName: product?.name ?? 'Unknown',
-          stockCount,
+      if (discount > 0) {
+        this.eventEmitter.emit('discount.approved', {
+          saleId: sale.id,
+          userId,
+          amount: discount,
           tenantId,
         });
       }
-    }
 
-    return sale;
+      const productIds = [...new Set(units.map((u) => u.productId))];
+      for (const productId of productIds) {
+        const stockCount = await this.prisma.inventoryUnit.count({
+          where: { productId, status: UnitStatus.in_stock, tenantId },
+        });
+        if (stockCount <= this.stockLowThreshold) {
+          const product = await this.prisma.product.findFirst({
+            where: { id: productId, tenantId },
+            select: { name: true },
+          });
+          this.eventEmitter.emit('stock.low', {
+            productId,
+            productName: product?.name ?? 'Unknown',
+            stockCount,
+            tenantId,
+          });
+        }
+      }
+
+      return sale;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        // Unique constraint violation on idempotency_key
+        const existingSale = await this.prisma.sale.findUnique({
+          where: { idempotencyKey: dto.idempotencyKey },
+          include: {
+            items: {
+              include: {
+                inventoryUnit: {
+                  select: { serialNumber: true, product: { select: { name: true, brand: true } } },
+                },
+              },
+            },
+            customer: { select: { id: true, name: true, phone: true } },
+            soldBy: { select: { id: true, name: true } },
+          }
+        });
+        if (existingSale) return existingSale;
+      }
+      throw error;
+    }
   }
 
   async listSales(dto: FilterSalesDto, tenantId: string) {

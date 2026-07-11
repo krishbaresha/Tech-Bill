@@ -82,6 +82,11 @@ enum TransactionStatus {
   PENDING
 }
 
+enum SessionStatus {
+  OPEN
+  CLOSED
+}
+
 // ─── Tenant model ──────────────────────────────────────────────────────────
 
 model Tenant {
@@ -116,6 +121,7 @@ model Tenant {
   auditLogs        AuditLog[]
   notifications    Notification[]
   transactions     Transaction[]
+  cashDrawerSessions CashDrawerSession[]
 
   @@map("tenants")
 }
@@ -151,6 +157,7 @@ model User {
   reconciliationsReviewed  CashReconciliation[] @relation("ReconciliationsReviewedBy")
   expenses                 Expense[]            @relation("ExpensesCreatedBy")
   courierPayouts           CourierPayout[]      @relation("PayoutsCreatedBy")
+  cashDrawerSessions       CashDrawerSession[]
 
   @@map("users")
 }
@@ -356,6 +363,9 @@ model Customer {
 model Sale {
   id                   String        @id @default(uuid()) @db.Uuid
   invoiceNumber        String        @map("invoice_number") @db.VarChar(50)
+  idempotencyKey       String?       @unique @map("idempotency_key") @db.Uuid
+  sessionId            String?       @map("session_id") @db.Uuid
+  session              CashDrawerSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
   customerId           String?       @map("customer_id") @db.Uuid
   customer             Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
   soldById             String?       @map("sold_by_id") @db.Uuid
@@ -393,6 +403,7 @@ model Sale {
   @@index([createdAt])
   @@index([soldById])
   @@index([tenantId])
+  @@index([sessionId])
   @@map("sales")
 }
 
@@ -438,6 +449,26 @@ model Return {
   @@index([inventoryUnitId])
   @@index([tenantId])
   @@map("returns")
+}
+
+// ─── Table 13.5: cash_drawer_sessions ────────────────────────────────────────
+
+model CashDrawerSession {
+  id          String        @id @default(uuid()) @db.Uuid
+  tenantId    String        @map("tenant_id") @db.Uuid
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId      String        @map("user_id") @db.Uuid
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      SessionStatus @default(OPEN)
+  openedAt    DateTime      @default(now()) @map("opened_at")
+  closedAt    DateTime?     @map("closed_at")
+
+  sales       Sale[]
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([status])
+  @@map("cash_drawer_sessions")
 }
 
 // ─── Table 14: cash_reconciliations ──────────────────────────────────────────
