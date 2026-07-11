@@ -40,10 +40,12 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({ user: state.user, accessToken: state.accessToken, refreshToken: state.refreshToken }),
       onRehydrateStorage: () => {
         return (state) => {
-          if (window.__APP_LOGOUT_DETECTED__) {
-            return undefined; // Skip hydration
-          }
           if (state) {
+            // If logout was detected, bootstrap already cleared storage.
+            // We just need to ensure the hydration flags are set so App doesn't hang.
+            if (window.__APP_LOGOUT_DETECTED__) {
+              state.clearAuth(); // Ensure state is clear
+            }
             state.setHasHydrated(true);
             state.setHydrating(false);
           }
