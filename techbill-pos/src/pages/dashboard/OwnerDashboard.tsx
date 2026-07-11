@@ -11,6 +11,7 @@ import SalesFeed from '../../components/dashboard/SalesFeed';
 import StockAlerts from '../../components/dashboard/StockAlerts';
 import AiInsights from '../../components/dashboard/AiInsights';
 import gsap from 'gsap';
+import { socket } from '../../api/socket';
 
 const formatPKR = (n: number) => `₨ ${n.toLocaleString('en-PK')}`;
 
@@ -29,6 +30,15 @@ export default function OwnerDashboard() {
     if (!useDashboardStore.getState().aiInsight) {
       fetchAiInsight();
     }
+    
+    // Live update for summary stats
+    const handleSale = () => {
+      syncDashboard();
+    };
+    socket.on('sale.created', handleSale);
+    return () => {
+      socket.off('sale.created', handleSale);
+    };
   }, [syncDashboard, fetchAiInsight]);
 
   useEffect(() => {
@@ -56,27 +66,7 @@ export default function OwnerDashboard() {
   const { isStarter } = useFeatureGate();
 
   return (
-    <div ref={containerRef} className="p-4 sm:p-6 space-y-6 relative min-h-[85vh]">
-      {isStarter && (
-        <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-md flex flex-col items-center justify-center text-center p-6 z-30 animate-in fade-in duration-300 rounded-2xl">
-          <div className="glass-card max-w-md p-8 border border-white/10 rounded-2xl shadow-2xl flex flex-col items-center bg-zinc-900/80">
-            <div className="w-16 h-16 rounded-full bg-stitch-primary/10 flex items-center justify-center mb-6">
-              <TrendingUp size={32} className="text-stitch-primary animate-pulse" />
-            </div>
-            <h2 className="text-lg font-bold text-white font-space">Unlock Advanced Telemetry Analytics</h2>
-            <p className="text-xs text-white/60 mt-3 leading-relaxed">
-              Get real-time performance insights, dead stock analysis, sales forecasting, and custom cashier performance analytics. Upgrade to TechBill Pro Core to unlock.
-            </p>
-            <button
-              type="button"
-              onClick={() => navigate('/checkout?plan=pro')}
-              className="mt-6 w-full py-2.5 bg-stitch-primary text-stitch-on-primary text-sm font-bold rounded-lg hover:bg-stitch-primary/90 transition-all active:scale-[0.98] font-space"
-            >
-              Upgrade to Pro Core
-            </button>
-          </div>
-        </div>
-      )}
+    <div ref={containerRef} className="p-4 sm:p-6 space-y-6 relative">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold font-space text-white">Dashboard</h1>
         <button
@@ -88,7 +78,7 @@ export default function OwnerDashboard() {
         </button>
       </div>
 
-      <AiInsights />
+      {!isStarter && <AiInsights />}
 
       {summary ? (
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
@@ -135,13 +125,35 @@ export default function OwnerDashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 glass-card rounded-xl p-4">
-          <SalesChart />
-        </div>
-        <div className="space-y-4">
-          <StockAlerts />
-          <SalesFeed />
+      <div className="relative min-h-[50vh]">
+        {isStarter && (
+          <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-md flex flex-col items-center justify-center text-center p-6 z-30 animate-in fade-in duration-300 rounded-2xl">
+            <div className="glass-card max-w-md p-8 border border-white/10 rounded-2xl shadow-2xl flex flex-col items-center bg-zinc-900/80">
+              <div className="w-16 h-16 rounded-full bg-stitch-primary/10 flex items-center justify-center mb-6">
+                <TrendingUp size={32} className="text-stitch-primary animate-pulse" />
+              </div>
+              <h2 className="text-lg font-bold text-white font-space">Unlock Advanced Telemetry Analytics</h2>
+              <p className="text-xs text-white/60 mt-3 leading-relaxed">
+                Get real-time performance insights, dead stock analysis, sales forecasting, and custom cashier performance analytics. Upgrade to TechBill Pro Core to unlock.
+              </p>
+              <button
+                type="button"
+                onClick={() => navigate('/checkout?plan=pro')}
+                className="mt-6 w-full py-2.5 bg-stitch-primary text-stitch-on-primary text-sm font-bold rounded-lg hover:bg-stitch-primary/90 transition-all active:scale-[0.98] font-space"
+              >
+                Upgrade to Pro Core
+              </button>
+            </div>
+          </div>
+        )}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
+          <div className="lg:col-span-2 glass-card rounded-xl p-4">
+            <SalesChart />
+          </div>
+          <div className="space-y-4">
+            <StockAlerts />
+            <SalesFeed />
+          </div>
         </div>
       </div>
 
