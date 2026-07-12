@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, ShoppingBag, X, Trash2, Search, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
 import gsap from 'gsap';
