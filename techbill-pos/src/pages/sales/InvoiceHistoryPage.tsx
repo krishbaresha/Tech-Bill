@@ -32,6 +32,7 @@ interface SaleDetail {
   discountAmount: number;
   paymentMethod: string;
   status: string;
+  shippingStatus?: string;
   createdAt: string;
   customer: { id: string; name: string; phone: string } | null;
   soldBy: { id: string; name: string } | null;
