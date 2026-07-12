@@ -51,9 +51,11 @@ interface SaleDetail {
 }
 
 const STATUS_STYLE: Record<string, string> = {
-  completed: 'bg-green-500/10 text-green-400 border-green-500/20',
-  voided:    'bg-stitch-error/10 text-stitch-error border-stitch-error/20',
-  pending:   'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  completed:      'bg-green-500/10 text-green-400 border-green-500/20',
+  partial_return: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  voided:         'bg-red-500/10 text-red-400 border-red-500/20',
+  returned:       'bg-red-500/10 text-red-400 border-red-500/20',
+  pending:        'bg-amber-500/10 text-amber-400 border-amber-500/20',
 };
 
 const PAYMENT_LABELS: Record<string, string> = {
