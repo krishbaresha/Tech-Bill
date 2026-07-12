@@ -172,9 +172,32 @@ export default function PosScreen() {
 
   // Memoized handlers passed down to SectionedGrid / ProductGrid
   // to prevent prop-identity churn on every cart state update.
-  const handleAddToCart = useCallback((p: ProductCard) => {
-    if (p.inStockCount > 0) openUnitPicker(p);
-  }, [openUnitPicker]);
+  const handleAddToCart = useCallback(async (p: ProductCard) => {
+    if (p.inStockCount <= 0) return;
+    try {
+      const res = await api.get<any>(`/inventory/units?productId=${p.id}&status=in_stock&limit=50`);
+      const payload = res.data;
+      const units = Array.isArray(payload) ? payload : payload.data ?? payload.units ?? [];
+      
+      const currentCartSerials = useCartStore.getState().items.map(i => i.serialNumber);
+      const availableUnit = units.find((u: any) => !currentCartSerials.includes(u.serialNumber));
+      
+      if (availableUnit) {
+        useCartStore.getState().addItem({
+          serialNumber: availableUnit.serialNumber,
+          productId: p.id,
+          productName: p.name,
+          brand: p.brand,
+          sellingPrice: availableUnit.sellingPrice ?? p.sellingPrice,
+        });
+        toast.success(`Added ${p.name} (${availableUnit.serialNumber}) to cart.`);
+      } else {
+        toast.warning(`No available units for ${p.name} that aren't already in your cart.`);
+      }
+    } catch (err) {
+      toast.error(`Failed to auto-add ${p.name}.`);
+    }
+  }, [toast]);
 
   const handleViewUnits = useCallback((p: ProductCard) => {
     openUnitPicker(p);

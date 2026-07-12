@@ -142,13 +142,13 @@ export default function PublicInvoicePage() {
         <div className="bg-zinc-900/80 border border-white/10 rounded-2xl overflow-hidden shadow-2xl relative">
           
           {/* Watermark */}
-          {(invoice.status === 'returned' || invoice.status === 'void' || invoice.shippingStatus === 'returned') && (
+          {(invoice.status === 'partial_return' || invoice.status === 'voided' || invoice.shippingStatus === 'returned') && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden z-0">
               <span
                 className="text-6xl font-black uppercase whitespace-nowrap opacity-[0.15] text-red-500"
                 style={{ transform: 'rotate(-30deg)' }}
               >
-                {invoice.status === 'void' ? 'VOID' : 'RETURNED'}
+                {invoice.status === 'voided' ? 'VOID' : (invoice.status === 'partial_return' ? 'PARTIAL RETURN' : 'RETURNED')}
               </span>
             </div>
           )}
@@ -193,7 +193,7 @@ export default function PublicInvoicePage() {
                     <p className="text-sm font-bold text-white tabular-nums whitespace-nowrap">{formatPKR(item.sellingPrice)}</p>
                   </div>
                   {/* Warranty status */}
-                  <WarrantyBadge item={item} isReturned={invoice.status === 'returned' || invoice.status === 'void' || invoice.shippingStatus === 'returned'} />
+                  <WarrantyBadge item={item} isReturned={invoice.status === 'partial_return' || invoice.status === 'voided' || invoice.shippingStatus === 'returned'} />
                 </div>
               ))}
             </div>

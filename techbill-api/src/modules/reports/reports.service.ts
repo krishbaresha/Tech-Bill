@@ -42,7 +42,7 @@ export class ReportsService {
   ) {
     const where = {
       tenantId,
-      status: SaleStatus.completed,
+      status: { in: [SaleStatus.completed, SaleStatus.partial_return] },
       createdAt: { gte: start, lte: end },
     };
 
@@ -62,7 +62,7 @@ export class ReportsService {
         where: {
           sale: {
             tenantId,
-            status: SaleStatus.completed,
+            status: { in: [SaleStatus.completed, SaleStatus.partial_return] },
             createdAt: { gte: start, lte: end },
           },
         },
@@ -154,6 +154,30 @@ export class ReportsService {
     onlineRevenue += courierPayouts;
 
     totalRevenue = offlineRevenue + onlineRevenue;
+
+    const approvedReturns = await this.prisma.return.findMany({
+      where: {
+        tenantId,
+        status: 'approved',
+        resolvedAt: { gte: start, lte: end },
+      },
+      select: {
+        refundAmount: true,
+        inventoryUnit: {
+          select: { purchasePrice: true, product: { select: { costPrice: true } } }
+        }
+      }
+    });
+
+    let totalRefundValue = 0;
+    let totalReturnCost = 0;
+    for (const r of approvedReturns) {
+      totalRefundValue += Number(r.refundAmount ?? 0);
+      totalReturnCost += Number(r.inventoryUnit?.purchasePrice ?? r.inventoryUnit?.product?.costPrice ?? 0);
+    }
+    
+    totalRevenue -= totalRefundValue;
+    totalCost -= totalReturnCost;
 
     const totalGrossProfit = totalRevenue - totalCost;
 
@@ -589,7 +613,29 @@ export class ReportsService {
       },
     });
 
-    const totalRefundValue = returns.reduce(
+    // Also fetch returned online orders
+    const returnedOnlineSales = await this.prisma.sale.findMany({
+      where: {
+        tenantId,
+        isOnline: true,
+        status: SaleStatus.voided,
+        shippingStatus: 'returned',
+        ...(dateFilter && { createdAt: dateFilter }),
+      },
+      select: {
+        totalAmount: true,
+        customer: { select: { id: true, name: true, phone: true } },
+        items: {
+          select: {
+            inventoryUnit: {
+              select: { product: { select: { id: true, name: true } } },
+            },
+          },
+        },
+      },
+    });
+
+    let totalRefundValue = returns.reduce(
       (s, r) => s + Number(r.refundAmount ?? 0),
       0,
     );
@@ -621,8 +667,22 @@ export class ReportsService {
       }
     }
 
+    // Process online returned sales
+    for (const s of returnedOnlineSales) {
+      totalRefundValue += Number(s.totalAmount ?? 0);
+      reasonMap.set('courier_return', (reasonMap.get('courier_return') ?? 0) + s.items.length);
+      
+      for (const item of s.items) {
+        if (!item.inventoryUnit) continue;
+        const pid = item.inventoryUnit.product.id;
+        const pname = item.inventoryUnit.product.name;
+        const prev = productMap.get(pid) ?? { name: pname, count: 0 };
+        productMap.set(pid, { ...prev, count: prev.count + 1 });
+      }
+    }
+
     return {
-      totalReturns: returns.length,
+      totalReturns: returns.length + returnedOnlineSales.length,
       totalRefundValue,
       mostReturnedProducts: [...productMap.entries()]
         .map(([productId, d]) => ({

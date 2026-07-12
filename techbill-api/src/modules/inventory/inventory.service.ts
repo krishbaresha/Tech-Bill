@@ -297,7 +297,7 @@ export class InventoryService {
         where,
         skip,
         take: limit,
-        orderBy: { receivedAt: 'desc' },
+        orderBy: { receivedAt: 'asc' },
         include: {
           product: {
             select: { id: true, name: true, brand: true, sellingPrice: true },

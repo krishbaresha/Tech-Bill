@@ -9,7 +9,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateReturnDto } from './dto/create-return.dto';
 import { ReviewReturnDto } from './dto/review-return.dto';
 import { FilterReturnsDto } from './dto/filter-returns.dto';
-import { ReturnStatus, UnitStatus } from '@prisma/client';
+import { ReturnStatus, UnitStatus, SaleStatus } from '@prisma/client';
 
 @Injectable()
 export class ReturnsService {
@@ -213,6 +213,13 @@ export class ReturnsService {
         where: { id: ret.inventoryUnitId },
         data: { status: UnitStatus.in_stock },
       });
+
+      if (ret.saleId) {
+        await tx.sale.update({
+          where: { id: ret.saleId },
+          data: { status: SaleStatus.partial_return },
+        });
+      }
 
       return updated;
     });
