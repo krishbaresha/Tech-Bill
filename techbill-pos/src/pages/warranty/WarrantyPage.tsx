@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Search, Shield, ShieldCheck, ShieldX, Clock } from 'lucide-react';
-import { format, differenceInDays, addMonths } from 'date-fns';
+import { addDays, format, differenceInDays } from 'date-fns';
 import { api } from '../../api/client';
 import gsap from 'gsap';
 
@@ -8,6 +8,9 @@ interface WarrantyResult {
   serialNumber: string;
   status: 'in_stock' | 'sold' | 'returned';
   soldAt: string | null;
+  sale: {
+    createdAt: string;
+  };
   product: {
     name: string;
     brand: string | null;
@@ -26,10 +29,10 @@ interface CheckedItem {
 
 function getWarrantyInfo(r: WarrantyResult) {
   if (!r.soldAt || r.status === 'in_stock') return null;
-  const soldDate = new Date(r.soldAt);
-  const expiryDate = addMonths(soldDate, r.product.warrantyMonths);
+  const soldDate = new Date(r.sale.createdAt);
+  const expiryDate = addDays(soldDate, r.product.warrantyMonths);
   const daysLeft = differenceInDays(expiryDate, new Date());
-  const totalDays = r.product.warrantyMonths * 30;
+  const totalDays = r.product.warrantyMonths;
   const daysUsed = differenceInDays(new Date(), soldDate);
   const pct = Math.min(100, Math.round((daysUsed / totalDays) * 100));
   return { soldDate, expiryDate, daysLeft, pct, expired: daysLeft < 0 };
@@ -182,7 +185,7 @@ export default function WarrantyPage() {
               </div>
               <div>
                 <p className="text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Warranty Period</p>
-                <p className="text-sm font-medium mt-0.5">{result.product.warrantyMonths} Months</p>
+                <p className="text-sm font-medium mt-0.5">{result.product.warrantyMonths} Days</p>
               </div>
               <div>
                 <p className="text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Expiry Date</p>
@@ -228,13 +231,13 @@ export default function WarrantyPage() {
 
       {/* In-stock (no sale date) */}
       {result && result.status === 'in_stock' && (
-        <div ref={resultRef} className="glass-card rounded-xl p-5 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
-            <Clock size={18} className="text-amber-400" />
+        <div ref={resultRef} className="bg-white/5 border border-white/10 p-3 rounded-xl flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center shrink-0">
+            <ShieldCheck size={20} className="text-indigo-400" />
           </div>
           <div>
-            <p className="font-semibold text-stitch-on-surface">{result.product.name}</p>
-            <p className="text-sm text-amber-400 font-medium">Unit is in stock — warranty starts from sale date</p>
+            <p className="text-[10px] uppercase tracking-wider text-stitch-on-surface-variant/70">Duration</p>
+            <p className="text-sm font-medium mt-0.5">{result.product.warrantyMonths} Days</p>
           </div>
         </div>
       )}

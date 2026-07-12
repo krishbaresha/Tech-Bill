@@ -54,8 +54,8 @@ export class PublicSalesController {
 
       if (warrantyMonths > 0 && !isReturned) {
         warrantyExpiresAt = new Date(saleDate);
-        warrantyExpiresAt.setMonth(
-          warrantyExpiresAt.getMonth() + warrantyMonths,
+        warrantyExpiresAt.setDate(
+          warrantyExpiresAt.getDate() + warrantyMonths,
         );
         const msLeft = warrantyExpiresAt.getTime() - Date.now();
         warrantyDaysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));

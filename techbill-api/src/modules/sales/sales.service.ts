@@ -341,6 +341,10 @@ export class SalesService {
           customer: { select: { id: true, name: true, phone: true } },
           soldBy: { select: { id: true, name: true } },
           _count: { select: { items: true } },
+          returns: {
+            where: { status: 'approved' },
+            select: { id: true },
+          },
         },
       }),
       this.prisma.sale.count({ where }),

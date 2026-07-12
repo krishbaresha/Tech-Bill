@@ -1,5 +1,5 @@
 import { X, Printer, Plus, Download } from 'lucide-react';
-import { format, addMonths, differenceInDays } from 'date-fns';
+import { format, addDays, differenceInDays } from 'date-fns';
 import { QRCodeSVG } from 'qrcode.react';
 import html2pdf from 'html2pdf.js';
 import type { Sale, ShopSettings } from '../../types';
@@ -41,12 +41,11 @@ function getPaymentBadgeClass(method: string): string {
   return PAYMENT_BADGE_CLASSES[method] ?? 'bg-white/10 text-white/70 border-white/20';
 }
 
-function getWarrantyText(warrantyMonths: number, saleDate: Date): string {
-  if (!warrantyMonths || warrantyMonths <= 0) return '';
-  const expiryDate = addMonths(saleDate, warrantyMonths);
-  const daysLeft = differenceInDays(expiryDate, new Date());
-  if (daysLeft < 0) return `Expired ${Math.abs(daysLeft)} days ago`;
-  if (daysLeft === 0) return 'Expires today';
+function getWarrantyText(warrantyDays: number, saleDate: Date): string {
+  if (!warrantyDays || warrantyDays <= 0) return '';
+  const expiryDate = addDays(saleDate, warrantyDays);
+  const daysLeft = Math.ceil((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  if (daysLeft < 0) return 'Expired';
   return `${daysLeft} days left (until ${format(expiryDate, 'dd MMM yyyy')})`;
 }
 
@@ -270,9 +269,9 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: 
                   {sale.items.map((item, idx) => {
                     const product = item.inventoryUnit?.product;
                     const serial = item.inventoryUnit?.serialNumber;
-                    const wMonths = product?.warrantyMonths ?? 0;
+                    const wDays = product?.warrantyMonths ?? 0;
                     const isItemReturned = isSaleVoided || returnedUnitIds.has(item.inventoryUnit?.id);
-                    const warrantyText = isItemReturned ? '' : getWarrantyText(wMonths, saleDate);
+                    const warrantyText = isItemReturned ? '' : getWarrantyText(wDays, saleDate);
                     return (
                       <div key={item.id ?? idx} className="space-y-1">
                         <div className="flex items-baseline justify-between gap-3">

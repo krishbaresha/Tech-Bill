@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FileText, Search, ChevronDown, ChevronUp, RefreshCw, X } from 'lucide-react';
-import { format, addMonths } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { api } from '../../api/client';
 import gsap from 'gsap';
 import InvoiceModal from '../../components/pos/InvoiceModal';
@@ -23,6 +23,7 @@ interface SaleListItem {
   _count: { items: number };
   isOnline: boolean;
   codAmount?: number;
+  returns?: { id: string }[];
 }
 
 interface SaleDetail {
@@ -106,8 +107,8 @@ function ExpandedDetail({ saleId, createdAt, onViewReceipt }: { saleId: string; 
         </thead>
         <tbody className="divide-y divide-white/[0.04]">
           {detail.items.map((item) => {
-            const wMonths = item.inventoryUnit.product.warrantyMonths;
-            const warrantyEnd = wMonths > 0 ? addMonths(saleDate, wMonths) : null;
+            const wDays = item.inventoryUnit.product.warrantyMonths;
+            const warrantyEnd = wDays > 0 ? addDays(saleDate, wDays) : null;
             const isActive = warrantyEnd ? warrantyEnd > new Date() : false;
             
             const returnedUnitIds = new Set(detail.returns?.map(r => r.inventoryUnitId) || []);
@@ -136,7 +137,7 @@ function ExpandedDetail({ saleId, createdAt, onViewReceipt }: { saleId: string; 
                         ? 'bg-green-500/10 text-green-400 border-green-500/20'
                         : 'bg-stitch-error/10 text-stitch-error border-stitch-error/20'
                     }`}>
-                      {isActive ? `Active (${wMonths}m)` : 'Expired'}
+                      {isActive ? `Active (${wDays}d)` : 'Expired'}
                     </span>
                   ) : (
                     <span className="text-stitch-on-surface-variant/50">None</span>
@@ -337,9 +338,16 @@ export default function InvoiceHistoryPage() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border capitalize whitespace-nowrap ${STATUS_STYLE[s.status] ?? 'bg-white/5 text-stitch-on-surface-variant border-white/10'}`}>
-                        {s.status}
-                      </span>
+                      {(() => {
+                        const isSaleVoided = s.status === 'voided' || s.shippingStatus === 'returned';
+                        const hasReturns = (s.returns && s.returns.length > 0) || s.status === 'partial_return';
+                        const displayStatus = isSaleVoided ? 'voided' : (hasReturns ? 'partial_return' : s.status);
+                        return (
+                          <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border capitalize whitespace-nowrap ${STATUS_STYLE[displayStatus] ?? 'bg-white/5 text-stitch-on-surface-variant border-white/10'}`}>
+                            {displayStatus === 'partial_return' ? 'Partial Return' : displayStatus}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3 text-stitch-on-surface-variant">
                       {expandedId === s.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}

@@ -51,7 +51,7 @@ export default function InventoryPage() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [productForm, setProductForm] = useState<AddProductForm>({
-    name: '', brand: '', category: '', sellingPrice: '', warrantyMonths: '0',
+    name: '', brand: '', category: '', sellingPrice: '', warrantyMonths: '7',
   });
   const [unitForm, setUnitForm] = useState<AddUnitForm>({
     serialNumber: '', productId: '', purchasePrice: '',
@@ -161,11 +161,11 @@ export default function InventoryPage() {
           sellingPrice: parseFloat(productForm.sellingPrice),
           warrantyMonths: parseInt(productForm.warrantyMonths),
         });
-        toast.success('Product added successfully');
+        toast.success('Product added successfully!');
       }
       setShowAddProduct(false);
       setEditingProductId(null);
-      setProductForm({ name: '', brand: '', category: productForm.category, sellingPrice: '', warrantyMonths: '0' });
+      setProductForm({ name: '', brand: '', category: productForm.category, sellingPrice: '', warrantyMonths: '7' });
       loadProducts();
       loadCategories();
     } catch (err: unknown) {
@@ -261,7 +261,7 @@ export default function InventoryPage() {
         {canWrite && (
           <div className="flex gap-2 flex-wrap">
             <button
-              onClick={() => { setEditingProductId(null); setProductForm({ name: '', brand: '', category: '', sellingPrice: '', warrantyMonths: '0' }); setShowAddProduct(true); setShowAddUnit(false); setStockModal(null); }}
+              onClick={() => { setEditingProductId(null); setProductForm({ name: '', brand: '', category: '', sellingPrice: '', warrantyMonths: '7' }); setShowAddProduct(true); setShowAddUnit(false); setStockModal(null); }}
               className="flex items-center gap-1.5 px-4 py-2 bg-stitch-primary text-stitch-on-primary text-sm font-bold rounded-lg hover:bg-stitch-primary/90 transition-all active:scale-95"
             >
               <Plus size={14} /> Add Product
@@ -327,7 +327,7 @@ export default function InventoryPage() {
                 onChange={(e) => setProductForm({ ...productForm, sellingPrice: e.target.value })} required className={inputCls} />
             </div>
             <div>
-              <label className={labelCls}>Warranty (months)</label>
+              <label className="block text-xs font-medium text-stitch-on-surface-variant/70 mb-1 uppercase tracking-wider">Warranty (Days)</label>
               <input type="number" min="0" value={productForm.warrantyMonths}
                 onChange={(e) => setProductForm({ ...productForm, warrantyMonths: e.target.value })} className={inputCls} />
             </div>
@@ -547,7 +547,7 @@ export default function InventoryPage() {
                         ) : <span className="text-stitch-on-surface-variant text-sm">—</span>}
                       </td>
                       <td className="px-4 py-3 text-sm font-bold font-mono text-stitch-on-surface tabular-nums">{formatPKR(Number(p.sellingPrice))}</td>
-                      <td className="px-4 py-3 text-sm text-stitch-on-surface-variant">{p.warrantyMonths ? `${p.warrantyMonths}m` : '—'}</td>
+                      <td className="px-4 py-3 text-sm text-stitch-on-surface-variant">{p.warrantyMonths ? `${p.warrantyMonths}d` : '—'}</td>
                       <td className="px-4 py-3 text-sm font-mono font-bold tabular-nums">
                         <span className={p.stockCount !== undefined && p.stockCount <= 2 ? 'text-amber-400' : 'text-stitch-tertiary'}>
                           {p.stockCount ?? '—'}
