@@ -29,7 +29,7 @@ export class ReturnsService {
     );
   }
 
-  async createReturn(dto: CreateReturnDto, userId: string, tenantId: string) {
+  async createReturn(dto: CreateReturnDto, userId: string, tenantId: string, ipAddress?: string) {
     const sale = await this.prisma.sale.findFirst({
       where: { id: dto.saleId, tenantId },
       include: { items: { include: { inventoryUnit: true } } },
@@ -97,6 +97,7 @@ export class ReturnsService {
       serialNumbers: dto.serialNumbers,
       hasSuspiciousFlag: returns.some((r) => r.suspiciousFlag),
       tenantId,
+      ipAddress,
     });
 
     for (const ret of returns) {
@@ -123,6 +124,7 @@ export class ReturnsService {
         productName,
         requestedByName: user?.name,
         tenantId,
+        ipAddress,
       });
     }
 
@@ -190,6 +192,7 @@ export class ReturnsService {
     dto: ReviewReturnDto,
     userId: string,
     tenantId: string,
+    ipAddress?: string,
   ) {
     const ret = await this.prisma.return.findFirst({ where: { id, tenantId } });
     if (!ret) throw new NotFoundException(`Return ${id} not found`);
@@ -229,6 +232,7 @@ export class ReturnsService {
       userId,
       refundAmount: dto.refundAmount,
       tenantId,
+      ipAddress,
     });
 
     return updated;
@@ -239,6 +243,7 @@ export class ReturnsService {
     dto: ReviewReturnDto,
     userId: string,
     tenantId: string,
+    ipAddress?: string,
   ) {
     const ret = await this.prisma.return.findFirst({ where: { id, tenantId } });
     if (!ret) throw new NotFoundException(`Return ${id} not found`);
@@ -268,10 +273,39 @@ export class ReturnsService {
     this.eventEmitter.emit('return.rejected', {
       returnId: id,
       userId,
-      reviewNotes: dto.reviewNotes || '',
+      reviewNotes: dto.reviewNotes,
       tenantId,
+      ipAddress,
     });
 
     return updated;
+  }
+
+  async deleteReturn(id: string, tenantId: string) {
+    const returnRecord = await this.prisma.return.findFirst({
+      where: { id, tenantId },
+    });
+    if (!returnRecord) {
+      throw new NotFoundException(`Return ${id} not found`);
+    }
+
+    const hoursSinceCreation =
+      (Date.now() - returnRecord.createdAt.getTime()) / (1000 * 60 * 60);
+    if (hoursSinceCreation > 24) {
+      throw new BadRequestException('Cannot delete returns older than 24 hours');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      // Revert the inventory unit back to "sold"
+      await tx.inventoryUnit.update({
+        where: { id: returnRecord.inventoryUnitId },
+        data: { status: 'sold' },
+      });
+
+      // Delete the return
+      return tx.return.delete({
+        where: { id },
+      });
+    });
   }
 }

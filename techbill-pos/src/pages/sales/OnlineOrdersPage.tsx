@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Truck, PackageSearch, CheckCircle2, RotateCcw, Search, X, CheckCircle } from 'lucide-react';
+import { Truck, PackageSearch, CheckCircle2, RotateCcw, Search, X, CheckCircle, Trash2 } from 'lucide-react';
 import { api } from '../../api/client';
 import type { Sale } from '../../types';
 import { format } from 'date-fns';
+import { useAuthStore } from '../../store/auth.store';
+import { useToastStore } from '../../store/toast.store';
 
 export default function OnlineOrdersPage() {
   const [activeTab, setActiveTab] = useState<'pending' | 'dispatched' | 'delivered' | 'returned'>('pending');
@@ -22,6 +24,9 @@ export default function OnlineOrdersPage() {
   const [orders, setOrders] = useState<Sale[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [ledger, setLedger] = useState({ totalDeliveredCod: 0, totalPayouts: 0, dueFromCouriers: 0 });
+  
+  const { user } = useAuthStore();
+  const toast = useToastStore();
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -98,6 +103,19 @@ export default function OnlineOrdersPage() {
       console.error(err);
     } finally {
       setReturningId(null);
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!window.confirm('Are you sure you want to permanently delete this online order? This will restore the inventory items and cannot be undone.')) return;
+    
+    try {
+      await api.delete(`/sales/${id}`);
+      toast.success('Order deleted successfully');
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to delete order');
     }
   };
 
@@ -189,7 +207,21 @@ export default function OnlineOrdersPage() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                   <div><p className="text-stitch-on-surface-variant text-[10px] uppercase font-bold">Customer</p><p className="font-semibold text-white">{order.customer?.name || 'Walk-in'}</p></div>
                   <div><p className="text-stitch-on-surface-variant text-[10px] uppercase font-bold">Total</p><p className="font-semibold text-white">Rs {Number(order.totalAmount).toLocaleString()}</p></div>
-                  <div><p className="text-stitch-on-surface-variant text-[10px] uppercase font-bold">Tracking</p><p className="font-mono text-white text-xs">{order.trackingId || 'N/A'}</p></div>
+                  <div>
+                    <p className="text-stitch-on-surface-variant text-[10px] uppercase font-bold">Tracking</p>
+                    <p className="font-mono text-white text-xs">{order.trackingId || 'N/A'}</p>
+                  </div>
+                  {user?.role === 'owner' && (Date.now() - new Date(order.createdAt).getTime()) / (1000 * 60 * 60) <= 24 && (
+                    <div className="flex items-center">
+                      <button
+                        onClick={(e) => handleDelete(e, order.id)}
+                        className="p-1.5 text-stitch-on-surface-variant hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
+                        title="Delete Mistaken Order"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex flex-col gap-2 w-full md:w-64">

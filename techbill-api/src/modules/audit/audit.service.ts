@@ -146,6 +146,7 @@ export class AuditService {
     itemCount: number;
     paymentMethod: string;
     tenantId: string;
+    ipAddress?: string;
   }) {
     await this.log({
       action: 'sale.created',
@@ -157,6 +158,7 @@ export class AuditService {
         itemCount: payload.itemCount,
         paymentMethod: payload.paymentMethod,
       },
+      ipAddress: payload.ipAddress,
       tenantId: payload.tenantId,
     });
   }
@@ -167,6 +169,7 @@ export class AuditService {
     userId: string;
     reason: string;
     tenantId: string;
+    ipAddress?: string;
   }) {
     await this.log({
       action: 'sale.voided',
@@ -174,6 +177,7 @@ export class AuditService {
       entityType: 'sale',
       entityId: payload.id,
       newValue: { reason: payload.reason },
+      ipAddress: payload.ipAddress,
       tenantId: payload.tenantId,
     });
   }
@@ -185,6 +189,7 @@ export class AuditService {
     serialNumber: string;
     productId: string;
     tenantId: string;
+    ipAddress?: string;
   }) {
     await this.log({
       action: 'inventory.unit_added',
@@ -195,6 +200,7 @@ export class AuditService {
         serialNumber: payload.serialNumber,
         productId: payload.productId,
       },
+      ipAddress: payload.ipAddress,
       tenantId: payload.tenantId,
     });
   }
@@ -206,6 +212,7 @@ export class AuditService {
     oldStatus: string;
     newStatus: string;
     tenantId: string;
+    ipAddress?: string;
   }) {
     await this.log({
       action: 'inventory.status_changed',
@@ -214,6 +221,7 @@ export class AuditService {
       entityId: payload.unitId,
       oldValue: { status: payload.oldStatus },
       newValue: { status: payload.newStatus },
+      ipAddress: payload.ipAddress,
       tenantId: payload.tenantId,
     });
   }
@@ -225,6 +233,7 @@ export class AuditService {
     saleId: string;
     reason: string;
     tenantId: string;
+    ipAddress?: string;
   }) {
     await this.log({
       action: 'return.requested',
@@ -232,6 +241,7 @@ export class AuditService {
       entityType: 'return',
       entityId: payload.returnId,
       newValue: { saleId: payload.saleId, reason: payload.reason },
+      ipAddress: payload.ipAddress,
       tenantId: payload.tenantId,
     });
   }
@@ -242,6 +252,7 @@ export class AuditService {
     userId: string;
     refundAmount?: number;
     tenantId: string;
+    ipAddress?: string;
   }) {
     await this.log({
       action: 'return.approved',
@@ -249,6 +260,7 @@ export class AuditService {
       entityType: 'return',
       entityId: payload.returnId,
       newValue: { refundAmount: payload.refundAmount },
+      ipAddress: payload.ipAddress,
       tenantId: payload.tenantId,
     });
   }
@@ -259,6 +271,7 @@ export class AuditService {
     userId: string;
     reviewNotes: string;
     tenantId: string;
+    ipAddress?: string;
   }) {
     await this.log({
       action: 'return.rejected',
@@ -266,6 +279,7 @@ export class AuditService {
       entityType: 'return',
       entityId: payload.returnId,
       newValue: { reviewNotes: payload.reviewNotes },
+      ipAddress: payload.ipAddress,
       tenantId: payload.tenantId,
     });
   }
@@ -276,6 +290,7 @@ export class AuditService {
     userId: string;
     amount: number;
     tenantId: string;
+    ipAddress?: string;
   }) {
     await this.log({
       action: 'discount.requested',
@@ -283,6 +298,7 @@ export class AuditService {
       entityType: 'sale',
       entityId: payload.saleId,
       newValue: { amount: payload.amount },
+      ipAddress: payload.ipAddress,
       tenantId: payload.tenantId,
     });
   }
@@ -293,6 +309,7 @@ export class AuditService {
     userId: string;
     amount: number;
     tenantId: string;
+    ipAddress?: string;
   }) {
     await this.log({
       action: 'discount.approved',
@@ -300,6 +317,7 @@ export class AuditService {
       entityType: 'sale',
       entityId: payload.saleId,
       newValue: { amount: payload.amount },
+      ipAddress: payload.ipAddress,
       tenantId: payload.tenantId,
     });
   }

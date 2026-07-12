@@ -10,6 +10,8 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  Delete,
+  ForbiddenException,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { SalesService } from './sales.service';
@@ -72,7 +74,7 @@ export class SalesController {
   @UseGuards(SubscriptionGuard)
   @HttpCode(HttpStatus.CREATED)
   createSale(@Body() dto: CreateSaleDto, @Req() req: RequestWithUser) {
-    return this.salesService.createSale(dto, req.user.id, req.user.tenantId);
+    return this.salesService.createSale(dto, req.user.id, req.user.tenantId, req.ip);
   }
 
   @Post('customers')
@@ -89,7 +91,17 @@ export class SalesController {
     @Body() dto: VoidSaleDto,
     @Req() req: RequestWithUser,
   ) {
-    return this.salesService.voidSale(id, dto, req.user.id, req.user.tenantId);
+    return this.salesService.voidSale(id, dto, req.user.id, req.user.tenantId, req.ip);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  deleteSale(@Param('id') id: string, @Req() req: RequestWithUser) {
+    // Only owner should be able to hard delete
+    if (req.user.role !== 'owner') {
+      throw new ForbiddenException('Only owners can delete sales');
+    }
+    return this.salesService.deleteSale(id, req.user.tenantId);
   }
 
   @Patch(':id/dispatch')

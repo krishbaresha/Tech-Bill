@@ -10,6 +10,8 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  Delete,
+  ForbiddenException,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { ReturnsService } from './returns.service';
@@ -55,6 +57,7 @@ export class ReturnsController {
       dto,
       req.user.id,
       req.user.tenantId,
+      req.ip,
     );
   }
 
@@ -71,6 +74,7 @@ export class ReturnsController {
       dto,
       req.user.id,
       req.user.tenantId,
+      req.ip,
     );
   }
 
@@ -87,6 +91,16 @@ export class ReturnsController {
       dto,
       req.user.id,
       req.user.tenantId,
+      req.ip,
     );
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  deleteReturn(@Param('id') id: string, @Req() req: RequestWithUser) {
+    if (req.user.role !== 'owner') {
+      throw new ForbiddenException('Only owners can delete returns');
+    }
+    return this.returnsService.deleteReturn(id, req.user.tenantId);
   }
 }

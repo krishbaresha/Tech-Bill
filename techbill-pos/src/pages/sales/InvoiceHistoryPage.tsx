@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { FileText, Search, ChevronDown, ChevronUp, RefreshCw, X } from 'lucide-react';
+import { FileText, Search, ChevronDown, ChevronUp, RefreshCw, X, Trash2 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { api } from '../../api/client';
 import gsap from 'gsap';
 import InvoiceModal from '../../components/pos/InvoiceModal';
 import type { Sale, ShopSettings } from '../../types';
 import { useToastStore } from '../../store/toast.store';
+import { useAuthStore } from '../../store/auth.store';
 import { TableSkeleton } from '../../components/common/Skeleton';
 
 const formatPKR = (n: number) => `₨ ${n.toLocaleString('en-PK')}`;
@@ -161,6 +162,7 @@ function ExpandedDetail({ saleId, createdAt, onViewReceipt }: { saleId: string; 
 
 export default function InvoiceHistoryPage() {
   const toast = useToastStore();
+  const user = useAuthStore((s) => s.user);
   const [sales, setSales] = useState<SaleListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -213,6 +215,19 @@ export default function InvoiceHistoryPage() {
     e.preventDefault();
     setPage(1);
     setSearch(searchInput.trim());
+  };
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!window.confirm('Are you sure you want to permanently delete this invoice? This will restore the inventory items and cannot be undone.')) return;
+    
+    try {
+      await api.delete(`/sales/${id}`);
+      toast.success('Invoice deleted successfully');
+      load(page, search);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to delete invoice');
+    }
   };
 
   const totalPages = Math.ceil(total / limit);
@@ -352,8 +367,19 @@ export default function InvoiceHistoryPage() {
                         );
                       })()}
                     </td>
-                    <td className="px-4 py-3 text-stitch-on-surface-variant">
-                      {expandedId === s.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {user?.role === 'owner' && (Date.now() - new Date(s.createdAt).getTime()) / (1000 * 60 * 60) <= 24 && (
+                          <button
+                            onClick={(e) => handleDelete(e, s.id)}
+                            className="p-1.5 text-stitch-on-surface-variant hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
+                            title="Delete Mistaken Sale"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                        {expandedId === s.id ? <ChevronUp size={14} className="text-stitch-on-surface-variant" /> : <ChevronDown size={14} className="text-stitch-on-surface-variant" />}
+                      </div>
                     </td>
                   </tr>
                   {expandedId === s.id && (

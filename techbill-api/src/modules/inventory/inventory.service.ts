@@ -361,7 +361,7 @@ export class InventoryService {
     return { ...unitWithoutSaleItems, soldAt };
   }
 
-  async createUnit(dto: CreateUnitDto, userId: string, tenantId: string) {
+  async createUnit(dto: CreateUnitDto, userId: string, tenantId: string, ipAddress?: string) {
     const existing = await this.prisma.inventoryUnit.findUnique({
       where: {
         tenantId_serialNumber: {
@@ -399,6 +399,7 @@ export class InventoryService {
       serialNumber: unit.serialNumber,
       productId: unit.productId,
       tenantId,
+      ipAddress,
     });
 
     return unit;
@@ -408,6 +409,7 @@ export class InventoryService {
     dto: BulkCreateUnitsDto,
     userId: string,
     tenantId: string,
+    ipAddress?: string,
   ) {
     const serials = dto.units.map((u) => u.serialNumber);
     const duplicates = serials.filter((s, i) => serials.indexOf(s) !== i);
@@ -449,6 +451,7 @@ export class InventoryService {
         serialNumber: unit.serialNumber,
         productId: unit.productId,
         tenantId,
+        ipAddress,
       });
     }
 
@@ -460,6 +463,7 @@ export class InventoryService {
     dto: UpdateUnitDto,
     userId: string,
     tenantId: string,
+    ipAddress?: string,
   ) {
     const unit = await this.prisma.inventoryUnit.findFirst({
       where: { id, tenantId },
@@ -483,6 +487,7 @@ export class InventoryService {
         oldStatus,
         newStatus: dto.status,
         tenantId,
+        ipAddress,
       });
     }
 

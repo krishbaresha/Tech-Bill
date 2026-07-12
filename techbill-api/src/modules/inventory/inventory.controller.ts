@@ -116,6 +116,7 @@ export class InventoryController {
       dto,
       req.user.id,
       req.user.tenantId,
+      req.ip,
     );
   }
 
@@ -129,6 +130,7 @@ export class InventoryController {
       dto,
       req.user.id,
       req.user.tenantId,
+      req.ip,
     );
   }
 
@@ -144,6 +146,7 @@ export class InventoryController {
       dto,
       req.user.id,
       req.user.tenantId,
+      req.ip,
     );
   }
 

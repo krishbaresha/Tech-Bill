@@ -29,7 +29,12 @@ export class SalesService {
     );
   }
 
-  async createSale(dto: CreateSaleDto, userId: string, tenantId: string) {
+  async createSale(
+    dto: CreateSaleDto,
+    cashierId: string,
+    tenantId: string,
+    ipAddress?: string,
+  ) {
     // 1. Scenario E: Idempotency catch block
     try {
       if (dto.idempotencyKey) {
@@ -57,13 +62,13 @@ export class SalesService {
 
       if (!resolvedSessionId && !dto.isOnline) {
         let activeSession = await this.prisma.cashDrawerSession.findFirst({
-          where: { userId, tenantId, status: 'OPEN' },
+          where: { userId: cashierId, tenantId, status: 'OPEN' },
         });
         
         if (!activeSession) {
           activeSession = await this.prisma.cashDrawerSession.create({
             data: {
-              userId,
+              userId: cashierId,
               tenantId,
               status: 'OPEN',
               openedAt: new Date(),
@@ -81,7 +86,7 @@ export class SalesService {
       }
 
       // 3. Scenario D: Custom Pricing Authorization
-      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      const user = await this.prisma.user.findUnique({ where: { id: cashierId } });
       const canOverridePrice = user?.role === 'owner' || user?.role === 'platform_admin' || user?.role === 'inventory_manager';
       
       const serialCounts = dto.serials.reduce((acc, serial) => {
@@ -158,8 +163,6 @@ export class SalesService {
           const total = subtotal - discount + deliveryCharge + additionalCharges;
 
           if (total < 0) throw new BadRequestException('Discount exceeds subtotal');
-
-          // Note: OTP validation logic can be moved here or done before transaction if needed
           
           // Add idempotencyKey to the insert payload
           const created = await tx.sale.create({
@@ -168,7 +171,7 @@ export class SalesService {
               idempotencyKey: dto.idempotencyKey,
               sessionId: resolvedSessionId,
               customerId: resolvedCustomerId,
-              soldById: userId,
+              soldById: cashierId,
               paymentMethod: dto.paymentMethod,
               subtotal,
               discountAmount: discount,
@@ -212,12 +215,13 @@ export class SalesService {
       const discount = txResult.discount;
 
       this.eventEmitter.emit('sale.created', {
-        saleId: sale.id,
-        invoiceNumber: sale.invoiceNumber,
+        id: sale.id,
+        cashierId,
         totalAmount: Number(sale.totalAmount),
         itemCount: units.length,
-        cashierId: userId,
+        paymentMethod: sale.paymentMethod,
         tenantId,
+        ipAddress,
         isOnline: sale.isOnline,
         shippingStatus: sale.shippingStatus,
       });
@@ -225,7 +229,7 @@ export class SalesService {
       if (discount > 0) {
         this.eventEmitter.emit('discount.approved', {
           saleId: sale.id,
-          userId,
+          userId: cashierId,
           amount: discount,
           tenantId,
         });
@@ -353,6 +357,37 @@ export class SalesService {
     return { data: sales, meta: { total, page, limit } };
   }
 
+  async deleteSale(id: string, tenantId: string) {
+    const sale = await this.prisma.sale.findFirst({
+      where: { id, tenantId },
+      include: { items: true },
+    });
+    if (!sale) throw new NotFoundException(`Sale ${id} not found`);
+
+    // Check if within 24 hours
+    const hoursSinceCreation =
+      (Date.now() - sale.createdAt.getTime()) / (1000 * 60 * 60);
+    if (hoursSinceCreation > 24) {
+      throw new BadRequestException('Cannot delete sales older than 24 hours');
+    }
+
+    const unitIds = sale.items.map((i) => i.inventoryUnitId);
+
+    return this.prisma.$transaction(async (tx) => {
+      // Restore inventory units to 'in_stock'
+      await tx.inventoryUnit.updateMany({
+        where: { tenantId, id: { in: unitIds } },
+        data: { status: 'in_stock' },
+      });
+
+      // Delete the sale (cascades to sale_items, etc.)
+      const deleted = await tx.sale.delete({
+        where: { id },
+      });
+      return deleted;
+    });
+  }
+
   async getSale(id: string, tenantId: string) {
     const sale = await this.prisma.sale.findFirst({
       where: { id, tenantId },
@@ -416,6 +451,7 @@ export class SalesService {
     dto: VoidSaleDto,
     userId: string,
     tenantId: string,
+    ipAddress?: string,
   ) {
     const sale = await this.prisma.sale.findFirst({
       where: { id, tenantId },
@@ -453,7 +489,9 @@ export class SalesService {
     this.eventEmitter.emit('sale.voided', {
       saleId: id,
       userId,
+      reason: dto.reason,
       tenantId,
+      ipAddress,
     });
 
     return voided;

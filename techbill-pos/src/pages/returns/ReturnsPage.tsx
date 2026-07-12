@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { CheckCircle, XCircle, AlertTriangle, RefreshCw, RotateCcw, Plus, Search } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, RefreshCw, RotateCcw, Plus, Search, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { api } from '../../api/client';
 import { useAuthStore } from '../../store/auth.store';
+import { useToastStore } from '../../store/toast.store';
 import type { ReturnItem } from '../../types';
 import gsap from 'gsap';
 
@@ -322,6 +323,7 @@ export default function ReturnsPage() {
   const [modal, setModal] = useState<{ returnId: string; action: 'approve' | 'reject' } | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const { user } = useAuthStore();
+  const toast = useToastStore();
   const isOwner = user?.role === 'owner';
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -331,6 +333,19 @@ export default function ReturnsPage() {
       .then((r) => setReturns(r.data.data ?? []))
       .catch(() => setReturns([]))
       .finally(() => setLoading(false));
+  };
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!window.confirm('Are you sure you want to permanently delete this return? This will revert the inventory items back to "sold" and cannot be undone.')) return;
+    
+    try {
+      await api.delete(`/returns/${id}`);
+      toast.success('Return record deleted successfully');
+      load();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to delete return');
+    }
   };
 
   useEffect(() => { load(); }, [statusFilter]);
@@ -423,9 +438,20 @@ export default function ReturnsPage() {
                 </div>
                 <p className="text-xs font-mono text-stitch-tertiary mt-0.5">{r.inventoryUnit?.serialNumber}</p>
               </div>
-              <p className="text-xs text-stitch-on-surface-variant shrink-0 font-mono">
-                {format(new Date(r.createdAt), 'dd MMM, h:mm a')}
-              </p>
+              <div className="flex items-center gap-3">
+                <p className="text-xs text-stitch-on-surface-variant shrink-0 font-mono">
+                  {format(new Date(r.createdAt), 'dd MMM, h:mm a')}
+                </p>
+                {isOwner && (Date.now() - new Date(r.createdAt).getTime()) / (1000 * 60 * 60) <= 24 && (
+                  <button
+                    onClick={(e) => handleDelete(e, r.id)}
+                    className="p-1.5 text-stitch-on-surface-variant hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
+                    title="Delete Mistaken Return"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
