@@ -62,3 +62,5 @@ tech-bill-*.json
 # ── VM Details ────────────────────────────────────────────────────────
 vm_details.md
 *vm*details*
+vm run*.js
+vm_run*.js

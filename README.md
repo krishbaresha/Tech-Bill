@@ -87,7 +87,7 @@ The codebase is organized into two primary project directories:
 
 ### Prerequisites
 *   Node.js 20+
-*   PostgreSQL instance (Supabase recommended)
+*   **Database Options**: Either a Supabase Cloud PostgreSQL database OR the production Azure VM PostgreSQL database (which requires running the local SSH tunnel).
 *   Redis server (optional, falling back to local memory without it)
 
 ### 1. Installation
@@ -96,6 +96,9 @@ Clone the repository and install dependency bundles for both application directo
 git clone https://github.com/krishbaresha/Tech-Bill.git
 cd Tech-Bill
 
+# Install root & developer scripting dependencies
+npm install
+
 # Install backend dependencies
 cd techbill-api && npm install
 
@@ -103,11 +106,23 @@ cd techbill-api && npm install
 cd ../techbill-pos && npm install
 ```
 
-### 2. Database Migrations & Seeding
-Configure your database connection strings (see [Environment Variables](#environment-variables)), then run migrations:
+### 2. Database Selection & Configuration
+Before starting local services, configure your database target in `techbill-api/.env` (see [Environment Variables](#environment-variables)):
+
+*   **Option A: Azure VM Database (Recommended)**
+    To connect to the live VM database, run the SSH port-forwarding tunnel in a separate terminal:
+    ```bash
+    node scratch/tunnel.js
+    ```
+    Keep this terminal open, and ensure the `.env` has the VM connection uncommented.
+    
+*   **Option B: Supabase Cloud Database**
+    Ensure the Supabase connection strings are uncommented in `techbill-api/.env`.
+
+Run migrations and seed baseline data:
 ```bash
 cd techbill-api
-npx prisma migrate dev --name init
+npx prisma migrate dev
 npx prisma db seed
 ```
 
@@ -137,9 +152,14 @@ cd techbill-pos && npm run build
 ## Environment Variables
 
 ### Backend Configuration (`techbill-api/.env`)
-```env
-# Database Connections
-DATABASE_URL="postgresql://postgres.[ref]:[pwd]@aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres"
+# Database Connections (Uncomment one option)
+# Option A: VM Database via SSH Tunnel (Requires 'node scratch/tunnel.js' active)
+DATABASE_URL="postgresql://techbill_admin:<your_password>@localhost:5432/techbill_db?schema=public"
+DIRECT_URL="postgresql://techbill_admin:<your_password>@localhost:5432/techbill_db?schema=public"
+
+# Option B: Supabase Cloud PostgreSQL
+# DATABASE_URL="postgresql://postgres.[ref]:[pwd]@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=2"
+# DIRECT_URL="postgresql://postgres.[ref]:[pwd]@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres"
 
 # JWT Signatures
 JWT_SECRET="long-secure-random-string"

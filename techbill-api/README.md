@@ -34,9 +34,20 @@ npm install
 ### 2. Configuration
 Create a `.env` file in this directory based on the `.env.example` file:
 ```bash
-cp .env.example .env
+cp ../.env.example .env
 ```
-Fill out the parameters (Database endpoints, JWT secrets, Resend API key, and Groq Cloud key).
+Fill out the parameters (JWT secrets, Resend API key, and Groq Cloud key). 
+
+#### Database Setup Options:
+*   **Option A: Production VM Database (via SSH Tunnel)**
+    To connect to the database on the Azure VM, you must first start the SSH tunnel in a separate terminal from the root folder:
+    ```bash
+    node ../scratch/tunnel.js
+    ```
+    Keep the tunnel active, and make sure Option A is uncommented in `techbill-api/.env`.
+    
+*   **Option B: Supabase Cloud Database**
+    If using Supabase, make sure Option B connection strings are uncommented in `techbill-api/.env`.
 
 ### 3. Database Migration
 Apply the Prisma schema migrations to your database:
