@@ -75,6 +75,8 @@ export default function ExpensesPage() {
     }
   };
 
+  const totalExpenses = expenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
+
   return (
     <div ref={containerRef} className="p-4 sm:p-6 space-y-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between">
@@ -94,6 +96,13 @@ export default function ExpensesPage() {
           <Plus size={16} />
           <span>New Expense</span>
         </button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="glass-card rounded-xl p-4 border border-stitch-error/20 bg-stitch-error/5">
+          <p className="text-xs text-stitch-error font-bold uppercase tracking-wider mb-1">Total Expenses Shown</p>
+          <p className="text-2xl font-bold text-white tabular-nums">₨ {totalExpenses.toLocaleString('en-PK')}</p>
+        </div>
       </div>
 
       {formOpen && (

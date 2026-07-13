@@ -192,6 +192,17 @@ export class ReportsService {
     });
     const totalPurchaseCost = Number(poExpenses._sum.amount ?? 0);
 
+    // Standard Daily Expenses (excluding POs)
+    const standardExpenses = await this.prisma.expense.aggregate({
+      where: {
+        tenantId,
+        category: { not: 'purchase_order' },
+        date: { gte: start, lte: end },
+      },
+      _sum: { amount: true },
+    });
+    const totalExpenses = Number(standardExpenses._sum.amount ?? 0);
+
     const pendingOnlineOrders = await this.prisma.sale.count({
       where: {
         tenantId,
@@ -206,6 +217,8 @@ export class ReportsService {
       totalRevenue,
       totalGrossProfit: totalGrossProfit - totalPurchaseCost,
       totalPurchaseCost,
+      totalExpenses,
+      netProfit: totalGrossProfit - totalPurchaseCost - totalExpenses,
       totalSales: totals._count.id,
       totalItems: items.length,
       totalDiscounts,

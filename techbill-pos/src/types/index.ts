@@ -256,6 +256,8 @@ export interface SalesSummary {
   period: string;
   totalRevenue: number;
   totalGrossProfit: number;
+  totalExpenses: number;
+  netProfit: number;
   totalSales: number;
   totalItems: number;
   totalDiscounts: number;

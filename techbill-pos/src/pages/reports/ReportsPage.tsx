@@ -168,13 +168,15 @@ export default function ReportsPage() {
 
           {tab === 'sales' && summary && (
             <div className="space-y-5">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
                 {[
                   { label: 'Total Revenue', value: formatPKR(summary.totalRevenue), color: 'text-stitch-tertiary' },
                   { label: 'Gross Profit', value: formatPKR(summary.totalGrossProfit || 0), color: 'text-green-500' },
+                  { label: 'Expenses', value: formatPKR(summary.totalExpenses || 0), color: 'text-stitch-error' },
+                  { label: 'Net Profit', value: formatPKR(summary.netProfit || 0), color: 'text-emerald-400' },
                   { label: 'Total Sales', value: String(summary.totalSales), color: 'text-stitch-primary' },
                   { label: 'Items Sold', value: String(summary.totalItems), color: 'text-green-400' },
-                  { label: 'Discounts Given', value: formatPKR(summary.totalDiscounts), color: 'text-amber-400' },
+                  { label: 'Discounts', value: formatPKR(summary.totalDiscounts), color: 'text-amber-400' },
                 ].map((c) => (
                   <div key={c.label} className="glass-card rounded-xl p-4">
                     <p className="text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">{c.label}</p>

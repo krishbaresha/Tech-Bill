@@ -39,4 +39,14 @@ Real-time updates are handled via `EventsGateway`.
 2. **Timezones**: The `createdAt` timestamps in Prisma rely on UTC. The Node API correctly translates local date requests (e.g. `start = new Date('2026-07-11T00:00:00+05:00')`) into UTC for database querying. Do not manually subtract timezone hours unless absolutely necessary, as `Date` handles it internally.
 3. **PM2 Restarts**: Always remember to run `pm2 restart electrotrack-backend` after updating code on the VM or pushing Prisma client updates.
 
-*Last Updated: July 11, 2026*
+### 4. Mistaken Action Deletions & IP Logging
+- Added `trust proxy` in NestJS to properly retrieve and record actual IP addresses (e.g. `req.ip` via Nginx) rather than local proxy loops like `::ffff:127.0.0.1` in Audit Logs.
+- Implemented a 24-hour hard-delete window for the Owner role to permanently delete mistakenly created Sales, Returns, and Online Orders.
+- Deleting an invoice or return gracefully restores the associated inventory items (from `sold` back to `in_stock`, and vice versa) and recursively recalculates parent sale statuses (e.g. reverting a Sale to `completed` if its last return is deleted).
+
+### 5. Purchase Orders & Inventory Enhancements
+- Removed the redundant GRN (Good Receipt Note) flow.
+- Purchase Orders now auto-create suppliers if they don't exist and integrate directly into the gross profit deduction.
+- Inventory restocking now happens automatically upon receiving a Purchase Order, including manual and auto serial number generation support.
+
+*Last Updated: July 12, 2026*
