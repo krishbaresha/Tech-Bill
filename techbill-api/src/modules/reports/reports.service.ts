@@ -23,7 +23,9 @@ export class ReportsService {
     const date = query.date ?? new Date().toISOString().slice(0, 10);
     const start = new Date(date + 'T00:00:00+05:00');
     const end = new Date(date + 'T23:59:59+05:00');
-    return this.buildSummary(start, end, date, tenantId);
+    const expenseStart = new Date(date + 'T00:00:00Z');
+    const expenseEnd = new Date(date + 'T00:00:00Z');
+    return this.buildSummary(start, end, expenseStart, expenseEnd, date, tenantId);
   }
 
   async salesSummaryRange(query: SalesSummaryQueryDto, tenantId: string) {
@@ -31,12 +33,16 @@ export class ReportsService {
     const to = query.to ?? from;
     const start = new Date(from + 'T00:00:00+05:00');
     const end = new Date(to + 'T23:59:59+05:00');
-    return this.buildSummary(start, end, `${from} to ${to}`, tenantId);
+    const expenseStart = new Date(from + 'T00:00:00Z');
+    const expenseEnd = new Date(to + 'T00:00:00Z');
+    return this.buildSummary(start, end, expenseStart, expenseEnd, `${from} to ${to}`, tenantId);
   }
 
   private async buildSummary(
     start: Date,
     end: Date,
+    expenseStart: Date,
+    expenseEnd: Date,
     label: string,
     tenantId: string,
   ) {
@@ -185,7 +191,7 @@ export class ReportsService {
       where: {
         tenantId,
         category: 'purchase_order',
-        date: { gte: start, lte: end },
+        date: { gte: expenseStart, lte: expenseEnd },
       },
       _sum: { amount: true },
     });
@@ -196,7 +202,7 @@ export class ReportsService {
       where: {
         tenantId,
         category: { not: 'purchase_order' },
-        date: { gte: start, lte: end },
+        date: { gte: expenseStart, lte: expenseEnd },
       },
       _sum: { amount: true },
     });
@@ -351,10 +357,11 @@ export class ReportsService {
     const today = new Date().toISOString().slice(0, 10);
     const start = new Date(today + 'T00:00:00+05:00');
     const end = new Date(today + 'T23:59:59+05:00');
+    const expenseDate = new Date(today + 'T00:00:00Z');
 
     // 1. Get latest actual cash from previous reconciliations
     const lastRecon = await this.prisma.cashReconciliation.findFirst({
-      where: { tenantId, date: { lt: start } },
+      where: { tenantId, date: { lt: expenseDate } },
       orderBy: { date: 'desc' },
     });
     const defaultOpeningBalance = lastRecon?.actualCash
@@ -378,7 +385,7 @@ export class ReportsService {
     const expenses = await this.prisma.expense.aggregate({
       where: {
         tenantId,
-        date: { gte: start, lte: end },
+        date: { gte: expenseDate, lte: expenseDate },
       },
       _sum: { amount: true },
     });
@@ -399,6 +406,7 @@ export class ReportsService {
   ) {
     const start = new Date(dto.date + 'T00:00:00+05:00');
     const end = new Date(dto.date + 'T23:59:59+05:00');
+    const expenseDate = new Date(dto.date + 'T00:00:00Z');
 
     const cashSales = await this.prisma.sale.aggregate({
       where: {
@@ -414,7 +422,7 @@ export class ReportsService {
     const expenses = await this.prisma.expense.aggregate({
       where: {
         tenantId,
-        date: { gte: start, lte: end },
+        date: { gte: expenseDate, lte: expenseDate },
       },
       _sum: { amount: true },
     });
@@ -426,7 +434,7 @@ export class ReportsService {
 
     // Handle Opening Balance Adjustment
     const lastRecon = await this.prisma.cashReconciliation.findFirst({
-      where: { tenantId, date: { lt: start } },
+      where: { tenantId, date: { lt: expenseDate } },
       orderBy: { date: 'desc' },
     });
     const prevClosing = lastRecon?.actualCash
