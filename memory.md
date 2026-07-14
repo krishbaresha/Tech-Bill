@@ -1,19 +1,29 @@
 # TechBill POS System - Project Memory
 
 ## Architecture Overview
-- **Backend (`techbill-api`)**: NestJS, Prisma ORM, PostgreSQL (via Supabase). Hosted on an Azure VM.
+- **Backend (`techbill-api`)**: NestJS, Prisma ORM, PostgreSQL (local VM). Hosted on an Azure VM at `4.193.188.145`.
 - **Frontend (`techbill-pos`)**: React, Vite, Zustand, TailwindCSS, React Router. Hosted on Vercel with auto-deployment on push to the `master` branch.
-- **Database**: PostgreSQL on Supabase (Pooler connection string required for Prisma, which is sensitive to execution environment).
+- **Database**: Local PostgreSQL on the VM — `localhost:5432`, DB = `techbill_db`, user = `techbill_admin`, password = `TechBillSecurePass2026!`. **NOT Supabase.**
+
+## Canonical Repo & VM Info
+- **GitHub**: `https://github.com/krishbaresha/Tech-Bill` ← the ONLY correct repo
+- **VM Host**: `4.193.188.145` | User: `techbill_admin` | Password: `Office#1234_h`
+- **API Path on VM**: `/home/techbill_admin/techbill/electrotrack-api/techbill-api`
+- **PM2 App Name**: `electrotrack-backend`
+- **Old stale remote** `talharana23/test-techbill` — deleted, never use it
 
 ## Key Workflows & Scripts
 
 ### Remote VM Deployment
-The backend VM is managed via a custom Node.js script located at `scratch/vm_run.js`.
-To pull the latest changes, build, and restart PM2 on the production VM, use:
-```javascript
-node scratch/vm_run.js
-```
-*Note: Any schema changes require `npx prisma db push --accept-data-loss` (or `npx prisma migrate deploy`) to be run on the VM environment.*
+Standard deploy workflow:
+1. Make changes locally
+2. `git add` + `git commit` + `git push origin master`
+3. SSH to VM → `git pull origin master`
+4. `npx prisma db push --accept-data-loss` (if schema changed)
+5. `npm run build`
+6. `pm2 restart electrotrack-backend`
+
+For SSH automation, use scripts in `scratch/` (e.g. `vm_run.js`, `fix_additional_charges.js`).
 
 ### WebSocket Events
 Real-time updates are handled via `EventsGateway`. 
@@ -56,11 +66,27 @@ Real-time updates are handled via `EventsGateway`.
 - **Fix**: Separated the date window for expense/reconciliation queries from the timestamp range used for sales. Expenses are now queried using exact UTC midnight boundaries (e.g. `date = 2026-07-14T00:00:00Z`), strictly isolating them to the correct calendar day.
 - **Files Changed**: `techbill-api/src/modules/reports/reports.service.ts` — `buildSummary()`, `getTodayReconciliationState()`, `submitReconciliation()`.
 
+### 8. Additional Charges Bug Fix (Session 6 — July 14, 2026)
+- **Root Cause (3 parts)**:
+  1. `sales` DB table had no `additional_charges` or `description` columns — they were never in the Prisma schema.
+  2. `sales.service.ts` total calculation ignored `additionalCharges` (`total = subtotal - discount + deliveryCharge` — missing `+ additionalCharges`).
+  3. `sale.create()` data block never included `additionalCharges` or `description` fields.
+- **Symptoms**: Additional charges showed correctly on the POS form UI but were silently dropped on submit — not stored in DB, not reflected in invoice total.
+- **Fix**:
+  - Added `additionalCharges` and `description` to `Sale` model in **both** `prisma/schema.prisma` (root) and `techbill-api/prisma/schema.prisma` (API-level — the one CI uses).
+  - Fixed total calculation: `const additionalCharges = dto.additionalCharges ?? 0; const total = subtotal - discount + deliveryCharge + additionalCharges;`
+  - Added both fields to `tx.sale.create({ data: { ... } })`.
+  - Applied `npx prisma db push --accept-data-loss` on VM to add the DB columns.
+- **CI Fix**: GitHub Actions CI was failing because only `techbill-api/prisma/schema.prisma` is used during CI build — fixing the root `prisma/schema.prisma` alone was not enough.
+- **VM Git Remote Fix**: VM's git remote was pointing to the old deleted repo `talharana23/test-techbill`. Updated to `krishbaresha/Tech-Bill` permanently via `git remote set-url origin`.
+- **Commits**: `3d0730d` (service + root schema fix), `805f746` (API schema fix for CI).
+
 ## Known Gotchas
-1. **Prisma Supabase Pooler**: Trying to connect to the Supabase connection pool directly from the IDE VM via ad-hoc scripts often fails due to network routing. Workarounds involve executing Prisma scripts directly on the production VM using SSH/`vm_run.js`.
+1. **Two schema files**: `prisma/schema.prisma` (root, used for local VM tunnel scripts) AND `techbill-api/prisma/schema.prisma` (API-level, used by CI and the actual NestJS build). **Always update BOTH** when changing the DB schema.
 2. **Timezones**: The `createdAt` timestamps in Prisma rely on UTC. The Node API correctly translates local date requests (e.g. `start = new Date('2026-07-11T00:00:00+05:00')`) into UTC for database querying. Do not manually subtract timezone hours unless absolutely necessary, as `Date` handles it internally.
 3. **PM2 Restarts**: Always remember to run `pm2 restart electrotrack-backend` after updating code on the VM or pushing Prisma client updates.
 4. **`@db.Date` vs Timestamp Filtering**: When querying models with `@db.Date` fields (e.g. `Expense`, `CashReconciliation`), do NOT use timezone-offset timestamps as range filters. PostgreSQL will ignore the time part and bleed into adjacent days. Always use exact UTC midnight dates (e.g. `new Date('2026-07-14T00:00:00Z')`) as both `gte` and `lte` to match a single day.
-5. **`DIRECT_URL` on VM**: The VM `.env` requires both `DATABASE_URL` and `DIRECT_URL` to be set for Prisma to work. If only `DATABASE_URL` is set, `npx prisma db push` will fail with `P1012`. Use `scratch/fix_env.js` to auto-append `DIRECT_URL` if missing.
+5. **VM Schema Sync**: Use `npx prisma db push --accept-data-loss` on the VM (NOT `migrate dev`) since the VM has a local PostgreSQL DB. `migrate dev` requires interactive prompts and a `DIRECT_URL` that differs from pool URL.
+6. **VM Git Remote**: The VM's `origin` remote must always point to `https://github.com/krishbaresha/Tech-Bill.git`. It was previously stale pointing at `talharana23/test-techbill` (deleted). If a git pull fails, check remote with `git remote -v` and fix with `git remote set-url origin https://github.com/krishbaresha/Tech-Bill.git`.
 
-*Last Updated: July 14, 2026*
+*Last Updated: July 14, 2026 — Session 6*
