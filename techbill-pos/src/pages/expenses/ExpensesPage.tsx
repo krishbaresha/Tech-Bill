@@ -150,6 +150,7 @@ export default function ExpensesPage() {
                 <option value="supplies">Shop Supplies</option>
                 <option value="entertainment">Entertainment</option>
                 <option value="maintenance">Maintenance</option>
+                <option value="personal">Personal Expenses</option>
                 <option value="adjustment">Adjustment / Shortage</option>
                 <option value="other">Other</option>
               </select>
