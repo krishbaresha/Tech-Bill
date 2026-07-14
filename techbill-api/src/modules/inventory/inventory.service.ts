@@ -40,12 +40,136 @@ export class InventoryService {
       },
     });
 
-    return products.map((p) => ({
-      ...p,
-      stockCount: p._count.inventoryUnits,
-      _count: undefined,
-    }));
+    return {
+      data: products.map((p) => ({
+        ...p,
+        stockCount: p._count.inventoryUnits,
+        _count: undefined,
+      })),
+    };
   }
+
+  // ─── Inventory Summary ──────────────────────────────────────────────────────
+
+  async getInventorySummary(tenantId: string) {
+    // Fetch low-stock threshold from shop settings (default: 2)
+    const settings = await this.prisma.shopSettings.findFirst({
+      where: { tenantId },
+      select: { lowStockThreshold: true },
+    });
+    const lowStockThreshold = settings?.lowStockThreshold ?? 2;
+
+    // Fire all independent DB queries in parallel
+    const [
+      costAgg,
+      totalInStockUnits,
+      totalSoldUnits,
+      totalReturnedUnits,
+      totalReturnPendingUnits,
+      totalProducts,
+      inStockByProduct,
+    ] = await Promise.all([
+      // 1. Inventory Cost Value = SUM(purchasePrice) WHERE in_stock
+      this.prisma.inventoryUnit.aggregate({
+        where: { tenantId, status: UnitStatus.in_stock },
+        _sum: { purchasePrice: true },
+      }),
+      // 2. Total in-stock unit count
+      this.prisma.inventoryUnit.count({
+        where: { tenantId, status: UnitStatus.in_stock },
+      }),
+      // 3. Total sold unit count
+      this.prisma.inventoryUnit.count({
+        where: { tenantId, status: UnitStatus.sold },
+      }),
+      // 4. Total returned unit count (approved returns)
+      this.prisma.inventoryUnit.count({
+        where: { tenantId, status: UnitStatus.returned },
+      }),
+      // 5. Total return-pending unit count
+      this.prisma.inventoryUnit.count({
+        where: { tenantId, status: UnitStatus.return_pending },
+      }),
+      // 6. Total active products
+      this.prisma.product.count({
+        where: { tenantId, isActive: true },
+      }),
+      // 7. Per-product in-stock counts — O(products), never O(units)
+      this.prisma.inventoryUnit.groupBy({
+        by: ['productId'],
+        where: { tenantId, status: UnitStatus.in_stock },
+        _count: { id: true },
+      }),
+    ]);
+
+    // 6. Fetch sellingPrice only for products that have in-stock units
+    const productIds = inStockByProduct.map((r) => r.productId);
+    const productPrices =
+      productIds.length > 0
+        ? await this.prisma.product.findMany({
+            where: { id: { in: productIds } },
+            select: { id: true, sellingPrice: true },
+          })
+        : [];
+    const priceMap = new Map(
+      productPrices.map((p) => [p.id, Number(p.sellingPrice)]),
+    );
+
+    // 7. Retail Value = SUM(count × sellingPrice) — calculated in JS over product-level rows
+    const inventoryRetailValue = inStockByProduct.reduce((sum, row) => {
+      const price = priceMap.get(row.productId) ?? 0;
+      return sum + row._count.id * price;
+    }, 0);
+
+    const inventoryCostValue = Number(costAgg._sum.purchasePrice ?? 0);
+    const potentialGrossProfit = inventoryRetailValue - inventoryCostValue;
+
+    // 8. Low-stock and out-of-stock product counts
+    //    Need all active product IDs to detect products with 0 in-stock units
+    const allActiveProductIds = (
+      await this.prisma.product.findMany({
+        where: { tenantId, isActive: true },
+        select: { id: true },
+      })
+    ).map((p) => p.id);
+
+    const stockByProductId = new Map(
+      inStockByProduct.map((r) => [r.productId, r._count.id]),
+    );
+
+    let totalLowStockProducts = 0;
+    let totalOutOfStockProducts = 0;
+    for (const pid of allActiveProductIds) {
+      const stock = stockByProductId.get(pid) ?? 0;
+      if (stock === 0) {
+        totalOutOfStockProducts++;
+      } else if (stock <= lowStockThreshold) {
+        totalLowStockProducts++;
+      }
+    }
+
+    return {
+      stats: {
+        totalProducts,
+        totalInStockUnits,
+        totalSoldUnits,
+        totalReturnedUnits,
+        totalReturnPendingUnits,
+        totalLowStockProducts,
+        totalOutOfStockProducts,
+      },
+      valuation: {
+        inventoryCostValue,
+        inventoryRetailValue,
+        potentialGrossProfit,
+      },
+      meta: {
+        generatedAt: new Date().toISOString(),
+      },
+    };
+  }
+
+  // ─── Categories ──────────────────────────────────────────────────────────────
 
   async listCategories(tenantId: string): Promise<string[]> {
     const rows = await this.prisma.product.findMany({
@@ -157,7 +281,10 @@ export class InventoryService {
       ),
     ].sort();
 
-    const lowStock = cards.filter((c) => c.inStockCount <= lowStockThreshold);
+    // Low-stock: only products with 1..threshold units (NOT zero-stock, those are out-of-stock)
+    const lowStock = cards.filter(
+      (c) => c.inStockCount > 0 && c.inStockCount <= lowStockThreshold,
+    );
 
     const createdAtMap = new Map(
       products.map((p) => [p.id, p.createdAt.getTime()]),
@@ -175,9 +302,27 @@ export class InventoryService {
       )
       .slice(0, 6);
 
-    // 8. Aggregate stats
-    const totalInStock = cards.reduce((s, c) => s + c.inStockCount, 0);
-    const totalSold = cards.reduce((s, c) => s + c.soldCount, 0);
+    // 8. Aggregate stats via authoritative DB counts — identical method to getInventorySummary().
+    //    Never compute these via in-memory reduce() over stale card arrays.
+    const [totalInStock, totalSold, totalReturned] = await Promise.all([
+      this.prisma.inventoryUnit.count({
+        where: { tenantId, status: UnitStatus.in_stock },
+      }),
+      this.prisma.inventoryUnit.count({
+        where: { tenantId, status: UnitStatus.sold },
+      }),
+      this.prisma.inventoryUnit.count({
+        where: { tenantId, status: UnitStatus.returned },
+      }),
+    ]);
+
+    // Out-of-stock: active products with 0 in-stock units
+    const stockByProductId = new Map(
+      cards.map((c) => [c.id, c.inStockCount]),
+    );
+    const totalOutOfStock = cards.filter(
+      (c) => (stockByProductId.get(c.id) ?? 0) === 0,
+    ).length;
 
     return {
       categories,
@@ -188,7 +333,9 @@ export class InventoryService {
         totalProducts: cards.length,
         totalInStock,
         totalSold,
+        totalReturned,
         totalLowStock: lowStock.length,
+        totalOutOfStock,
       },
     };
   }

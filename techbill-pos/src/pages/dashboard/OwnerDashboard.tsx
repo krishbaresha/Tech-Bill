@@ -9,7 +9,6 @@ import { useFeatureGate } from '../../hooks/useFeatureGate';
 import SalesChart from '../../components/dashboard/SalesChart';
 import SalesFeed from '../../components/dashboard/SalesFeed';
 import StockAlerts from '../../components/dashboard/StockAlerts';
-import AiInsights from '../../components/dashboard/AiInsights';
 import gsap from 'gsap';
 import { socket } from '../../api/socket';
 
@@ -21,25 +20,25 @@ export default function OwnerDashboard() {
   const user = useAuthStore((s) => s.user);
   const isOnlineEnabled = useCan('pos.online_sell') && !!user?.onlineSellingEnabled;
   const syncDashboard = useDashboardStore((s) => s.syncDashboard);
-  const fetchAiInsight = useDashboardStore((s) => s.fetchAiInsight);
   const [showItemsModal, setShowItemsModal] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     syncDashboard();
-    if (!useDashboardStore.getState().aiInsight) {
-      fetchAiInsight();
-    }
     
     // Live update for summary stats
     const handleSale = () => {
       syncDashboard();
     };
     socket.on('sale.created', handleSale);
+    socket.on('expense.created', handleSale);
+    socket.on('expense.deleted', handleSale);
     return () => {
       socket.off('sale.created', handleSale);
+      socket.off('expense.created', handleSale);
+      socket.off('expense.deleted', handleSale);
     };
-  }, [syncDashboard, fetchAiInsight]);
+  }, [syncDashboard]);
 
   useEffect(() => {
     if (containerRef.current) {
@@ -55,10 +54,9 @@ export default function OwnerDashboard() {
 
   const statCards = summary
     ? [
-        { label: "Today's Revenue", value: formatPKR(summary.totalRevenue), icon: TrendingUp, color: 'text-stitch-tertiary', accent: 'bg-stitch-tertiary' },
-        { label: 'Gross Profit', value: formatPKR(summary.totalGrossProfit || 0), icon: Banknote, color: 'text-green-500', accent: 'bg-green-500' },
-        { label: 'Expenses', value: formatPKR(summary.totalExpenses || 0), icon: Wallet, color: 'text-stitch-error', accent: 'bg-stitch-error' },
-        { label: 'Net Profit', value: formatPKR(summary.netProfit || 0), icon: Banknote, color: 'text-emerald-400', accent: 'bg-emerald-400' },
+        { label: 'Gross Revenue', value: formatPKR(summary.totalRevenue), icon: TrendingUp, color: 'text-stitch-tertiary', accent: 'bg-stitch-tertiary' },
+        { label: 'Total Expenses', value: formatPKR(summary.totalExpenses || 0), icon: Wallet, color: 'text-stitch-error', accent: 'bg-stitch-error' },
+        { label: 'Net Revenue', value: formatPKR(summary.totalRevenue - (summary.totalExpenses || 0)), icon: Banknote, color: 'text-emerald-400', accent: 'bg-emerald-400' },
         { label: 'Total Sales', value: String(summary.totalSales), icon: ShoppingCart, color: 'text-stitch-primary', accent: 'bg-stitch-primary' },
         { label: 'Items Sold', value: String(summary.totalItems), icon: Package, color: 'text-green-400', accent: 'bg-green-400' },
         { label: 'Discounts', value: formatPKR(summary.totalDiscounts), icon: Tag, color: 'text-amber-400', accent: 'bg-amber-400' },
@@ -80,10 +78,8 @@ export default function OwnerDashboard() {
         </button>
       </div>
 
-      {!isStarter && <AiInsights />}
-
       {summary ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
           {statCards.map((card) => {
             const isItemsCard = card.label === 'Items Sold';
             return (
@@ -103,7 +99,7 @@ export default function OwnerDashboard() {
           })}
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
           {[1, 2, 3, 4, 5, 6, 7].map((i) => (
             <div key={i} className="glass-card rounded-xl p-4 h-24 animate-pulse bg-white/5" />
           ))}

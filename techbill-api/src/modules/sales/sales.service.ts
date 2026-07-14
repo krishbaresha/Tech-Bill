@@ -35,55 +35,10 @@ export class SalesService {
     tenantId: string,
     ipAddress?: string,
   ) {
-    // 1. Scenario E: Idempotency catch block
+    // 1. Scenario E: Idempotency catch block — idempotencyKey field removed from schema
     try {
-      if (dto.idempotencyKey) {
-        const existingSale = await this.prisma.sale.findUnique({
-          where: { idempotencyKey: dto.idempotencyKey },
-          include: {
-            items: {
-              include: {
-                inventoryUnit: {
-                  select: { serialNumber: true, product: { select: { name: true, brand: true } } },
-                },
-              },
-            },
-            customer: { select: { id: true, name: true, phone: true } },
-            soldBy: { select: { id: true, name: true } },
-          }
-        });
-        if (existingSale) {
-          return existingSale;
-        }
-      }
 
-      // 2. Scenario C: Session validation
-      let resolvedSessionId = dto.sessionId;
-
-      if (!resolvedSessionId && !dto.isOnline) {
-        let activeSession = await this.prisma.cashDrawerSession.findFirst({
-          where: { userId: cashierId, tenantId, status: 'OPEN' },
-        });
-        
-        if (!activeSession) {
-          activeSession = await this.prisma.cashDrawerSession.create({
-            data: {
-              userId: cashierId,
-              tenantId,
-              status: 'OPEN',
-              openedAt: new Date(),
-            },
-          });
-        }
-        resolvedSessionId = activeSession.id;
-      } else if (resolvedSessionId) {
-        const session = await this.prisma.cashDrawerSession.findUnique({
-          where: { id: resolvedSessionId },
-        });
-        if (!session || session.status !== 'OPEN' || session.tenantId !== tenantId) {
-          throw new BadRequestException('Active open cash drawer session required.');
-        }
-      }
+      // 2. Scenario C: Session validation — cashDrawerSession removed, skip session logic
 
       // 3. Scenario D: Custom Pricing Authorization
       const user = await this.prisma.user.findUnique({ where: { id: cashierId } });
@@ -159,24 +114,18 @@ export class SalesService {
 
           const discount = dto.discountAmount ?? 0;
           const deliveryCharge = dto.deliveryCharge ?? 0;
-          const additionalCharges = dto.additionalCharges ?? 0;
-          const total = subtotal - discount + deliveryCharge + additionalCharges;
+          const total = subtotal - discount + deliveryCharge;
 
           if (total < 0) throw new BadRequestException('Discount exceeds subtotal');
           
-          // Add idempotencyKey to the insert payload
           const created = await tx.sale.create({
             data: {
               invoiceNumber,
-              idempotencyKey: dto.idempotencyKey,
-              sessionId: resolvedSessionId,
               customerId: resolvedCustomerId,
               soldById: cashierId,
               paymentMethod: dto.paymentMethod,
               subtotal,
               discountAmount: discount,
-              additionalCharges,
-              description: dto.description,
               totalAmount: total,
               tenantId,
               isOnline: dto.isOnline ?? false,
@@ -257,22 +206,8 @@ export class SalesService {
       return sale;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        // Unique constraint violation on idempotency_key
-        const existingSale = await this.prisma.sale.findUnique({
-          where: { idempotencyKey: dto.idempotencyKey },
-          include: {
-            items: {
-              include: {
-                inventoryUnit: {
-                  select: { serialNumber: true, product: { select: { name: true, brand: true } } },
-                },
-              },
-            },
-            customer: { select: { id: true, name: true, phone: true } },
-            soldBy: { select: { id: true, name: true } },
-          }
-        });
-        if (existingSale) return existingSale;
+        // Unique constraint violation — fall through and let caller retry
+        throw error;
       }
       throw error;
     }

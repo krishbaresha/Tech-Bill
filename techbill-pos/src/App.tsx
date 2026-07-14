@@ -20,6 +20,7 @@ const ReturnAnalyticsPage = lazy(() => import('./pages/returns/ReturnAnalyticsPa
 const ReportsPage = lazy(() => import('./pages/reports/ReportsPage'));
 const CashReconciliationPage = lazy(() => import('./pages/reports/CashReconciliationPage'));
 const ExpensesPage = lazy(() => import('./pages/expenses/ExpensesPage'));
+const CreditPage = lazy(() => import('./pages/credit/CreditPage'));
 const UsersPage = lazy(() => import('./pages/users/UsersPage'));
 const SettingsPage = lazy(() => import('./pages/settings/SettingsPage'));
 const AuditPage = lazy(() => import('./pages/audit/AuditPage'));
@@ -40,6 +41,9 @@ import type { Role, Permission } from './types';
 import LockOverlay from './components/auth/LockOverlay';
 import { useLockStore } from './store/lock.store';
 import ToastContainer from './components/common/ToastContainer';
+import { useLicenseStore } from './store/license.store';
+import { socket } from './api/socket';
+
 
 function RequireAuth({
   children,
@@ -124,6 +128,61 @@ function RequireAuth({
   return children;
 }
 
+function RequireFeature({
+  children,
+  feature,
+  requiredAccess = 'READ',
+}: {
+  children: React.ReactElement;
+  feature: string;
+  requiredAccess?: 'NONE' | 'READ' | 'WRITE' | 'FULL';
+}) {
+  const { user } = useAuthStore();
+  const { hasFeatureAccess, isLoading, license } = useLicenseStore();
+
+  if (user?.role === 'platform_admin') {
+    return children;
+  }
+
+  if (isLoading || !license) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-stitch-surface">
+        <span className="w-8 h-8 border-2 border-stitch-primary/30 border-t-stitch-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!hasFeatureAccess(feature, requiredAccess)) {
+    return <Navigate to="/feature-disabled" replace />;
+  }
+
+  return children;
+}
+
+const FeatureDisabledPage = () => (
+  <div className="flex flex-col items-center justify-center min-h-screen bg-stitch-surface text-stitch-on-surface p-4">
+    <div className="glass-panel p-8 rounded-2xl max-w-md w-full text-center border border-white/10 shadow-2xl space-y-6">
+      <div className="mx-auto w-16 h-16 bg-stitch-error/10 text-stitch-error rounded-full flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+      <div className="space-y-2">
+        <h2 className="text-xl font-bold tracking-tight font-space text-white">Feature Disabled</h2>
+        <p className="text-sm text-stitch-on-surface-variant leading-relaxed">
+          This capability is not enabled under your current subscription plan. Please contact your administrator to upgrade.
+        </p>
+      </div>
+      <button
+        onClick={() => window.location.href = '/dashboard'}
+        className="w-full py-2.5 px-4 rounded-xl bg-stitch-primary hover:bg-stitch-primary/90 text-stitch-on-primary font-semibold text-sm transition-all duration-200"
+      >
+        Go to Dashboard
+      </button>
+    </div>
+  </div>
+);
+
 // Guard against React StrictMode double-invocation in dev.
 // Without this, both calls hit /auth/refresh with the same cookie:
 //   Call 1 → revokes token A, creates token B → success
@@ -132,6 +191,8 @@ let isRefreshingInProgress = false;
 
 export default function App() {
   const { user, accessToken, refreshToken, setToken, setAuth, clearAuth, setHydrating, isHydrating, _hasHydrated } = useAuthStore();
+
+  const { fetchLicense } = useLicenseStore();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -149,6 +210,28 @@ export default function App() {
       }
     }
   }, [setAuth]);
+
+  useEffect(() => {
+    if (user && accessToken) {
+      void fetchLicense();
+    }
+  }, [user, accessToken, fetchLicense]);
+
+  useEffect(() => {
+    const handleUpdate = (payload: { tenantId: string }) => {
+      if (payload.tenantId === '*' || payload.tenantId === user?.tenantId) {
+        void fetchLicense();
+      }
+    };
+
+    socket.on('subscription.updated', handleUpdate);
+    socket.on('features.updated', handleUpdate);
+
+    return () => {
+      socket.off('subscription.updated', handleUpdate);
+      socket.off('features.updated', handleUpdate);
+    };
+  }, [user?.tenantId, fetchLicense]);
 
   useEffect(() => {
     if (!_hasHydrated) return;
@@ -264,7 +347,9 @@ export default function App() {
             path="pos"
             element={
               <RequireAuth permission="pos.read">
-                <PosScreen />
+                <RequireFeature feature="pos">
+                  <PosScreen />
+                </RequireFeature>
               </RequireAuth>
             }
           />
@@ -272,7 +357,9 @@ export default function App() {
             path="dashboard"
             element={
               <RequireAuth permission="reports.read">
-                <OwnerDashboard />
+                <RequireFeature feature="dashboard">
+                  <OwnerDashboard />
+                </RequireFeature>
               </RequireAuth>
             }
           />
@@ -280,7 +367,9 @@ export default function App() {
             path="inventory"
             element={
               <RequireAuth permission="inventory.read">
-                <InventoryPage />
+                <RequireFeature feature="inventory">
+                  <InventoryPage />
+                </RequireFeature>
               </RequireAuth>
             }
           />
@@ -288,7 +377,9 @@ export default function App() {
             path="returns"
             element={
               <RequireAuth permission="returns.read">
-                <ReturnsPage />
+                <RequireFeature feature="returns">
+                  <ReturnsPage />
+                </RequireFeature>
               </RequireAuth>
             }
           />
@@ -296,7 +387,9 @@ export default function App() {
             path="reports"
             element={
               <RequireAuth permission="reports.read">
-                <ReportsPage />
+                <RequireFeature feature="reports">
+                  <ReportsPage />
+                </RequireFeature>
               </RequireAuth>
             }
           />
@@ -304,7 +397,9 @@ export default function App() {
             path="users"
             element={
               <RequireAuth permission="users.read">
-                <UsersPage />
+                <RequireFeature feature="users_staff">
+                  <UsersPage />
+                </RequireFeature>
               </RequireAuth>
             }
           />
@@ -312,7 +407,9 @@ export default function App() {
             path="settings"
             element={
               <RequireAuth permission="settings.read">
-                <SettingsPage />
+                <RequireFeature feature="shop_settings">
+                  <SettingsPage />
+                </RequireFeature>
               </RequireAuth>
             }
           />
@@ -320,7 +417,9 @@ export default function App() {
             path="audit"
             element={
               <RequireAuth permission="audit.read">
-                <AuditPage />
+                <RequireFeature feature="audit_logs">
+                  <AuditPage />
+                </RequireFeature>
               </RequireAuth>
             }
           />
@@ -328,7 +427,9 @@ export default function App() {
             path="customers"
             element={
               <RequireAuth permission="customers.read">
-                <CustomersPage />
+                <RequireFeature feature="customers">
+                  <CustomersPage />
+                </RequireFeature>
               </RequireAuth>
             }
           />
@@ -336,7 +437,9 @@ export default function App() {
             path="suppliers"
             element={
               <RequireAuth permission="suppliers.read">
-                <SuppliersPage />
+                <RequireFeature feature="suppliers">
+                  <SuppliersPage />
+                </RequireFeature>
               </RequireAuth>
             }
           />
@@ -344,7 +447,9 @@ export default function App() {
             path="purchase-orders"
             element={
               <RequireAuth permission="suppliers.read">
-                <PurchaseOrdersPage />
+                <RequireFeature feature="purchase_orders">
+                  <PurchaseOrdersPage />
+                </RequireFeature>
               </RequireAuth>
             }
           />
@@ -352,7 +457,9 @@ export default function App() {
             path="warranty"
             element={
               <RequireAuth permission="warranty.read">
-                <WarrantyPage />
+                <RequireFeature feature="warranty">
+                  <WarrantyPage />
+                </RequireFeature>
               </RequireAuth>
             }
           />
@@ -360,7 +467,9 @@ export default function App() {
             path="loyalty"
             element={
               <RequireAuth permission="loyalty.read">
-                <LoyaltyPage />
+                <RequireFeature feature="loyalty_rewards">
+                  <LoyaltyPage />
+                </RequireFeature>
               </RequireAuth>
             }
           />
@@ -368,7 +477,9 @@ export default function App() {
             path="return-analytics"
             element={
               <RequireAuth permission="returns.read">
-                <ReturnAnalyticsPage />
+                <RequireFeature feature="return_analytics">
+                  <ReturnAnalyticsPage />
+                </RequireFeature>
               </RequireAuth>
             }
           />
@@ -376,7 +487,9 @@ export default function App() {
             path="cash-reconciliation"
             element={
               <RequireAuth permission="reports.cash_reconciliation">
-                <CashReconciliationPage />
+                <RequireFeature feature="cash_reconciliation">
+                  <CashReconciliationPage />
+                </RequireFeature>
               </RequireAuth>
             }
           />
@@ -384,7 +497,19 @@ export default function App() {
             path="expenses"
             element={
               <RequireAuth permission="reports.read">
-                <ExpensesPage />
+                <RequireFeature feature="expenses">
+                  <ExpensesPage />
+                </RequireFeature>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="credit"
+            element={
+              <RequireAuth permission="reports.read">
+                <RequireFeature feature="credit">
+                  <CreditPage />
+                </RequireFeature>
               </RequireAuth>
             }
           />
@@ -393,7 +518,9 @@ export default function App() {
             path="invoices"
             element={
               <RequireAuth roles={['owner']}>
-                <InvoiceHistoryPage />
+                <RequireFeature feature="invoices">
+                  <InvoiceHistoryPage />
+                </RequireFeature>
               </RequireAuth>
             }
           />
@@ -401,11 +528,14 @@ export default function App() {
             path="online-orders"
             element={
               <RequireAuth permission="pos.online_sell">
-                <OnlineOrdersPage />
+                <RequireFeature feature="online_orders">
+                  <OnlineOrdersPage />
+                </RequireFeature>
               </RequireAuth>
             }
           />
         </Route>
+        <Route path="/feature-disabled" element={<FeatureDisabledPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       </Suspense>

@@ -81,8 +81,6 @@ export class PublicSalesController {
       paymentMethod: sale.paymentMethod,
       subtotal: Number(sale.subtotal),
       discountAmount: Number(sale.discountAmount),
-      additionalCharges: Number(sale.additionalCharges ?? 0),
-      description: sale.description,
       totalAmount: Number(sale.totalAmount),
       status: sale.status,
       shippingStatus: sale.shippingStatus,

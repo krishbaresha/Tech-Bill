@@ -64,13 +64,19 @@ const PAYMENT_LABELS: Record<string, string> = {
   card: 'Card', bank_transfer: 'Bank Transfer',
 };
 
+const listCache: Record<string, { data: SaleListItem[]; total: number }> = {};
+const detailsCache: Record<string, SaleDetail> = {};
+
 function ExpandedDetail({ saleId, createdAt, onViewReceipt }: { saleId: string; createdAt: string; onViewReceipt: (detail: SaleDetail) => void }) {
-  const [detail, setDetail] = useState<SaleDetail | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [detail, setDetail] = useState<SaleDetail | null>(detailsCache[saleId] || null);
+  const [loading, setLoading] = useState(!detailsCache[saleId]);
 
   useEffect(() => {
     api.get<SaleDetail>(`/sales/${saleId}`)
-      .then((r) => setDetail(r.data))
+      .then((r) => {
+        detailsCache[saleId] = r.data;
+        setDetail(r.data);
+      })
       .catch(() => undefined)
       .finally(() => setLoading(false));
   }, [saleId]);
@@ -176,11 +182,36 @@ export default function InvoiceHistoryPage() {
   const limit = 25;
 
   const load = (p: number, q: string) => {
+    const cacheKey = `${p}-${q}`;
+    if (listCache[cacheKey]) {
+      const cached = listCache[cacheKey];
+      setSales(cached.data);
+      setTotal(cached.total);
+      
+      const params = new URLSearchParams({ page: String(p), limit: String(limit) });
+      if (q) params.set('search', q);
+      api.get<{ data: SaleListItem[]; meta: { total: number } }>(`/sales?${params.toString()}`)
+        .then((r) => {
+          listCache[cacheKey] = {
+            data: r.data.data ?? [],
+            total: r.data.meta?.total ?? 0,
+          };
+          setSales(r.data.data ?? []);
+          setTotal(r.data.meta?.total ?? 0);
+        })
+        .catch(() => undefined);
+      return;
+    }
+
     setLoading(true);
     const params = new URLSearchParams({ page: String(p), limit: String(limit) });
     if (q) params.set('search', q);
     api.get<{ data: SaleListItem[]; meta: { total: number } }>(`/sales?${params.toString()}`)
       .then((r) => {
+        listCache[cacheKey] = {
+          data: r.data.data ?? [],
+          total: r.data.meta?.total ?? 0,
+        };
         setSales(r.data.data ?? []);
         setTotal(r.data.meta?.total ?? 0);
       })
@@ -198,6 +229,19 @@ export default function InvoiceHistoryPage() {
       .then((r) => setShopSettings(r.data))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!sales.length) return;
+    sales.forEach((s) => {
+      if (!detailsCache[s.id]) {
+        api.get<SaleDetail>(`/sales/${s.id}`)
+          .then((r) => {
+            detailsCache[s.id] = r.data;
+          })
+          .catch(() => undefined);
+      }
+    });
+  }, [sales]);
 
   useEffect(() => {
     if (!loading && containerRef.current) {
@@ -224,6 +268,8 @@ export default function InvoiceHistoryPage() {
     try {
       await api.delete(`/sales/${id}`);
       toast.success('Invoice deleted successfully');
+      delete detailsCache[id];
+      Object.keys(listCache).forEach((k) => delete listCache[k]);
       load(page, search);
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to delete invoice');

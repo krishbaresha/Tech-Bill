@@ -71,7 +71,7 @@ export class ReportsService {
           inventoryUnit: {
             select: {
               purchasePrice: true,
-              product: { select: { id: true, name: true, costPrice: true } },
+              product: { select: { id: true, name: true } },
             },
           },
           sale: { select: { isOnline: true } },
@@ -108,7 +108,6 @@ export class ReportsService {
     for (const item of items) {
       const cost =
         item.inventoryUnit.purchasePrice ??
-        item.inventoryUnit.product.costPrice ??
         0;
       totalCost += Number(cost);
     }
@@ -164,7 +163,7 @@ export class ReportsService {
       select: {
         refundAmount: true,
         inventoryUnit: {
-          select: { purchasePrice: true, product: { select: { costPrice: true } } }
+          select: { purchasePrice: true }
         }
       }
     });
@@ -173,7 +172,7 @@ export class ReportsService {
     let totalReturnCost = 0;
     for (const r of approvedReturns) {
       totalRefundValue += Number(r.refundAmount ?? 0);
-      totalReturnCost += Number(r.inventoryUnit?.purchasePrice ?? r.inventoryUnit?.product?.costPrice ?? 0);
+      totalReturnCost += Number(r.inventoryUnit?.purchasePrice ?? 0);
     }
     
     totalRevenue -= totalRefundValue;
@@ -240,62 +239,64 @@ export class ReportsService {
   // ─── Stock Valuation ──────────────────────────────────────────────────────────
 
   async stockValuation(tenantId: string) {
-    const units = await this.prisma.inventoryUnit.findMany({
-      where: { status: UnitStatus.in_stock, tenantId },
-      select: {
-        purchasePrice: true,
-        product: {
-          select: {
-            id: true,
-            name: true,
-            brand: true,
-            category: true,
-            sellingPrice: true,
-          },
-        },
-      },
-    });
+    // Compute totals via aggregation (O(1) DB, no memory spike)
+    const [costAgg, inStockByProduct] = await Promise.all([
+      this.prisma.inventoryUnit.aggregate({
+        where: { status: UnitStatus.in_stock, tenantId },
+        _sum: { purchasePrice: true },
+        _count: { id: true },
+      }),
+      // Per-product in-stock counts for retail value and breakdown
+      this.prisma.inventoryUnit.groupBy({
+        by: ['productId'],
+        where: { status: UnitStatus.in_stock, tenantId },
+        _count: { id: true },
+        _sum: { purchasePrice: true },
+      }),
+    ]);
 
-    const productMap = new Map<
-      string,
-      {
-        productId: string;
-        productName: string;
-        brand: string | null;
-        category: string | null;
-        inStockCount: number;
-        costValue: number;
-        sellingValue: number;
-      }
-    >();
+    // Fetch product info only for products that have in-stock units
+    const productIds = inStockByProduct.map((r) => r.productId);
+    const products =
+      productIds.length > 0
+        ? await this.prisma.product.findMany({
+            where: { id: { in: productIds } },
+            select: {
+              id: true,
+              name: true,
+              brand: true,
+              category: true,
+              sellingPrice: true,
+            },
+          })
+        : [];
+    const productMap = new Map(products.map((p) => [p.id, p]));
 
-    for (const unit of units) {
-      const pid = unit.product.id;
-      const entry = productMap.get(pid) ?? {
-        productId: pid,
-        productName: unit.product.name,
-        brand: unit.product.brand,
-        category: unit.product.category,
-        inStockCount: 0,
-        costValue: 0,
-        sellingValue: 0,
-      };
-      productMap.set(pid, {
-        ...entry,
-        inStockCount: entry.inStockCount + 1,
-        costValue: entry.costValue + Number(unit.purchasePrice ?? 0),
-        sellingValue: entry.sellingValue + Number(unit.product.sellingPrice),
-      });
-    }
+    const breakdown = inStockByProduct
+      .map((row) => {
+        const product = productMap.get(row.productId);
+        if (!product) return null;
+        const inStockCount = row._count.id;
+        const costValue = Number(row._sum.purchasePrice ?? 0);
+        const sellingValue = Number(product.sellingPrice) * inStockCount;
+        return {
+          productId: row.productId,
+          productName: product.name,
+          brand: product.brand,
+          category: product.category,
+          inStockCount,
+          costValue,
+          sellingValue,
+        };
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null)
+      .sort((a, b) => b.sellingValue - a.sellingValue);
 
-    const breakdown = [...productMap.values()].sort(
-      (a, b) => b.sellingValue - a.sellingValue,
-    );
-    const totalCostValue = breakdown.reduce((s, p) => s + p.costValue, 0);
+    const totalCostValue = Number(costAgg._sum.purchasePrice ?? 0);
     const totalSellingValue = breakdown.reduce((s, p) => s + p.sellingValue, 0);
 
     return {
-      totalUnits: units.length,
+      totalUnits: costAgg._count.id,
       totalCostValue,
       totalSellingValue,
       potentialProfit: totalSellingValue - totalCostValue,

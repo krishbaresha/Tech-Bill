@@ -44,10 +44,39 @@ export default function PaymentForm({ onSaleComplete, shopSettings }: { onSaleCo
     return new Date(periodEnd) < new Date();
   })();
 
-  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, watch, setValue, getValues, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { paymentMethod: 'cash', discountAmount: 0, additionalCharges: 0 },
   });
+  const [activeAddOns, setActiveAddOns] = useState<string[]>([]);
+
+  const handleToggleAddOn = (addOn: { name: string; amount: number; enabled: boolean }) => {
+    const currentCharges = Number(getValues('additionalCharges') || 0);
+    const currentDesc = getValues('description') || '';
+    const isActive = activeAddOns.includes(addOn.name);
+
+    let newCharges = currentCharges;
+    let newDesc = currentDesc;
+
+    if (isActive) {
+      newCharges = Math.max(0, currentCharges - addOn.amount);
+      const parts = currentDesc.split(',').map(p => p.trim()).filter(Boolean);
+      const filteredParts = parts.filter(p => p !== addOn.name);
+      newDesc = filteredParts.join(', ');
+      setActiveAddOns(prev => prev.filter(name => name !== addOn.name));
+    } else {
+      newCharges = currentCharges + addOn.amount;
+      const parts = currentDesc.split(',').map(p => p.trim()).filter(Boolean);
+      if (!parts.includes(addOn.name)) {
+        parts.push(addOn.name);
+      }
+      newDesc = parts.join(', ');
+      setActiveAddOns(prev => [...prev, addOn.name]);
+    }
+
+    setValue('additionalCharges', newCharges);
+    setValue('description', newDesc);
+  };
 
   const discount = watch('discountAmount') ?? 0;
   const delivery = watch('deliveryCharge') ?? 0;
@@ -165,7 +194,32 @@ export default function PaymentForm({ onSaleComplete, shopSettings }: { onSaleCo
         </div>
 
         <div>
-          <label className={labelCls}>Additional Charges (₨)</label>
+          <div className="flex justify-between items-center mb-1">
+            <label className={labelCls}>Additional Charges (₨)</label>
+            {shopSettings?.quickAddOns && shopSettings.quickAddOns.some(a => a.enabled) && (
+              <div className="flex gap-1.5 flex-wrap justify-end max-w-[70%]">
+                {shopSettings.quickAddOns
+                  .filter(a => a.enabled)
+                  .map((addOn) => {
+                    const isActive = activeAddOns.includes(addOn.name);
+                    return (
+                      <button
+                        key={addOn.name}
+                        type="button"
+                        onClick={() => handleToggleAddOn(addOn)}
+                        className={`text-[9px] font-bold px-2 py-0.5 rounded-full transition-all border font-space select-none ${
+                          isActive
+                            ? 'bg-stitch-primary border-stitch-primary text-stitch-on-primary shadow-sm shadow-stitch-primary/20'
+                            : 'bg-white/5 border-white/10 text-stitch-on-surface-variant hover:bg-white/10 hover:text-stitch-on-surface'
+                        }`}
+                      >
+                        {addOn.name} (+{addOn.amount})
+                      </button>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
           <input {...register('additionalCharges')} type="number" min={0} className={inputCls} placeholder="0" />
         </div>
 

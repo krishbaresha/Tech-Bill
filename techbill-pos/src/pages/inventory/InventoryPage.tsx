@@ -1,16 +1,37 @@
 import { useEffect, useRef, useState } from 'react';
-import { Plus, Package, X, Tag, Search, Layers, Trash2, Wand2, Pencil, AlertTriangle } from 'lucide-react';
+import { Plus, Package, X, Tag, Search, Layers, Trash2, Wand2, Pencil, AlertTriangle, DollarSign, ShoppingCart, TrendingUp, RefreshCw } from 'lucide-react';
 import { api } from '../../api/client';
 import { useCan } from '../../lib/permissions';
 import type { Product, InventoryUnit } from '../../types';
 import gsap from 'gsap';
 import { useToastStore } from '../../store/toast.store';
 import { TableSkeleton } from '../../components/common/Skeleton';
+import IntegrityCenter from './components/IntegrityCenter';
 
 const formatPKR = (n: number) => `₨ ${n.toLocaleString('en-PK')}`;
 
 interface ProductWithStock extends Product {
   stockCount?: number;
+}
+
+interface InventorySummary {
+  stats: {
+    totalProducts: number;
+    totalInStockUnits: number;
+    totalSoldUnits: number;
+    totalReturnedUnits: number;
+    totalReturnPendingUnits: number;
+    totalLowStockProducts: number;
+    totalOutOfStockProducts: number;
+  };
+  valuation: {
+    inventoryCostValue: number;
+    inventoryRetailValue: number;
+    potentialGrossProfit: number;
+  };
+  meta: {
+    generatedAt: string;
+  };
 }
 
 interface AddProductForm {
@@ -37,9 +58,12 @@ export default function InventoryPage() {
   const canDelete = useCan('inventory.delete');
   const toast = useToastStore();
   const [products, setProducts] = useState<ProductWithStock[]>([]);
+  const [summary, setSummary] = useState<InventorySummary | null>(null);
+  const [summaryError, setSummaryError] = useState(false);
+  const [summaryLoading, setSummaryLoading] = useState(true);
   const [units, setUnits] = useState<InventoryUnit[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
-  const [tab, setTab] = useState<'products' | 'units'>('products');
+  const [tab, setTab] = useState<'products' | 'units' | 'integrity'>('products');
   const [search, setSearch] = useState('');
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showAddUnit, setShowAddUnit] = useState(false);
@@ -64,9 +88,20 @@ export default function InventoryPage() {
   const [stockPrefix, setStockPrefix] = useState('');
 
   const loadProducts = () => {
-    api.get<ProductWithStock[]>('/inventory/products')
-      .then((r) => setProducts(r.data))
+    api.get<{ data: ProductWithStock[] }>('/inventory/products')
+      .then((r) => setProducts(r.data.data))
       .catch(() => toast.error('Failed to load products'));
+  };
+
+  // Refreshes summary without clearing existing values (avoids UI flicker on refetch)
+  const refreshSummary = async () => {
+    try {
+      const res = await api.get<InventorySummary>('/inventory/summary');
+      setSummary(res.data);
+      setSummaryError(false);
+    } catch {
+      // Keep previous summary visible on refetch failure — do not clear it
+    }
   };
 
   const loadUnits = () => {
@@ -81,18 +116,39 @@ export default function InventoryPage() {
       .catch(() => undefined);
   };
 
+
+
   const loadAllData = async () => {
     setDataLoading(true);
+    setSummaryLoading(true);
+
+    // Products, units, categories load together via allSettled so one failure
+    // does not block the others
+    const [prodRes, unitsRes, catRes] = await Promise.allSettled([
+      api.get<{ data: ProductWithStock[] }>('/inventory/products'),
+      api.get<{ data: InventoryUnit[] }>('/inventory/units?status=in_stock&limit=100'),
+      api.get<string[]>('/inventory/categories'),
+    ]);
+
+    if (prodRes.status === 'fulfilled') {
+      setProducts(prodRes.value.data.data);
+    } else {
+      toast.error('Failed to load products');
+    }
+    if (unitsRes.status === 'fulfilled') setUnits(unitsRes.value.data.data);
+    if (catRes.status === 'fulfilled') setCategories(catRes.value.data);
+    setDataLoading(false);
+
+    // Summary loads independently — failure shows an error state but does NOT
+    // block the inventory table from rendering
     try {
-      await Promise.all([
-        api.get<ProductWithStock[]>('/inventory/products').then((r) => setProducts(r.data)),
-        api.get<{ data: InventoryUnit[] }>('/inventory/units?status=in_stock&limit=100').then((r) => setUnits(r.data.data)),
-        api.get<string[]>('/inventory/categories').then((r) => setCategories(r.data)).catch(() => {})
-      ]);
+      const summaryRes = await api.get<InventorySummary>('/inventory/summary');
+      setSummary(summaryRes.data);
+      setSummaryError(false);
     } catch {
-      toast.error('Failed to load inventory data');
+      setSummaryError(true);
     } finally {
-      setDataLoading(false);
+      setSummaryLoading(false);
     }
   };
 
@@ -119,6 +175,7 @@ export default function InventoryPage() {
       toast.success(`"${product.name}" deactivated — historical sales preserved`);
       setDeleteConfirm(null);
       loadProducts();
+      void refreshSummary();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
       toast.error(e.response?.data?.message ?? 'Failed to delete product');
@@ -190,6 +247,7 @@ export default function InventoryPage() {
       setUnitForm({ serialNumber: '', productId: '', purchasePrice: '' });
       loadUnits();
       loadProducts();
+      void refreshSummary();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
       toast.error(e.response?.data?.message ?? 'Failed to add unit');
@@ -227,6 +285,7 @@ export default function InventoryPage() {
       setStockMode('manual');
       loadProducts();
       loadUnits();
+      void refreshSummary();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
       toast.error(e.response?.data?.message ?? 'Failed to add stock');
@@ -274,6 +333,99 @@ export default function InventoryPage() {
             </button>
           </div>
         )}
+      </div>
+
+      {/* Inventory Dashboard Summary */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+        {/* Card renderer helper */}
+        {((): React.ReactNode => {
+          // Skeleton shown only on first load, not on subsequent refreshes
+          if (summaryLoading) {
+            return Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="glass-card rounded-xl p-4 overflow-hidden relative border border-white/5 bg-white/[0.01] animate-pulse">
+                <div className="h-2 bg-white/10 rounded w-2/3 mb-3" />
+                <div className="h-7 bg-white/10 rounded w-1/2" />
+              </div>
+            ));
+          }
+
+          // Error state — summary-only, products still render below
+          if (summaryError) {
+            return (
+              <div className="col-span-full glass-card rounded-xl p-4 border border-stitch-error/20 bg-stitch-error/5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle size={16} className="text-stitch-error shrink-0" />
+                  <p className="text-sm text-stitch-on-surface-variant">Could not load inventory analytics. Products are still available below.</p>
+                </div>
+                <button
+                  onClick={() => { setSummaryLoading(true); void refreshSummary().finally(() => setSummaryLoading(false)); }}
+                  className="flex items-center gap-1.5 text-xs font-bold text-stitch-primary hover:text-stitch-primary/80 transition-colors shrink-0 ml-4"
+                >
+                  <RefreshCw size={12} /> Retry
+                </button>
+              </div>
+            );
+          }
+
+          const s = summary!;
+          const cards = [
+            {
+              label: 'Total Products',
+              value: s.stats.totalProducts.toLocaleString(),
+              icon: <Package size={18} />,
+              color: 'text-stitch-tertiary',
+              bg: 'bg-stitch-tertiary/10',
+              bar: 'bg-stitch-tertiary/60',
+            },
+            {
+              label: 'In-Stock Units',
+              value: s.stats.totalInStockUnits.toLocaleString(),
+              icon: <Package size={18} />,
+              color: 'text-stitch-primary',
+              bg: 'bg-stitch-primary/10',
+              bar: 'bg-stitch-primary/60',
+            },
+            {
+              label: 'Cost Value',
+              value: formatPKR(s.valuation.inventoryCostValue),
+              icon: <DollarSign size={18} />,
+              color: 'text-green-400',
+              bg: 'bg-green-500/10',
+              bar: 'bg-green-500/60',
+            },
+            {
+              label: 'Retail Value',
+              value: formatPKR(s.valuation.inventoryRetailValue),
+              icon: <ShoppingCart size={18} />,
+              color: 'text-blue-400',
+              bg: 'bg-blue-500/10',
+              bar: 'bg-blue-500/60',
+            },
+            {
+              label: 'Potential Gross Profit',
+              value: formatPKR(s.valuation.potentialGrossProfit),
+              icon: <TrendingUp size={18} />,
+              color: 'text-amber-400',
+              bg: 'bg-amber-500/10',
+              bar: 'bg-amber-500/60',
+            },
+          ];
+
+          return cards.map((c) => (
+            <div key={c.label} className="glass-card rounded-xl p-4 overflow-hidden relative border border-white/5 bg-white/[0.01]">
+              <div className={`absolute top-0 left-0 right-0 h-0.5 ${c.bar}`} />
+              <div className="flex items-center justify-between">
+                <div className="min-w-0 pr-2">
+                  <p className="text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider truncate">{c.label}</p>
+                  <p className={`text-xl font-bold font-space mt-1 tabular-nums truncate ${c.color}`}>{c.value}</p>
+                </div>
+                <div className={`w-9 h-9 rounded-lg ${c.bg} flex items-center justify-center shrink-0 ${c.color}`}>
+                  {c.icon}
+                </div>
+              </div>
+            </div>
+          ));
+        })()}
       </div>
 
       <div className="relative w-full sm:max-w-xs">
@@ -498,7 +650,11 @@ export default function InventoryPage() {
         <div className="flex border-b border-white/5 px-4 gap-1 bg-white/[0.01]">
           {([
             { key: 'products', label: 'Products', count: products.length },
-            { key: 'units', label: 'In-Stock Units', count: units.length },
+            // IMPORTANT: always read in-stock total from the authoritative /inventory/summary
+            // endpoint, never compute via products.reduce() which uses a different API response
+            // and can show stale or inconsistent values.
+            { key: 'units', label: 'In-Stock Units', count: summary?.stats.totalInStockUnits ?? 0 },
+            { key: 'integrity', label: 'Integrity Center', count: undefined },
           ] as const).map((t) => (
             <button key={t.key} onClick={() => setTab(t.key)}
               className={`px-4 py-3 text-sm font-semibold border-b-2 transition-all ${
@@ -507,9 +663,11 @@ export default function InventoryPage() {
                   : 'border-transparent text-stitch-on-surface-variant hover:text-white'
               }`}>
               {t.label}
-              <span className={`ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                tab === t.key ? 'bg-stitch-primary/20 text-stitch-primary' : 'bg-white/5 text-stitch-on-surface-variant'
-              }`}>{t.count}</span>
+              {t.count !== undefined && (
+                <span className={`ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                  tab === t.key ? 'bg-stitch-primary/20 text-stitch-primary' : 'bg-white/5 text-stitch-on-surface-variant'
+                }`}>{t.count}</span>
+              )}
             </button>
           ))}
         </div>
@@ -649,6 +807,11 @@ export default function InventoryPage() {
                 )}
               </tbody>
             </table>
+          </div>
+        )}
+        {tab === 'integrity' && (
+          <div className="p-4 sm:p-6 bg-white/[0.01]">
+            <IntegrityCenter />
           </div>
         )}
       </div>

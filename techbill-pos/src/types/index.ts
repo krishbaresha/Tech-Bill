@@ -82,7 +82,9 @@ export interface DashboardData {
     totalProducts: number;
     totalInStock: number;
     totalSold: number;
+    totalReturned: number;
     totalLowStock: number;
+    totalOutOfStock: number;
   };
 }
 
@@ -124,6 +126,7 @@ export interface ShopSettings {
   invoiceFooterNotes: string | null;
   invoiceWatermarkText: string | null;
   invoiceShowWatermark: boolean;
+  quickAddOns?: { name: string; amount: number; enabled: boolean }[];
   tenant?: {
     onlineSellingEnabled: boolean;
   };
@@ -315,6 +318,11 @@ export interface Tenant {
   maxUsers: number;
   onlineSellingEnabled: boolean;
   appAccessEnabled: boolean;
+  subscriptionPlanId?: string | null;
+  subscriptionStartAt?: string | null;
+  subscriptionExpiresAt?: string | null;
+  subscriptionRenewedAt?: string | null;
+  gracePeriodDays?: number;
   createdAt: string;
   updatedAt: string;
   currentPeriodEnd?: string | null;

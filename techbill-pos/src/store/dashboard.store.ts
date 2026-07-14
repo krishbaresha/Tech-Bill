@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { format, subDays, parseISO } from 'date-fns';
 import { api } from '../api/client';
@@ -92,6 +92,13 @@ export const useDashboardStore = create<DashboardState>()(
         set((state) => {
           const prev = state.lowStock;
           const exists = prev.find((a) => a.productId === data.productId);
+
+          // If stockCount drops to 0, remove from low-stock list (it is now out-of-stock,
+          // not low-stock — consistent with getDashboard() filter: inStockCount > 0 && <= threshold)
+          if (data.stockCount === 0) {
+            return { lowStock: prev.filter((a) => a.productId !== data.productId) };
+          }
+
           if (exists) {
             return {
               lowStock: prev.map((a) =>

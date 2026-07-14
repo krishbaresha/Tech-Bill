@@ -1,26 +1,26 @@
 import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
+import { useLicenseStore } from '../../store/license.store';
 
 export const SubscriptionBanner: React.FC = () => {
   const { user } = useAuthStore();
+  const { license } = useLicenseStore();
 
-  if (!user || user.role === 'platform_admin') return null;
+  if (!user || user.role === 'platform_admin' || !license) return null;
 
   const now = new Date();
-  const periodEnd = user.currentPeriodEnd ? new Date(user.currentPeriodEnd) : null;
-  const isInactive = user.tenantStatus !== undefined && user.tenantStatus !== 'active';
+  const expiresAt = license.expiresAt ? new Date(license.expiresAt) : null;
+  const isInactive = license.status !== 'ACTIVE' && license.status !== 'TRIAL';
   
   let daysLeft = Infinity;
-  if (periodEnd) {
-    const diffMs = periodEnd.getTime() - now.getTime();
+  if (expiresAt) {
+    const diffMs = expiresAt.getTime() - now.getTime();
     daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  } else {
-    daysLeft = 0; // NOT ACTIVATED = EXPIRED
   }
 
-  const isExpired = daysLeft <= 0 || isInactive;
-  const isExpiringSoon = daysLeft > 0 && daysLeft <= 2 && !isInactive;
+  const isExpired = isInactive || license.isExpired || (expiresAt !== null && daysLeft <= 0);
+  const isExpiringSoon = expiresAt !== null && daysLeft > 0 && daysLeft <= 2 && !isInactive && !license.isExpired;
 
   if (!isExpired && !isExpiringSoon) return null;
 

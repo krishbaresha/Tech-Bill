@@ -233,7 +233,7 @@ export class SuppliersService {
       // Mark PO as received
       const updated = await tx.purchaseOrder.update({
         where: { id },
-        data: { status: 'received', receivedAt: now },
+        data: { status: 'received' },
         include: {
           supplier: { select: { id: true, name: true } },
           items: { include: { product: { select: { id: true, name: true } } } },

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Wallet, Plus, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { api } from '../../api/client';
+import { useDashboardStore } from '../../store/dashboard.store';
 import gsap from 'gsap';
 
 interface Expense {
@@ -18,6 +19,7 @@ export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [_loading, setLoading] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
+  const syncDashboard = useDashboardStore((s) => s.syncDashboard);
   const [form, setForm] = useState({
     amount: '',
     category: 'lunch',
@@ -52,25 +54,49 @@ export default function ExpensesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const tempId = `temp-${Date.now()}`;
+    const newExpense: Expense = {
+      id: tempId,
+      amount: Number(form.amount),
+      category: form.category,
+      description: form.description,
+      date: form.date,
+      createdBy: { name: 'You' },
+      createdAt: new Date().toISOString(),
+    };
+
+    const originalExpenses = [...expenses];
+    setExpenses((prev) => [newExpense, ...prev]);
+    setFormOpen(false);
+    const prevForm = { ...form };
+    setForm({ amount: '', category: 'lunch', description: '', date: format(new Date(), 'yyyy-MM-dd') });
+
     try {
       await api.post('/expenses', {
-        ...form,
-        amount: Number(form.amount),
+        ...prevForm,
+        amount: Number(prevForm.amount),
       });
-      setFormOpen(false);
-      setForm({ amount: '', category: 'lunch', description: '', date: format(new Date(), 'yyyy-MM-dd') });
-      await fetchExpenses();
+      void fetchExpenses();
+      void syncDashboard();
     } catch {
+      setExpenses(originalExpenses);
+      setForm(prevForm);
+      setFormOpen(true);
       alert('Failed to save expense');
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this expense?')) return;
+    const originalExpenses = [...expenses];
+    setExpenses((prev) => prev.filter((exp) => exp.id !== id));
+
     try {
       await api.delete(`/expenses/${id}`);
-      await fetchExpenses();
+      void fetchExpenses();
+      void syncDashboard();
     } catch {
+      setExpenses(originalExpenses);
       alert('Failed to delete expense');
     }
   };

@@ -21,6 +21,8 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { TenantGuard } from '../../common/guards/tenant.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
+import { RequireFeature } from '../../common/decorators/require-feature.decorator';
+import { FeatureAccess } from '@prisma/client';
 
 interface RequestWithUser extends Request {
   user: {
@@ -33,6 +35,7 @@ interface RequestWithUser extends Request {
 
 @Controller('reports')
 @UseGuards(JwtAuthGuard, TenantGuard, PermissionsGuard)
+@RequireFeature('reports', FeatureAccess.READ)
 export class ReportsController {
   constructor(private reportsService: ReportsService) {}
 
@@ -107,6 +110,7 @@ export class ReportsController {
 
   @Get('return-analytics')
   @Permissions('returns.read')
+  @RequireFeature('return_analytics', FeatureAccess.READ)
   returnAnalytics(
     @Query('from') from: string | undefined,
     @Query('to') to: string | undefined,
@@ -117,6 +121,7 @@ export class ReportsController {
 
   @Post('cash-reconciliation')
   @Permissions('reports.cash_reconciliation')
+  @RequireFeature('cash_reconciliation', FeatureAccess.WRITE)
   @HttpCode(HttpStatus.CREATED)
   submitReconciliation(
     @Body() dto: ReconciliationDto,
@@ -131,12 +136,14 @@ export class ReportsController {
 
   @Get('cash-reconciliation/today')
   @Permissions('reports.read')
+  @RequireFeature('cash_reconciliation', FeatureAccess.READ)
   reconciliationTodayState(@Req() req: RequestWithUser) {
     return this.reportsService.getTodayReconciliationState(req.user.tenantId);
   }
 
   @Get('cash-reconciliation')
   @Permissions('reports.read')
+  @RequireFeature('cash_reconciliation', FeatureAccess.READ)
   listReconciliations(
     @Query() filter: FilterReconciliationDto,
     @Req() req: RequestWithUser,
@@ -146,6 +153,7 @@ export class ReportsController {
 
   @Patch('cash-reconciliation/:id/review')
   @Permissions('reports.cash_reconciliation')
+  @RequireFeature('cash_reconciliation', FeatureAccess.WRITE)
   reviewReconciliation(@Param('id') id: string, @Req() req: RequestWithUser) {
     return this.reportsService.reviewReconciliation(
       id,
@@ -156,6 +164,7 @@ export class ReportsController {
 
   @Delete('cash-reconciliation/:id')
   @Permissions('reports.cash_reconciliation')
+  @RequireFeature('cash_reconciliation', FeatureAccess.WRITE)
   deleteReconciliation(@Param('id') id: string, @Req() req: RequestWithUser) {
     return this.reportsService.deleteReconciliation(id, req.user.tenantId);
   }

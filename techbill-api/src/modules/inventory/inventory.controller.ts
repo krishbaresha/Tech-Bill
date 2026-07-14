@@ -61,6 +61,12 @@ export class InventoryController {
     return this.inventoryService.listProducts(req.user.tenantId);
   }
 
+  @Get('summary')
+  @Permissions('inventory.read')
+  getInventorySummary(@Req() req: RequestWithUser) {
+    return this.inventoryService.getInventorySummary(req.user.tenantId);
+  }
+
   @Get('products/:id')
   @Permissions('inventory.read')
   getProduct(@Param('id') id: string, @Req() req: RequestWithUser) {

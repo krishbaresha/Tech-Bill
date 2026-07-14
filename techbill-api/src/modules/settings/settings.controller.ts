@@ -45,6 +45,7 @@ export class SettingsController {
       invoiceFooterNotes?: string | null;
       invoiceWatermarkText?: string | null;
       invoiceShowWatermark?: boolean;
+      quickAddOns?: { name: string; amount: number; enabled: boolean }[];
     },
   ) {
     return this.settingsService.updateSettings(req.user.tenantId, dto);

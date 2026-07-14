@@ -91,7 +91,6 @@ const ProductGrid = memo(function ProductGrid({
   products,
   loading,
   onAddToCart,
-  onViewUnits,
   selectedCategory,
 }: Props) {
   const gridRef = useRef<HTMLDivElement>(null);
@@ -149,7 +148,7 @@ const ProductGrid = memo(function ProductGrid({
           <div
             key={product.id}
             data-product-card
-            onClick={() => { if (!outOfStock) onViewUnits(product); }}
+            onClick={() => { if (!outOfStock) onAddToCart(product); }}
             className={`glass-card rounded-xl overflow-hidden border border-white/5 hover:shadow-lg transition-all duration-200 group flex flex-col ${
               outOfStock 
                 ? 'opacity-60 border-white/5 hover:border-white/5 hover:shadow-none cursor-not-allowed' 

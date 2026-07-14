@@ -10,7 +10,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import * as nodemailer from 'nodemailer';
-import { Role } from '@prisma/client';
+import { Role, TenantStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OtpService } from './otp.service';
 import { LoginDto } from './dto/login.dto';
@@ -73,7 +73,7 @@ export class AuthService {
     }
 
     // Block suspended/cancelled tenant
-    if (user.tenant && user.tenant.status !== 'active') {
+    if (user.tenant && user.tenant.status !== TenantStatus.ACTIVE) {
       throw new UnauthorizedException(
         'Your shop account has been suspended. Contact platform admin.',
       );
@@ -221,7 +221,7 @@ export class AuthService {
       throw new UnauthorizedException('User inactive');
     }
 
-    if (user.tenant && user.tenant.status !== 'active') {
+    if (user.tenant && user.tenant.status !== TenantStatus.ACTIVE) {
       throw new UnauthorizedException('Tenant suspended');
     }
 

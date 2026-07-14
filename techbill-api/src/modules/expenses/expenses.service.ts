@@ -1,13 +1,17 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 
 @Injectable()
 export class ExpensesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private eventEmitter: EventEmitter2,
+  ) {}
 
   async createExpense(dto: CreateExpenseDto, userId: string, tenantId: string) {
-    return this.prisma.expense.create({
+    const expense = await this.prisma.expense.create({
       data: {
         amount: dto.amount,
         category: dto.category,
@@ -17,6 +21,8 @@ export class ExpensesService {
         tenantId,
       },
     });
+    this.eventEmitter.emit('expense.created', expense);
+    return expense;
   }
 
   async listExpenses(tenantId: string, from?: string, to?: string) {
@@ -37,8 +43,10 @@ export class ExpensesService {
   }
 
   async deleteExpense(id: string, tenantId: string) {
-    return this.prisma.expense.delete({
+    const expense = await this.prisma.expense.delete({
       where: { id, tenantId },
     });
+    this.eventEmitter.emit('expense.deleted', expense);
+    return expense;
   }
 }

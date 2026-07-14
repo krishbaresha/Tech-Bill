@@ -1,5 +1,6 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { TenantStatus } from '@prisma/client';
 
 @Injectable()
 export class TenantActiveGuard implements CanActivate {
@@ -28,7 +29,7 @@ export class TenantActiveGuard implements CanActivate {
       return true;
     }
 
-    if (tenant.status !== 'active') {
+    if (tenant.status !== TenantStatus.ACTIVE) {
       throw new ForbiddenException(`Subscription inactive. Current status: ${tenant.status}`);
     }
 

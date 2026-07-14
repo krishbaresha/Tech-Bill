@@ -6,8 +6,9 @@ import {
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import * as bcrypt from 'bcrypt';
-import { Role } from '@prisma/client';
+import { Role, TenantStatus } from '.prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+
 
 const BCRYPT_ROUNDS = 12;
 
@@ -53,19 +54,24 @@ export class TenantsService {
         _count: {
           select: { users: true },
         },
-        users: {
-          where: { role: Role.owner },
-          select: { email: true },
-          take: 1,
-        },
+      },
+    });
+
+    const owners = await this.prisma.user.findMany({
+      where: {
+        role: Role.owner,
+      },
+      select: {
+        email: true,
+        tenantId: true,
       },
     });
 
     return tenants.map((t) => {
-      const { users, ...rest } = t;
+      const owner = owners.find((o) => o.tenantId === t.id);
       return {
-        ...rest,
-        ownerEmail: users[0]?.email,
+        ...t,
+        ownerEmail: owner?.email,
       };
     });
   }
@@ -169,12 +175,13 @@ export class TenantsService {
       throw new NotFoundException(`Tenant with ID "${id}" not found`);
     }
 
-    const { subscriptionExpiresAt, ...rest } = dto;
+    const { subscriptionExpiresAt, status, ...rest } = dto;
 
     return this.prisma.tenant.update({
       where: { id },
       data: {
         ...rest,
+        ...(status ? { status: status.toUpperCase() as TenantStatus } : {}),
         // Only include subscriptionExpiresAt in the update payload if it was explicitly provided
         ...(subscriptionExpiresAt !== undefined
           ? {
@@ -248,7 +255,7 @@ export class TenantsService {
     } else {
       return this.prisma.tenant.update({
         where: { id },
-        data: { status: 'pending_deletion' },
+        data: { status: TenantStatus.PENDING_DELETION },
       });
     }
   }
@@ -261,7 +268,7 @@ export class TenantsService {
 
     return this.prisma.tenant.update({
       where: { id },
-      data: { status: 'active' },
+      data: { status: TenantStatus.ACTIVE },
     });
   }
 
@@ -280,7 +287,7 @@ export class TenantsService {
       data: {
         currentPeriodEnd: newPeriodEnd,
         // If tenant was suspended, reactivate on renewal
-        ...(tenant.status === 'suspended' ? { status: 'active' } : {}),
+        ...(tenant.status === TenantStatus.SUSPENDED ? { status: TenantStatus.ACTIVE } : {}),
       },
     });
   }
@@ -332,7 +339,7 @@ export class TenantsService {
 
     const tenantsToDelete = await this.prisma.tenant.findMany({
       where: {
-        status: 'pending_deletion',
+        status: TenantStatus.PENDING_DELETION,
         updatedAt: { lte: thirtyDaysAgo },
       },
     });

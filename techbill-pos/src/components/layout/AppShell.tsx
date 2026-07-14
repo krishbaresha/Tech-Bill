@@ -1,19 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import {
-  ShoppingCart, BarChart3, LogOut, Package, RotateCcw,
-  FileText, Users, Settings, ClipboardList, Bell, UserCircle, Building2, ShoppingBag, ShieldAlert,
-  ShieldCheck, Star, TrendingDown, Banknote, Menu, Wallet, Truck, Lock
-} from 'lucide-react';
+import { LogOut, Bell, ShieldAlert, Menu, Lock } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuthStore } from '../../store/auth.store';
 import { useLockStore } from '../../store/lock.store';
-import { disconnectSocket } from '../../api/socket';
+import { disconnectSocket, socket } from '../../api/socket';
 import { api } from '../../api/client';
-import { useCan } from '../../lib/permissions';
 import { getRootDomain, isMainDomain } from '../../lib/domain';
 import { SubscriptionBanner } from './SubscriptionBanner';
 import type { Notification } from '../../types';
+import * as LucideIcons from 'lucide-react';
+import { useLicenseStore } from '../../store/license.store';
 
 export default function AppShell() {
   const { user, clearAuth } = useAuthStore();
@@ -57,24 +54,40 @@ export default function AppShell() {
   };
 
   const isPlatformAdmin = user?.role === 'platform_admin';
-  const isOwner = user?.role === 'owner';
 
-  // Permission-based nav checks
-  const canSeePOS = useCan('pos.read') && !isPlatformAdmin;
-  const canSeeDash = useCan('reports.read') && !isPlatformAdmin;
-  const canSeeInventory = useCan('inventory.read') && !isPlatformAdmin;
-  const canSeeReturns = useCan('returns.read') && !isPlatformAdmin;
-  const canSeeReports = useCan('reports.read') && !isPlatformAdmin;
-  const canSeeCustomers = useCan('customers.read') && !isPlatformAdmin;
-  const canSeeSuppliers = useCan('suppliers.read') && !isPlatformAdmin;
-  const canSeeUsers = useCan('users.read') && !isPlatformAdmin;
-  const canSeeSettings = useCan('settings.read') && !isPlatformAdmin;
-  const canSeeAudit = useCan('audit.read') && !isPlatformAdmin;
-  const canSeeWarranty = useCan('warranty.read') && !isPlatformAdmin;
-  const canSeeLoyalty = useCan('loyalty.read') && !isPlatformAdmin;
-  const canSeeReturnAnalytics = useCan('returns.read') && !isPlatformAdmin;
-  const canSeeCashRecon = useCan('reports.cash_reconciliation') && !isPlatformAdmin;
-  const canSeeOnlineOrders = useCan('pos.online_sell') && !isPlatformAdmin && !!user?.onlineSellingEnabled;
+  const { license, fetchLicense } = useLicenseStore();
+
+  useEffect(() => {
+    // Only fetch for non-platform admin users, or if user is loaded
+    if (user) {
+      void fetchLicense();
+    }
+  }, [user, fetchLicense]);
+
+  useEffect(() => {
+    const handleUpdate = (payload: { tenantId: string }) => {
+      if (payload.tenantId === '*' || payload.tenantId === user?.tenantId) {
+        void fetchLicense();
+      }
+    };
+
+    socket.on('subscription.updated', handleUpdate);
+    socket.on('features.updated', handleUpdate);
+
+    return () => {
+      socket.off('subscription.updated', handleUpdate);
+      socket.off('features.updated', handleUpdate);
+    };
+  }, [user?.tenantId, fetchLicense]);
+
+  const standardNavItems = license?.navigation.filter(
+    (n) => n.category !== 'Administration' && n.category !== 'Settings'
+  ) || [];
+
+  const configNavItems = license?.navigation.filter(
+    (n) => n.category === 'Administration' || n.category === 'Settings'
+  ) || [];
+
 
   const fetchNotifications = useCallback(async () => {
     if (isPlatformAdmin) return;
@@ -264,120 +277,30 @@ export default function AppShell() {
           )}
 
           {/* Standard Shop Sidebar sections */}
-          {canSeePOS && (
-            <NavLink to="/pos" className={navClass}>
-              <ShoppingCart size={16} />
-              POS
-            </NavLink>
-          )}
-          {canSeeDash && (
-            <NavLink to="/dashboard" className={navClass}>
-              <BarChart3 size={16} />
-              Dashboard
-            </NavLink>
-          )}
-          {isOwner && !isPlatformAdmin && (
-            <NavLink to="/invoices" className={navClass}>
-              <FileText size={16} />
-              Invoices
-            </NavLink>
-          )}
-          {canSeeOnlineOrders && (
-            <NavLink to="/online-orders" className={navClass}>
-              <Truck size={16} />
-              Online Orders
-            </NavLink>
-          )}
-          {canSeeInventory && (
-            <NavLink to="/inventory" className={navClass}>
-              <Package size={16} />
-              Inventory
-            </NavLink>
-          )}
-          {canSeeReturns && (
-            <NavLink to="/returns" className={navClass}>
-              <RotateCcw size={16} />
-              Returns
-            </NavLink>
-          )}
-          {canSeeReturnAnalytics && (
-            <NavLink to="/return-analytics" className={navClass}>
-              <TrendingDown size={16} />
-              Return Analytics
-            </NavLink>
-          )}
-          {canSeeReports && (
-            <NavLink to="/reports" className={navClass}>
-              <FileText size={16} />
-              Reports
-            </NavLink>
-          )}
-          {canSeeReports && (
-            <NavLink to="/expenses" className={navClass}>
-              <Wallet size={16} />
-              Expenses
-            </NavLink>
-          )}
-          {canSeeCashRecon && (
-            <NavLink to="/cash-reconciliation" className={navClass}>
-              <Banknote size={16} />
-              Cash Reconciliation
-            </NavLink>
-          )}
-          {canSeeCustomers && (
-            <NavLink to="/customers" className={navClass}>
-              <UserCircle size={16} />
-              Customers
-            </NavLink>
-          )}
-          {canSeeLoyalty && (
-            <NavLink to="/loyalty" className={navClass}>
-              <Star size={16} />
-              Loyalty Rewards
-            </NavLink>
-          )}
-          {canSeeWarranty && (
-            <NavLink to="/warranty" className={navClass}>
-              <ShieldCheck size={16} />
-              Warranty
-            </NavLink>
-          )}
-          {canSeeSuppliers && (
-            <NavLink to="/suppliers" className={navClass}>
-              <Building2 size={16} />
-              Suppliers
-            </NavLink>
-          )}
-          {canSeeSuppliers && (
-            <NavLink to="/purchase-orders" className={navClass}>
-              <ShoppingBag size={16} />
-              Purchase Orders
-            </NavLink>
-          )}
+          {standardNavItems.map((item) => {
+            const IconComp = (LucideIcons[item.icon as keyof typeof LucideIcons] || LucideIcons.Package) as React.ComponentType<{ size: number }>;
+            return (
+              <NavLink key={item.key} to={item.route} className={navClass}>
+                <IconComp size={16} />
+                {item.title}
+              </NavLink>
+            );
+          })}
 
-          {(canSeeUsers || canSeeSettings || canSeeAudit) && (
+          {configNavItems.length > 0 && (
             <>
               <div className="pt-4 pb-1 px-3">
                 <p className="text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider font-space">Configuration</p>
               </div>
-              {canSeeUsers && (
-                <NavLink to="/users" className={navClass}>
-                  <Users size={16} />
-                  Users & Staff
-                </NavLink>
-              )}
-              {canSeeSettings && (
-                <NavLink to="/settings" className={navClass}>
-                  <Settings size={16} />
-                  Shop Settings
-                </NavLink>
-              )}
-              {canSeeAudit && (
-                <NavLink to="/audit" className={navClass}>
-                  <ClipboardList size={16} />
-                  Audit Log
-                </NavLink>
-              )}
+              {configNavItems.map((item) => {
+                const IconComp = (LucideIcons[item.icon as keyof typeof LucideIcons] || LucideIcons.Package) as React.ComponentType<{ size: number }>;
+                return (
+                  <NavLink key={item.key} to={item.route} className={navClass}>
+                    <IconComp size={16} />
+                    {item.title}
+                  </NavLink>
+                );
+              })}
             </>
           )}
         </nav>

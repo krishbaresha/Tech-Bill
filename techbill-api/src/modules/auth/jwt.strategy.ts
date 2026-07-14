@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
+import { TenantStatus } from '@prisma/client';
 
 interface JwtPayload {
   sub: string;
@@ -44,7 +45,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     // Block suspended/cancelled tenant users
-    if (user.tenant && user.tenant.status !== 'active') {
+    if (user.tenant && user.tenant.status !== TenantStatus.ACTIVE) {
       throw new UnauthorizedException('Tenant is suspended or cancelled');
     }
 

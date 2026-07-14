@@ -50,10 +50,11 @@ export default function GrnPage() {
       try {
         const [poRes, prodRes] = await Promise.all([
           api.get<PurchaseOrder[]>('/purchase-orders'),
-          api.get<Product[]>('/inventory/products'),
+          api.get<{ data: Product[] } | Product[]>('/inventory/products'),
         ]);
         setPurchaseOrders(poRes.data.filter((p) => ['draft', 'sent', 'partial'].includes(p.status)));
-        setProducts(prodRes.data);
+        const d = prodRes.data;
+        setProducts(Array.isArray(d) ? d : (d as { data: Product[] }).data ?? []);
       } catch {
         // silently ignore
       }

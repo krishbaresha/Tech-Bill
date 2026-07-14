@@ -22,8 +22,12 @@ import { SettingsModule } from './modules/settings/settings.module';
 import { AiModule } from './modules/ai/ai.module';
 import { ExpensesModule } from './modules/expenses/expenses.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { CreditModule } from './modules/credit/credit.module';
+import { IntegrityModule } from './modules/integrity/integrity.module';
+import { FeaturesModule } from './modules/features/features.module';
 
 import { TenantActiveGuard } from './common/guards/tenant-active.guard';
+import { FeatureGuard } from './common/guards/feature.guard';
 
 @Module({
   imports: [
@@ -47,12 +51,16 @@ import { TenantActiveGuard } from './common/guards/tenant-active.guard';
     AiModule,
     ExpensesModule,
     PaymentsModule,
+    CreditModule,
+    IntegrityModule,
+    FeaturesModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: TenantActiveGuard },
+    { provide: APP_GUARD, useClass: FeatureGuard },
   ],
 })
 export class AppModule {}

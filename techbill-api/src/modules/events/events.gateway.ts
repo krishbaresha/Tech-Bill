@@ -144,4 +144,20 @@ export class EventsGateway
   handleCashSubmitted(payload: unknown) {
     this.server.emit('cash_submitted', payload);
   }
+
+  @OnEvent('expense.created')
+  handleExpenseCreated(payload: unknown) {
+    this.server.emit('expense.created', payload);
+  }
+
+  @OnEvent('expense.deleted')
+  handleExpenseDeleted(payload: unknown) {
+    this.server.emit('expense.deleted', payload);
+  }
+
+  @OnEvent('subscription.updated')
+  handleSubscriptionUpdated(payload: { tenantId: string }) {
+    this.server.emit('subscription.updated', payload);
+    this.server.emit('features.updated', payload);
+  }
 }

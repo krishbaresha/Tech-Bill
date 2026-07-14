@@ -15,6 +15,7 @@ interface UpdateSettingsDto {
   invoiceFooterNotes?: string | null;
   invoiceWatermarkText?: string | null;
   invoiceShowWatermark?: boolean;
+  quickAddOns?: any;
 }
 
 @Injectable()
@@ -41,6 +42,11 @@ export class SettingsService {
           invoicePrimaryColor: '#ffffff',
           invoiceAccentColor: '#14b8a6',
           invoiceShowWatermark: false,
+          quickAddOns: [
+            { name: 'Bag', amount: 100, enabled: true },
+            { name: 'Gift Wrap', amount: 150, enabled: true },
+            { name: 'Delivery', amount: 500, enabled: false },
+          ],
         },
       });
       settings = await this.prisma.shopSettings.findFirst({

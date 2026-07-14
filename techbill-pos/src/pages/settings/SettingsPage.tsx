@@ -22,6 +22,7 @@ interface SettingsForm {
   invoiceFooterNotes: string;
   invoiceWatermarkText: string;
   invoiceShowWatermark: boolean;
+  quickAddOns: { name: string; amount: number; enabled: boolean }[];
 }
 
 const inputCls = 'w-full bg-stitch-surface-container-high/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-stitch-on-surface outline-none focus:border-stitch-primary/50 transition-colors placeholder:text-stitch-on-surface-variant/50';
@@ -110,6 +111,7 @@ export default function SettingsPage() {
     invoiceFooterNotes: '',
     invoiceWatermarkText: '',
     invoiceShowWatermark: false,
+    quickAddOns: [],
   });
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -132,6 +134,11 @@ export default function SettingsPage() {
           invoiceFooterNotes: s.invoiceFooterNotes ?? '',
           invoiceWatermarkText: s.invoiceWatermarkText ?? '',
           invoiceShowWatermark: s.invoiceShowWatermark ?? false,
+          quickAddOns: s.quickAddOns ?? [
+            { name: 'Bag', amount: 100, enabled: true },
+            { name: 'Gift Wrap', amount: 150, enabled: true },
+            { name: 'Delivery', amount: 500, enabled: false },
+          ],
         });
       })
       .catch(() => setError('Failed to load settings'))
@@ -172,6 +179,7 @@ export default function SettingsPage() {
         invoiceFooterNotes: form.invoiceFooterNotes || null,
         invoiceWatermarkText: form.invoiceWatermarkText || null,
         invoiceShowWatermark: form.invoiceShowWatermark,
+        quickAddOns: form.quickAddOns,
       });
       setSuccessMsg('Settings saved');
       setTimeout(() => setSuccessMsg(''), 3000);
@@ -357,6 +365,94 @@ export default function SettingsPage() {
                 </div>
                 <span className="text-xs text-stitch-on-surface-variant">Show watermark</span>
               </label>
+            </div>
+          </div>
+        </FieldGroup>
+
+        <FieldGroup title="Quick Add-on Buttons">
+          <div className="space-y-4">
+            <p className="text-[11px] text-stitch-on-surface-variant/80 leading-relaxed">
+              Configure pre-set add-on charges (like packaging, bags, or service fees) that cashiers can quickly apply on the POS checkout screen.
+            </p>
+
+            <div className="space-y-2">
+              {form.quickAddOns.map((addOn, index) => (
+                <div key={index} className="flex items-end gap-3 bg-white/[0.02] border border-white/5 p-3 rounded-lg hover:border-white/10 transition-colors">
+                  <div className="flex-1 min-w-0">
+                    <label className="block text-[8px] font-bold text-stitch-on-surface-variant uppercase tracking-wider mb-1.5">Name</label>
+                    <input
+                      type="text"
+                      value={addOn.name}
+                      onChange={(e) => {
+                        const updated = [...form.quickAddOns];
+                        updated[index] = { ...addOn, name: e.target.value };
+                        setForm(prev => ({ ...prev, quickAddOns: updated }));
+                      }}
+                      className="bg-stitch-surface-container-high/30 border border-white/5 text-xs font-semibold text-white outline-none w-full focus:border-stitch-primary/40 rounded px-2 py-1.5 transition-colors"
+                      placeholder="Add-on Name (e.g. Bag)"
+                    />
+                  </div>
+                  <div className="w-28">
+                    <label className="block text-[8px] font-bold text-stitch-on-surface-variant uppercase tracking-wider mb-1.5">Amount (₨)</label>
+                    <div className="flex items-center gap-1 bg-stitch-surface-container-high/30 border border-white/5 rounded px-2 py-1.5 focus-within:border-stitch-primary/40 transition-colors">
+                      <span className="text-[10px] text-stitch-on-surface-variant">₨</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={addOn.amount}
+                        onChange={(e) => {
+                          const updated = [...form.quickAddOns];
+                          updated[index] = { ...addOn, amount: Number(e.target.value) || 0 };
+                          setForm(prev => ({ ...prev, quickAddOns: updated }));
+                        }}
+                        className="bg-transparent border-none text-xs text-white outline-none w-full text-right p-0"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center pb-1">
+                    <label className="block text-[8px] font-bold text-stitch-on-surface-variant uppercase tracking-wider mb-2">Enabled</label>
+                    <div
+                      onClick={() => {
+                        const updated = [...form.quickAddOns];
+                        updated[index] = { ...addOn, enabled: !addOn.enabled };
+                        setForm(prev => ({ ...prev, quickAddOns: updated }));
+                      }}
+                      className={`relative w-8 h-4 rounded-full transition-colors cursor-pointer ${addOn.enabled ? 'bg-stitch-primary' : 'bg-white/10'}`}
+                    >
+                      <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform duration-200 ease-in-out ${addOn.enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                    </div>
+                  </div>
+                  <div className="pb-0.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = form.quickAddOns.filter((_, i) => i !== index);
+                        setForm(prev => ({ ...prev, quickAddOns: updated }));
+                      }}
+                      className="p-2 hover:bg-stitch-error/10 hover:text-stitch-error text-white/40 border border-transparent hover:border-stitch-error/20 rounded-lg transition-colors flex items-center justify-center"
+                      title="Delete add-on"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="border-t border-white/5 pt-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setForm(prev => ({
+                    ...prev,
+                    quickAddOns: [...prev.quickAddOns, { name: '', amount: 0, enabled: true }]
+                  }));
+                }}
+                className="px-3 py-1.5 bg-stitch-primary/10 text-stitch-primary border border-stitch-primary/20 rounded-lg text-xs font-bold hover:bg-stitch-primary/25 transition-colors flex items-center justify-center"
+              >
+                <Plus size={13} className="mr-1" /> Add Add-on Button
+              </button>
             </div>
           </div>
         </FieldGroup>

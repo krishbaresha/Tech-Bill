@@ -49,6 +49,7 @@ export default function PosScreen() {
   // Keep a ref in sync so handleAddUnit can read the current product value
   // without needing a state updater (which StrictMode would double-invoke).
   const viewingProductRef = useRef<ProductCard | null>(null);
+  const unitsCacheRef = useRef<Record<string, InventoryUnit[]>>({});
   const [unitPickerUnits, setUnitPickerUnits] = useState<InventoryUnit[]>([]);
   const [unitPickerLoading, setUnitPickerLoading] = useState(false);
   const [completedSale, setCompletedSale] = useState<Sale | null>(null);
@@ -77,6 +78,8 @@ export default function PosScreen() {
       
       const settingsPromise = api.get<ShopSettings>('/settings');
       const syncPromise = syncPosDashboard();
+      
+      unitsCacheRef.current = {};
       
       const [, settingsRes] = await Promise.allSettled([syncPromise, settingsPromise]);
       
@@ -119,6 +122,21 @@ export default function PosScreen() {
     return Array.from(map.values());
   }, [dashboard]);
 
+  useEffect(() => {
+    if (!allProducts.length) return;
+    allProducts.forEach(async (p) => {
+      if (p.inStockCount > 0 && !unitsCacheRef.current[p.id]) {
+        try {
+          const res = await api.get<any>(`/inventory/units?productId=${p.id}&status=in_stock&limit=50`);
+          const payload = res.data;
+          unitsCacheRef.current[p.id] = Array.isArray(payload) ? payload : payload.data ?? payload.units ?? [];
+        } catch {
+          // ignore background fetch error
+        }
+      }
+    });
+  }, [allProducts]);
+
   const filteredProducts = useMemo<ProductCard[]>(() => {
     return allProducts.filter((p) => {
       if (selectedCategory && p.category !== selectedCategory) return false;
@@ -132,6 +150,14 @@ export default function PosScreen() {
   const openUnitPicker = useCallback(async (product: ProductCard) => {
     viewingProductRef.current = product;
     setViewingProduct(product);
+    
+    const cached = unitsCacheRef.current[product.id];
+    if (cached) {
+      setUnitPickerUnits(cached);
+      setUnitPickerLoading(false);
+      return;
+    }
+
     setUnitPickerUnits([]);
     setUnitPickerLoading(true);
     try {
@@ -139,7 +165,9 @@ export default function PosScreen() {
         `/inventory/units?productId=${product.id}&status=in_stock&limit=100`
       );
       const payload = res.data;
-      setUnitPickerUnits(Array.isArray(payload) ? payload : payload.data ?? payload.units ?? []);
+      const units = Array.isArray(payload) ? payload : payload.data ?? payload.units ?? [];
+      unitsCacheRef.current[product.id] = units;
+      setUnitPickerUnits(units);
     } catch {
       setUnitPickerUnits([]);
     } finally {
@@ -175,9 +203,13 @@ export default function PosScreen() {
   const handleAddToCart = useCallback(async (p: ProductCard) => {
     if (p.inStockCount <= 0) return;
     try {
-      const res = await api.get<any>(`/inventory/units?productId=${p.id}&status=in_stock&limit=50`);
-      const payload = res.data;
-      const units = Array.isArray(payload) ? payload : payload.data ?? payload.units ?? [];
+      let units = unitsCacheRef.current[p.id];
+      if (!units) {
+        const res = await api.get<any>(`/inventory/units?productId=${p.id}&status=in_stock&limit=50`);
+        const payload = res.data;
+        units = Array.isArray(payload) ? payload : payload.data ?? payload.units ?? [];
+        unitsCacheRef.current[p.id] = units;
+      }
       
       const currentCartSerials = useCartStore.getState().items.map(i => i.serialNumber);
       const availableUnit = units.find((u: any) => !currentCartSerials.includes(u.serialNumber));
@@ -254,8 +286,12 @@ export default function PosScreen() {
   const closeInvoice = useCallback(() => {
     setCompletedSale(null);
     clearCart();
+    unitsCacheRef.current = {};
+    // Re-sync POS dashboard so stock counts update immediately after sale
+    void syncPosDashboard();
     toast.success('Sale transaction cleared.');
-  }, [clearCart, toast]);
+  }, [clearCart, toast, syncPosDashboard]);
+
 
   const dateStr = now.toLocaleDateString('en-PK', { weekday: 'short', day: '2-digit', month: 'short' });
   const timeStr = now.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' });

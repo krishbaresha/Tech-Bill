@@ -24,6 +24,26 @@ const PLAN_COLORS: Record<string, string> = {
 const inputCls = 'w-full bg-stitch-surface-container-high/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-stitch-on-surface outline-none focus:border-stitch-primary/50 transition-colors placeholder:text-stitch-on-surface-variant/50';
 const labelCls = 'block text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider mb-1';
 
+interface SystemPlan {
+  id: string;
+  name: string;
+  price: number;
+  billingCycle: string;
+}
+
+interface SystemFeature {
+  id: string;
+  key: string;
+  name: string;
+  category: { name: string };
+}
+
+interface TenantOverride {
+  featureId: string;
+  access: 'NONE' | 'READ' | 'WRITE' | 'FULL';
+  feature: { key: string };
+}
+
 export default function TenantsPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(false);
@@ -41,7 +61,11 @@ export default function TenantsPage() {
     ownerName: '', ownerEmail: '', ownerPasswordHashOrText: '',
   });
 
-  const [editForm, setEditForm] = useState({ plan: 'trial', maxUsers: 5, status: 'active', onlineSellingEnabled: false });
+  const [editForm, setEditForm] = useState({ plan: '', maxUsers: 5, status: 'active', onlineSellingEnabled: false });
+  const [systemPlans, setSystemPlans] = useState<SystemPlan[]>([]);
+  const [systemFeatures, setSystemFeatures] = useState<SystemFeature[]>([]);
+  const [tenantOverrides, setTenantOverrides] = useState<Record<string, 'DEFAULT' | 'NONE' | 'READ' | 'WRITE' | 'FULL'>>({});
+  const [selectedTab, setSelectedTab] = useState<'details' | 'features'>('details');
 
   const [renewingTenant, setRenewingTenant] = useState<Tenant | null>(null);
   const [renewStartDate, setRenewStartDate] = useState(new Date().toISOString().split('T')[0]);
@@ -59,7 +83,38 @@ export default function TenantsPage() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    api.get<SystemPlan[]>('/plans')
+      .then((r) => setSystemPlans(r.data))
+      .catch(() => console.error('Failed to load system plans'));
+    api.get<SystemFeature[]>('/features')
+      .then((r) => setSystemFeatures(r.data))
+      .catch(() => console.error('Failed to load system features'));
+  }, []);
+
+  const startEdit = async (tenant: Tenant) => {
+    setEditingTenant(tenant);
+    setSelectedTab('details');
+    setEditForm({
+      plan: tenant.subscriptionPlanId || '',
+      maxUsers: tenant.maxUsers,
+      status: tenant.status,
+      onlineSellingEnabled: tenant.onlineSellingEnabled,
+    });
+    
+    setTenantOverrides({});
+    try {
+      const res = await api.get<TenantOverride[]>(`/tenant/${tenant.id}/features`);
+      const ovsMap: Record<string, 'DEFAULT' | 'NONE' | 'READ' | 'WRITE' | 'FULL'> = {};
+      for (const o of res.data) {
+        ovsMap[o.feature.key] = o.access;
+      }
+      setTenantOverrides(ovsMap);
+    } catch (err) {
+      console.error('Failed to fetch overrides for tenant', err);
+    }
+  };
 
   useEffect(() => {
     if (!loading && containerRef.current) {
@@ -103,8 +158,25 @@ export default function TenantsPage() {
     setLoading(true);
     setError('');
     try {
-      await api.patch(`/tenants/${editingTenant.id}`, editForm);
-      setSuccessMsg(`Tenant "${editingTenant.name}" updated.`);
+      // 1. Update basic tenant info
+      await api.patch(`/tenants/${editingTenant.id}`, {
+        maxUsers: editForm.maxUsers,
+        status: editForm.status,
+        onlineSellingEnabled: editForm.onlineSellingEnabled,
+      });
+
+      // 2. Update pricing plan
+      if (editForm.plan) {
+        await api.put(`/tenant/${editingTenant.id}/plan`, { planId: editForm.plan });
+      }
+
+      // 3. Update feature overrides
+      const overridesPayload = Object.entries(tenantOverrides)
+        .filter(([_, access]) => access !== 'DEFAULT')
+        .map(([featureKey, access]) => ({ featureKey, access }));
+      await api.put(`/tenant/${editingTenant.id}/features`, { overrides: overridesPayload });
+
+      setSuccessMsg(`Tenant "${editingTenant.name}" updated successfully.`);
       setEditingTenant(null);
       load();
       setTimeout(() => setSuccessMsg(''), 4000);
@@ -375,7 +447,7 @@ export default function TenantsPage() {
       {/* EDIT MODAL */}
       {editingTenant && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="glass-modal rounded-xl p-6 w-full max-w-md border border-white/10 space-y-4">
+          <div className="glass-modal rounded-xl p-6 w-full max-w-xl border border-white/10 space-y-4">
             <div className="flex items-center justify-between border-b border-white/5 pb-3">
               <h2 className="font-bold text-stitch-on-surface font-space flex items-center gap-2">
                 <Edit3 size={16} className="text-indigo-400" /> Edit: {editingTenant.name}
@@ -384,30 +456,103 @@ export default function TenantsPage() {
                 <X size={18} />
               </button>
             </div>
+
+            <div className="flex border-b border-white/5 pb-2">
+              <button
+                type="button"
+                onClick={() => setSelectedTab('details')}
+                className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors ${
+                  selectedTab === 'details'
+                    ? 'border-indigo-500 text-white font-space'
+                    : 'border-transparent text-stitch-on-surface-variant hover:text-white font-space'
+                }`}
+              >
+                Tenant Details
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedTab('features')}
+                className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors ${
+                  selectedTab === 'features'
+                    ? 'border-indigo-500 text-white font-space'
+                    : 'border-transparent text-stitch-on-surface-variant hover:text-white font-space'
+                }`}
+              >
+                Feature Overrides
+              </button>
+            </div>
+
             <form onSubmit={handleEditSubmit} className="space-y-4">
-              <div>
-                <label className={labelCls}>Pricing Plan</label>
-                <select value={editForm.plan} onChange={(e) => setEditForm({ ...editForm, plan: e.target.value })}
-                  className={inputCls}>
-                  <option value="trial">Trial Plan</option>
-                  <option value="starter">Starter Plan</option>
-                  <option value="premium">Premium Plan</option>
-                  <option value="enterprise">Enterprise Plan</option>
-                </select>
-              </div>
-              <div>
-                <label className={labelCls}>User Limit</label>
-                <input type="number" min={1} value={editForm.maxUsers}
-                  onChange={(e) => setEditForm({ ...editForm, maxUsers: parseInt(e.target.value) || 1 })}
-                  className={inputCls} />
-              </div>
-              <div className="flex items-center gap-2 mt-2">
-                <input type="checkbox" id="onlineSellingEnabled" 
-                  checked={editForm.onlineSellingEnabled}
-                  onChange={(e) => setEditForm({ ...editForm, onlineSellingEnabled: e.target.checked })}
-                  className="rounded border-white/10 bg-white/5 text-indigo-500 focus:ring-indigo-500/50" />
-                <label htmlFor="onlineSellingEnabled" className="text-sm font-medium text-stitch-on-surface">Enable Online Selling</label>
-              </div>
+              {selectedTab === 'details' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className={labelCls}>Pricing Plan</label>
+                    <select value={editForm.plan} onChange={(e) => setEditForm({ ...editForm, plan: e.target.value })}
+                      className={inputCls}>
+                      <option value="">No Active Plan</option>
+                      {systemPlans.map((plan) => (
+                        <option key={plan.id} value={plan.id}>
+                          {plan.name} ({plan.billingCycle.toLowerCase()})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelCls}>User Limit</label>
+                    <input type="number" min={1} value={editForm.maxUsers}
+                      onChange={(e) => setEditForm({ ...editForm, maxUsers: parseInt(e.target.value) || 1 })}
+                      className={inputCls} />
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <input type="checkbox" id="onlineSellingEnabled" 
+                      checked={editForm.onlineSellingEnabled}
+                      onChange={(e) => setEditForm({ ...editForm, onlineSellingEnabled: e.target.checked })}
+                      className="rounded border-white/10 bg-white/5 text-indigo-500 focus:ring-indigo-500/50" />
+                    <label htmlFor="onlineSellingEnabled" className="text-sm font-medium text-stitch-on-surface">Enable Online Selling</label>
+                  </div>
+                </div>
+              )}
+
+              {selectedTab === 'features' && (
+                <div className="max-h-[350px] overflow-y-auto pr-1 space-y-4">
+                  <p className="text-xs text-stitch-on-surface-variant leading-relaxed">
+                    Overrides let you force custom access levels on specific features regardless of what their subscription plan provides.
+                  </p>
+                  {Object.entries(
+                    systemFeatures.reduce((acc, feat) => {
+                      const catName = feat.category?.name || 'General';
+                      if (!acc[catName]) acc[catName] = [];
+                      acc[catName].push(feat);
+                      return acc;
+                    }, {} as Record<string, SystemFeature[]>)
+                  ).map(([catName, feats]) => (
+                    <div key={catName} className="space-y-2 border-t border-white/5 pt-3">
+                      <h4 className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">{catName}</h4>
+                      <div className="space-y-2">
+                        {feats.map((feat) => (
+                          <div key={feat.id} className="flex items-center justify-between gap-4">
+                            <span className="text-sm text-stitch-on-surface font-medium">{feat.name}</span>
+                            <select
+                              value={tenantOverrides[feat.key] || 'DEFAULT'}
+                              onChange={(e) =>
+                                setTenantOverrides({ ...tenantOverrides, [feat.key]: e.target.value as any })
+                              }
+                              className="bg-stitch-surface-container-high border border-white/10 rounded-lg px-2 py-1 text-xs text-stitch-on-surface outline-none focus:border-indigo-500 transition-colors w-32"
+                            >
+                              <option value="DEFAULT">Plan Default</option>
+                              <option value="NONE">Disabled (NONE)</option>
+                              <option value="READ">Read Only</option>
+                              <option value="WRITE">Read & Write</option>
+                              <option value="FULL">Full Access</option>
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="flex gap-2 justify-end pt-2 border-t border-white/5">
                 <button type="button" onClick={() => setEditingTenant(null)}
                   className="px-4 py-2 text-sm text-stitch-on-surface-variant border border-white/10 rounded-lg hover:bg-white/5 transition-colors">
@@ -663,7 +808,7 @@ export default function TenantsPage() {
                           <Key size={14} />
                         </button>
                         <button
-                          onClick={() => { setEditingTenant(t); setEditForm({ plan: t.plan, maxUsers: t.maxUsers, status: t.status, onlineSellingEnabled: t.onlineSellingEnabled }); }}
+                          onClick={() => startEdit(t)}
                           title="Edit Tenant"
                           className="p-1.5 text-stitch-on-surface-variant hover:text-indigo-400 rounded-lg hover:bg-indigo-500/10 transition-colors">
                           <Edit3 size={14} />
