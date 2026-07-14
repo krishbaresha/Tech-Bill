@@ -16,6 +16,10 @@ export class CreateCreditDto {
   @IsDateString()
   date: string;
 
+  @IsString()
+  @IsOptional()
+  personName?: string;
+
   @IsUUID()
   @IsOptional()
   customerId?: string;

@@ -27,6 +27,7 @@ interface CreditRecord {
   dueAmount: number;
   description: string | null;
   date: string;
+  personName: string | null;
   customerId: string | null;
   supplierId: string | null;
   createdAt: string;
@@ -37,8 +38,6 @@ interface CreditRecord {
 export default function CreditPage() {
   const toast = useToastStore();
   const [records, setRecords] = useState<CreditRecord[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [tab, setTab] = useState<'CUSTOMER' | 'SUPPLIER'>('CUSTOMER');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'PAID'>('PENDING');
   const [search, setSearch] = useState('');
@@ -48,15 +47,14 @@ export default function CreditPage() {
   // Modals state
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState<CreditRecord | null>(null);
-  
+
   // Add form state
   const [addForm, setAddForm] = useState({
     type: 'CUSTOMER' as 'CUSTOMER' | 'SUPPLIER',
+    personName: '',
     amount: '',
     description: '',
     date: new Date().toISOString().slice(0, 10),
-    customerId: '',
-    supplierId: '',
   });
 
   // Payment form state
@@ -73,22 +71,9 @@ export default function CreditPage() {
     }
   };
 
-  const fetchAssociates = async () => {
-    try {
-      const [custRes, suppRes] = await Promise.all([
-        api.get<Customer[]>('/sales/customers'),
-        api.get<Supplier[]>('/inventory/suppliers'),
-      ]);
-      setCustomers(custRes.data);
-      setSuppliers(suppRes.data);
-    } catch {
-      toast.error('Failed to load customers or suppliers');
-    }
-  };
-
   const loadData = async () => {
     setDataLoading(true);
-    await Promise.all([fetchRecords(), fetchAssociates()]);
+    await fetchRecords();
     setDataLoading(false);
   };
 
@@ -116,8 +101,7 @@ export default function CreditPage() {
         amount: parseFloat(addForm.amount),
         description: addForm.description || undefined,
         date: addForm.date,
-        customerId: addForm.type === 'CUSTOMER' ? addForm.customerId : undefined,
-        supplierId: addForm.type === 'SUPPLIER' ? addForm.supplierId : undefined,
+        personName: addForm.personName || undefined,
       };
 
       await api.post('/credit', payload);
@@ -125,11 +109,10 @@ export default function CreditPage() {
       setShowAddModal(false);
       setAddForm({
         type: tab,
+        personName: '',
         amount: '',
         description: '',
         date: new Date().toISOString().slice(0, 10),
-        customerId: '',
-        supplierId: '',
       });
       await fetchRecords();
     } catch (err: any) {
@@ -169,16 +152,28 @@ export default function CreditPage() {
     }
   };
 
+  // Get display name for a record
+  const getDisplayName = (r: CreditRecord): string => {
+    if (r.personName) return r.personName;
+    if (r.type === 'CUSTOMER') return r.customer?.name ?? 'Unknown';
+    return r.supplier?.name ?? 'Unknown';
+  };
+
+  const getDisplayPhone = (r: CreditRecord): string | undefined => {
+    if (r.type === 'CUSTOMER') return r.customer?.phone;
+    return r.supplier?.phone;
+  };
+
   // Filter & Search
   const q = search.toLowerCase();
   const filteredRecords = records.filter((r) => {
     if (r.type !== tab) return false;
     if (statusFilter !== 'ALL' && r.status !== statusFilter) return false;
-    
-    const name = r.type === 'CUSTOMER' ? (r.customer?.name ?? '') : (r.supplier?.name ?? '');
-    const phone = r.type === 'CUSTOMER' ? (r.customer?.phone ?? '') : (r.supplier?.phone ?? '');
+
+    const name = getDisplayName(r);
+    const phone = getDisplayPhone(r) ?? '';
     const desc = r.description ?? '';
-    
+
     return name.toLowerCase().includes(q) || phone.includes(q) || desc.toLowerCase().includes(q);
   });
 
@@ -201,18 +196,17 @@ export default function CreditPage() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-stitch-on-surface font-space">Credit Management</h1>
-            <p className="text-xs text-stitch-on-surface-variant">Track receivables (Khata) and payables (Supplier Credit)</p>
+            <p className="text-xs text-stitch-on-surface-variant">Track receivables (Khata) and payables (We Owe)</p>
           </div>
         </div>
         <button
           onClick={() => {
             setAddForm({
               type: tab,
+              personName: '',
               amount: '',
               description: '',
               date: new Date().toISOString().slice(0, 10),
-              customerId: '',
-              supplierId: '',
             });
             setShowAddModal(true);
           }}
@@ -228,7 +222,7 @@ export default function CreditPage() {
           <div className="absolute top-0 left-0 right-0 h-0.5 bg-stitch-tertiary/60" />
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Total Customer Receivables (Inflow)</p>
+              <p className="text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Total Receivables — Customer Owes Us (Inflow)</p>
               <p className="text-2xl font-bold font-space mt-1 text-stitch-tertiary tabular-nums">
                 {formatPKR(totalReceivables)}
               </p>
@@ -243,7 +237,7 @@ export default function CreditPage() {
           <div className="absolute top-0 left-0 right-0 h-0.5 bg-stitch-error/60" />
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Total Supplier Payables (Outflow)</p>
+              <p className="text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Total Payables — We Owe (Outflow)</p>
               <p className="text-2xl font-bold font-space mt-1 text-stitch-error tabular-nums">
                 {formatPKR(totalPayables)}
               </p>
@@ -271,7 +265,7 @@ export default function CreditPage() {
                   : 'text-stitch-on-surface-variant hover:bg-white/5 hover:text-white'
               }`}
             >
-              {t === 'CUSTOMER' ? 'Customer Credit (Khata)' : 'Supplier Credit (Payables)'}
+              {t === 'CUSTOMER' ? 'Customer Owes Us (Khata)' : 'We Owe (Payables)'}
             </button>
           ))}
         </div>
@@ -283,7 +277,7 @@ export default function CreditPage() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search name, phone, description…"
+              placeholder="Search name, description…"
               className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm text-stitch-on-surface outline-none focus:border-stitch-primary/50 transition-colors placeholder:text-stitch-on-surface-variant/40"
             />
           </div>
@@ -314,7 +308,7 @@ export default function CreditPage() {
             <thead>
               <tr className="bg-stitch-surface-container-high/50 border-b border-white/5">
                 <th className="px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Date</th>
-                <th className="px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Associate</th>
+                <th className="px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Person / Party</th>
                 <th className="px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Description</th>
                 <th className="px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Total Amount</th>
                 <th className="px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Paid Amount</th>
@@ -339,16 +333,16 @@ export default function CreditPage() {
                 </tr>
               ) : (
                 filteredRecords.map((r) => {
-                  const associateName = r.type === 'CUSTOMER' ? (r.customer?.name ?? 'Unknown Customer') : (r.supplier?.name ?? 'Unknown Supplier');
-                  const associatePhone = r.type === 'CUSTOMER' ? r.customer?.phone : r.supplier?.phone;
+                  const displayName = getDisplayName(r);
+                  const displayPhone = getDisplayPhone(r);
                   return (
                     <tr key={r.id} className="hover:bg-white/[0.02] transition-colors">
                       <td className="px-4 py-3 text-sm text-stitch-on-surface-variant font-mono whitespace-nowrap">
                         {r.date ? new Date(r.date).toLocaleDateString('en-GB') : '—'}
                       </td>
                       <td className="px-4 py-3">
-                        <p className="text-sm font-semibold text-stitch-on-surface">{associateName}</p>
-                        {associatePhone && <p className="text-[11px] text-stitch-on-surface-variant">{associatePhone}</p>}
+                        <p className="text-sm font-semibold text-stitch-on-surface">{displayName}</p>
+                        {displayPhone && <p className="text-[11px] text-stitch-on-surface-variant">{displayPhone}</p>}
                       </td>
                       <td className="px-4 py-3 text-sm text-stitch-on-surface-variant max-w-xs truncate" title={r.description || ''}>
                         {r.description || '—'}
@@ -421,54 +415,32 @@ export default function CreditPage() {
                     <button
                       key={t}
                       type="button"
-                      onClick={() => setAddForm({ ...addForm, type: t, customerId: '', supplierId: '' })}
+                      onClick={() => setAddForm({ ...addForm, type: t, personName: '' })}
                       className={`py-2 text-xs font-bold rounded-lg border transition-all ${
                         addForm.type === t
                           ? 'bg-stitch-primary text-stitch-on-primary border-stitch-primary'
                           : 'bg-white/5 text-stitch-on-surface-variant border-white/10 hover:text-white'
                       }`}
                     >
-                      {t === 'CUSTOMER' ? 'Customer Oves Us' : 'We Owe Supplier'}
+                      {t === 'CUSTOMER' ? 'Customer Owes Us' : 'We Owe'}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {addForm.type === 'CUSTOMER' ? (
-                <div>
-                  <label className="block text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider mb-1">Select Customer *</label>
-                  <select
-                    value={addForm.customerId}
-                    onChange={(e) => setAddForm({ ...addForm, customerId: e.target.value })}
-                    required
-                    className="w-full bg-stitch-surface-container-high/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-stitch-on-surface outline-none focus:border-stitch-primary/50 transition-colors"
-                  >
-                    <option value="">-- Choose Customer --</option>
-                    {customers.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} ({c.phone})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider mb-1">Select Supplier *</label>
-                  <select
-                    value={addForm.supplierId}
-                    onChange={(e) => setAddForm({ ...addForm, supplierId: e.target.value })}
-                    required
-                    className="w-full bg-stitch-surface-container-high/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-stitch-on-surface outline-none focus:border-stitch-primary/50 transition-colors"
-                  >
-                    <option value="">-- Choose Supplier --</option>
-                    {suppliers.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({s.phone ?? 'No Phone'})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+              <div>
+                <label className="block text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider mb-1">
+                  {addForm.type === 'CUSTOMER' ? 'Customer Name *' : 'Person / Party Name *'}
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={addForm.personName}
+                  onChange={(e) => setAddForm({ ...addForm, personName: e.target.value })}
+                  placeholder={addForm.type === 'CUSTOMER' ? 'e.g. Ali Hassan' : 'e.g. Tariq Electronics'}
+                  className="w-full bg-stitch-surface-container-high/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-stitch-on-surface outline-none focus:border-stitch-primary/50 transition-colors placeholder:text-stitch-on-surface-variant/40"
+                />
+              </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -540,11 +512,9 @@ export default function CreditPage() {
             </div>
 
             <div className="p-3 bg-white/5 rounded-lg border border-white/5 space-y-1">
-              <p className="text-xs text-stitch-on-surface-variant font-bold uppercase tracking-wider">Associate</p>
+              <p className="text-xs text-stitch-on-surface-variant font-bold uppercase tracking-wider">Person / Party</p>
               <p className="text-sm font-semibold text-white">
-                {showPaymentModal.type === 'CUSTOMER'
-                  ? (showPaymentModal.customer?.name ?? 'Customer')
-                  : (showPaymentModal.supplier?.name ?? 'Supplier')}
+                {getDisplayName(showPaymentModal)}
               </p>
               <div className="flex justify-between pt-1 text-xs text-stitch-on-surface-variant">
                 <span>Total Due:</span>

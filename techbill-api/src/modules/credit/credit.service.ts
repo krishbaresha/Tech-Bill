@@ -9,13 +9,6 @@ export class CreditService {
   constructor(private prisma: PrismaService) {}
 
   async createCredit(dto: CreateCreditDto, tenantId: string) {
-    if (dto.type === CreditType.CUSTOMER && !dto.customerId) {
-      throw new BadRequestException('Customer ID is required for customer credit (receivables)');
-    }
-    if (dto.type === CreditType.SUPPLIER && !dto.supplierId) {
-      throw new BadRequestException('Supplier ID is required for supplier credit (payables)');
-    }
-
     return this.prisma.creditRecord.create({
       data: {
         type: dto.type,
@@ -24,8 +17,9 @@ export class CreditService {
         paidAmount: 0,
         description: dto.description,
         date: new Date(dto.date),
-        customerId: dto.type === CreditType.CUSTOMER ? dto.customerId : null,
-        supplierId: dto.type === CreditType.SUPPLIER ? dto.supplierId : null,
+        personName: dto.personName,
+        customerId: dto.type === CreditType.CUSTOMER ? (dto.customerId ?? null) : null,
+        supplierId: dto.type === CreditType.SUPPLIER ? (dto.supplierId ?? null) : null,
         tenantId,
       },
       include: {

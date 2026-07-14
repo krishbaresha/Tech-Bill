@@ -630,6 +630,7 @@ model CreditRecord {
   dueAmount   Decimal      @db.Decimal(12, 2) @map("due_amount")
   description String?
   date        DateTime     @db.Date
+  personName  String?      @map("person_name") @db.VarChar(255)
   customerId  String?      @map("customer_id") @db.Uuid
   supplierId  String?      @map("supplier_id") @db.Uuid
   tenantId    String       @map("tenant_id") @db.Uuid
