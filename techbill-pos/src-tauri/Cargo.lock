@@ -3922,6 +3922,7 @@ dependencies = [
 name = "techbill-pos"
 version = "1.0.0"
 dependencies = [
+ "log",
  "serde",
  "serde_json",
  "tauri",
@@ -3931,6 +3932,7 @@ dependencies = [
  "tauri-plugin-process",
  "tauri-plugin-single-instance",
  "tauri-plugin-updater",
+ "tokio",
 ]
 
 [[package]]
