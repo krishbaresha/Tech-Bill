@@ -25,6 +25,8 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { CreditModule } from './modules/credit/credit.module';
 import { IntegrityModule } from './modules/integrity/integrity.module';
 import { FeaturesModule } from './modules/features/features.module';
+import { LicenseModule } from './modules/license/license.module';
+import { DevicesModule } from './modules/devices/devices.module';
 
 import { TenantActiveGuard } from './common/guards/tenant-active.guard';
 import { FeatureGuard } from './common/guards/feature.guard';
@@ -54,6 +56,8 @@ import { FeatureGuard } from './common/guards/feature.guard';
     CreditModule,
     IntegrityModule,
     FeaturesModule,
+    LicenseModule,
+    DevicesModule,
   ],
   controllers: [AppController],
   providers: [
