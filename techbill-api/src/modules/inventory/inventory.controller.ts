@@ -166,8 +166,23 @@ export class InventoryController {
   @Delete('products/:id')
   @Permissions('inventory.delete')
   @HttpCode(HttpStatus.OK)
-  deleteProduct(@Param('id') id: string, @Req() req: RequestWithUser) {
-    return this.inventoryService.softDeleteProduct(id, req.user.tenantId);
+  deleteProduct(
+    @Param('id') id: string,
+    @Query('action') action: string,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.inventoryService.softDeleteProduct(
+      id,
+      req.user.tenantId,
+      action === 'delete'
+    );
+  }
+
+  @Patch('products/:id/activate')
+  @Permissions('inventory.write')
+  @HttpCode(HttpStatus.OK)
+  activateProduct(@Param('id') id: string, @Req() req: RequestWithUser) {
+    return this.inventoryService.activateProduct(id, req.user.tenantId);
   }
 
   // ─── Suppliers ────────────────────────────────────────────────────────────

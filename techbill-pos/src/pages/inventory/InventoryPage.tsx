@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Plus, Package, X, Tag, Search, Layers, Trash2, Wand2, Pencil, AlertTriangle, DollarSign, ShoppingCart, TrendingUp, RefreshCw } from 'lucide-react';
+import { Plus, Package, X, Tag, Search, Layers, Trash2, Wand2, Pencil, AlertTriangle, DollarSign, ShoppingCart, TrendingUp, RefreshCw, CheckCircle } from 'lucide-react';
 import { api } from '../../api/client';
 import { useCan } from '../../lib/permissions';
 import type { Product, InventoryUnit } from '../../types';
@@ -71,6 +71,8 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState<ProductWithStock | null>(null);
+  const [deleteMode, setDeleteMode] = useState<'deactivate' | 'delete'>('deactivate');
+  const [deleteInput, setDeleteInput] = useState('');
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -171,14 +173,31 @@ export default function InventoryPage() {
   const handleDeleteProduct = async (product: ProductWithStock) => {
     setLoading(true);
     try {
-      await api.delete(`/inventory/products/${product.id}`);
-      toast.success(`"${product.name}" deactivated — historical sales preserved`);
+      await api.delete(`/inventory/products/${product.id}?action=${deleteMode}`);
+      toast.success(deleteMode === 'delete' ? `"${product.name}" deleted and in-stock units removed` : `"${product.name}" deactivated — historical sales preserved`);
       setDeleteConfirm(null);
+      setDeleteMode('deactivate');
+      setDeleteInput('');
       loadProducts();
       void refreshSummary();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
       toast.error(e.response?.data?.message ?? 'Failed to delete product');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleActivateProduct = async (product: ProductWithStock) => {
+    setLoading(true);
+    try {
+      await api.patch(`/inventory/products/${product.id}/activate`);
+      toast.success(`"${product.name}" activated successfully`);
+      loadProducts();
+      void refreshSummary();
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      toast.error(e.response?.data?.message ?? 'Failed to activate product');
     } finally {
       setLoading(false);
     }
@@ -757,6 +776,16 @@ export default function InventoryPage() {
                                 <Trash2 size={12} />
                               </button>
                             )}
+                            {canWrite && !p.isActive && (
+                              <button
+                                onClick={() => void handleActivateProduct(p)}
+                                disabled={loading}
+                                title="Activate product"
+                                className="flex items-center justify-center w-7 h-7 text-stitch-on-surface-variant hover:text-green-400 hover:bg-green-400/10 border border-white/5 hover:border-green-400/20 rounded-lg transition-colors disabled:opacity-50"
+                              >
+                                <CheckCircle size={12} />
+                              </button>
+                            )}
                           </div>
                         </td>
                       )}
@@ -825,8 +854,8 @@ export default function InventoryPage() {
                 <Trash2 size={18} className="text-stitch-error" />
               </div>
               <div>
-                <p className="font-bold text-stitch-on-surface font-space">Deactivate Product?</p>
-                <p className="text-xs text-stitch-on-surface-variant mt-0.5">Historical sales and serial records are preserved.</p>
+                <p className="font-bold text-stitch-on-surface font-space">Deactivate / Delete Product</p>
+                <p className="text-xs text-stitch-on-surface-variant mt-0.5">Choose how to handle this product.</p>
               </div>
             </div>
             <div className="p-3 bg-white/5 rounded-lg border border-white/5">
@@ -841,19 +870,55 @@ export default function InventoryPage() {
                 </p>
               )}
             </div>
-            <div className="flex gap-2">
+
+            <div className="space-y-3 pt-2">
+              <label className="flex items-start gap-2 cursor-pointer group">
+                <input type="radio" checked={deleteMode === 'deactivate'} onChange={() => { setDeleteMode('deactivate'); setDeleteInput(''); }} className="mt-1 accent-stitch-primary" />
+                <div>
+                  <p className="text-sm font-bold text-stitch-on-surface group-hover:text-stitch-primary transition-colors">Deactivate (Recommended)</p>
+                  <p className="text-[10px] text-stitch-on-surface-variant">Product becomes inactive. Units remain in database.</p>
+                </div>
+              </label>
+              
+              <label className="flex items-start gap-2 cursor-pointer group">
+                <input type="radio" checked={deleteMode === 'delete'} onChange={() => setDeleteMode('delete')} className="mt-1 accent-stitch-error" />
+                <div>
+                  <p className="text-sm font-bold text-stitch-error group-hover:text-red-400 transition-colors">Hard Delete Units</p>
+                  <p className="text-[10px] text-stitch-on-surface-variant">Marks product inactive AND fully erases all in-stock units.</p>
+                </div>
+              </label>
+            </div>
+            
+            {deleteMode === 'delete' && (
+              <div className="p-3 bg-stitch-error/10 border border-stitch-error/20 rounded-lg">
+                <p className="text-xs font-bold text-stitch-error mb-2">Type DELETE to confirm:</p>
+                <input 
+                  type="text" 
+                  value={deleteInput}
+                  onChange={(e) => setDeleteInput(e.target.value)}
+                  className="w-full bg-white/10 border border-stitch-error/30 rounded px-2 py-1.5 text-sm text-stitch-on-surface outline-none focus:border-stitch-error transition-colors placeholder:text-stitch-error/40"
+                  placeholder="DELETE"
+                />
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-2">
               <button
-                onClick={() => setDeleteConfirm(null)}
+                onClick={() => { setDeleteConfirm(null); setDeleteMode('deactivate'); setDeleteInput(''); }}
                 className="flex-1 py-2 text-sm text-stitch-on-surface-variant border border-white/10 rounded-lg hover:bg-white/5 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={() => void handleDeleteProduct(deleteConfirm)}
-                disabled={loading}
-                className="flex-1 py-2 text-sm bg-stitch-error text-stitch-on-error font-bold rounded-lg hover:bg-stitch-error/80 disabled:opacity-50 active:scale-95 transition-all"
+                disabled={loading || (deleteMode === 'delete' && deleteInput !== 'DELETE')}
+                className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+                  deleteMode === 'delete' 
+                    ? 'bg-stitch-error text-stitch-on-error hover:bg-stitch-error/80 disabled:opacity-50'
+                    : 'bg-stitch-primary text-stitch-on-primary hover:bg-stitch-primary/90 disabled:opacity-50'
+                } active:scale-95`}
               >
-                {loading ? 'Deactivating…' : 'Deactivate'}
+                {loading ? 'Processing…' : (deleteMode === 'delete' ? 'Delete' : 'Deactivate')}
               </button>
             </div>
           </div>
