@@ -27,6 +27,7 @@ import { IntegrityModule } from './modules/integrity/integrity.module';
 import { FeaturesModule } from './modules/features/features.module';
 import { LicenseModule } from './modules/license/license.module';
 import { DevicesModule } from './modules/devices/devices.module';
+import { SyncModule } from './modules/sync/sync.module';
 
 import { TenantActiveGuard } from './common/guards/tenant-active.guard';
 import { FeatureGuard } from './common/guards/feature.guard';
@@ -58,6 +59,7 @@ import { FeatureGuard } from './common/guards/feature.guard';
     FeaturesModule,
     LicenseModule,
     DevicesModule,
+    SyncModule,
   ],
   controllers: [AppController],
   providers: [

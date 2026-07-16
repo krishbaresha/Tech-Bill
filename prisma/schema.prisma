@@ -877,3 +877,21 @@ model UserPermission {
 
   @@map("user_permissions")
 }
+
+// Sync bookkeeping (Phase 7, ARCHITECTURE.md §6) — one row per synced domain
+// row, WITHOUT touching the existing tables. Carries clientRowId and seq values.
+model SyncRowMeta {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  tableName   String   @map("table_name") @db.VarChar(100)
+  rowId       String   @map("row_id") @db.Uuid
+  clientRowId String?  @map("client_row_id") @db.VarChar(255)
+  seq         BigInt
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, tableName, rowId])
+  @@unique([tenantId, tableName, clientRowId])
+  @@index([tenantId, seq])
+  @@map("sync_row_meta")
+}
+
