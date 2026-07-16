@@ -115,11 +115,7 @@ export default function PosScreen() {
 
   const allProducts = useMemo<ProductCard[]>(() => {
     if (!dashboard) return [];
-    const map = new Map<string, ProductCard>();
-    [...dashboard.recentlyAdded, ...dashboard.fastSelling, ...dashboard.lowStock].forEach((p) => {
-      if (!map.has(p.id)) map.set(p.id, p);
-    });
-    return Array.from(map.values());
+    return dashboard.allProducts ?? [];
   }, [dashboard]);
 
   useEffect(() => {
@@ -236,7 +232,7 @@ export default function PosScreen() {
   }, [openUnitPicker]);
 
   const handleProductSelect = useCallback((product: SearchProduct) => {
-    openUnitPicker({
+    const card: ProductCard = {
       id: product.id,
       name: product.name,
       brand: product.brand,
@@ -245,9 +241,9 @@ export default function PosScreen() {
       inStockCount: product.inStockCount ?? 0,
       soldCount: 0,
       returnedCount: 0,
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    };
+    handleAddToCart(card);
+  }, [handleAddToCart]);
 
   const handleSerialAdd = useCallback(async (serial: string) => {
     try {

@@ -326,6 +326,7 @@ export class InventoryService {
 
     return {
       categories,
+      allProducts: cards,
       lowStock,
       recentlyAdded,
       fastSelling,
