@@ -197,7 +197,10 @@ export default function PosScreen() {
   // Memoized handlers passed down to SectionedGrid / ProductGrid
   // to prevent prop-identity churn on every cart state update.
   const handleAddToCart = useCallback(async (p: ProductCard) => {
-    if (p.inStockCount <= 0) return;
+    if (p.inStockCount <= 0) {
+      toast.warning(`Product ${p.name} is out of stock (count: ${p.inStockCount}).`);
+      return;
+    }
     try {
       let units = unitsCacheRef.current[p.id];
       if (!units) {
@@ -222,8 +225,9 @@ export default function PosScreen() {
       } else {
         toast.warning(`No available units for ${p.name} that aren't already in your cart.`);
       }
-    } catch (err) {
-      toast.error(`Failed to auto-add ${p.name}.`);
+    } catch (err: any) {
+      console.error('Add to cart error:', err.response?.data || err);
+      toast.error(`Failed to auto-add ${p.name}: ${err.response?.data?.message || err.message}`);
     }
   }, [toast]);
 

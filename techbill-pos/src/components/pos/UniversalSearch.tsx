@@ -68,6 +68,7 @@ export default function UniversalSearch({
 
   const inputWrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Trigger background sync on mount, but instantly use cached products
   useEffect(() => {
@@ -83,7 +84,12 @@ export default function UniversalSearch({
   // Close on outside click
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      if (inputWrapperRef.current && !inputWrapperRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        inputWrapperRef.current &&
+        !inputWrapperRef.current.contains(target) &&
+        (!dropdownRef.current || !dropdownRef.current.contains(target))
+      ) {
         setOpen(false);
         setSelectedIndex(-1);
       }
@@ -306,6 +312,7 @@ export default function UniversalSearch({
     open && suggestions.length > 0 && dropdownRect
       ? createPortal(
           <div
+            ref={dropdownRef}
             className="glass-modal rounded-lg border border-white/10 shadow-2xl overflow-hidden"
             style={{
               position: 'fixed',
