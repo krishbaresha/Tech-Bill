@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, Camera, Package, Barcode, Loader, Tag } from 'lucide-react';
+import { Search, Camera, Package, Barcode, Loader, Tag, Plus } from 'lucide-react';
 
 import BarcodeScanner from './BarcodeScanner';
 import { useInventoryStore } from '../../store/inventory.store';
@@ -254,17 +254,24 @@ export default function UniversalSearch({
           <span className="text-xs font-mono text-stitch-tertiary tabular-nums">
             {formatPkr(s.product.sellingPrice)}
           </span>
-          {s.product.inStockCount !== undefined && (
-            <span
-              className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                stock > 0
-                  ? 'bg-emerald-500/15 text-emerald-300'
-                  : 'bg-stitch-error/15 text-stitch-error'
-              }`}
-            >
-              {stock > 0 ? `${stock} in stock` : 'Out'}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {s.product.inStockCount !== undefined && (
+              <span
+                className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                  stock > 0
+                    ? 'bg-emerald-500/15 text-emerald-300'
+                    : 'bg-stitch-error/15 text-stitch-error'
+                }`}
+              >
+                {stock > 0 ? `${stock} in stock` : 'Out'}
+              </span>
+            )}
+            {stock > 0 && (
+              <div className="flex items-center gap-1 bg-stitch-primary text-stitch-on-primary px-2 py-0.5 rounded text-[10px] font-bold shadow-sm transition-transform active:scale-95">
+                <Plus size={10} /> Add
+              </div>
+            )}
+          </div>
         </div>
       </button>
     );
