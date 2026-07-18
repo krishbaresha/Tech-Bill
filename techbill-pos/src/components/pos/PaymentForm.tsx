@@ -8,6 +8,8 @@ import { useCartStore, generateIdempotencyKey } from '../../store/cart.store';
 import { queueSale } from '../../db/offline.db';
 import { useCan } from '../../lib/permissions';
 import { useLicenseStore } from '../../store/license.store';
+import { useDesktopLicenseStore } from '../../store/desktopLicense.store';
+import { isTauriApp } from '../../lib/platform';
 import type { Sale, ShopSettings } from '../../types';
 
 const schema = z.object({
@@ -35,9 +37,15 @@ export default function PaymentForm({ onSaleComplete, shopSettings }: { onSaleCo
   const { isOnlineOrder, setIsOnlineOrder, items } = useCartStore();
   const canSellOnline = useCan('pos.online_sell') && shopSettings?.tenant?.onlineSellingEnabled;
   const { license } = useLicenseStore();
+  const isDesktopLicenseReadOnly = useDesktopLicenseStore((s) => s.isReadOnly());
 
   // Check if subscription has expired
   const isSubscriptionExpired = license?.isExpired ?? false;
+  // Desktop-only: the shop's activated License (TB-DSK-XXXX) has expired,
+  // been revoked, or gone stale without a successful checkin — independent
+  // of the subscription check above.
+  const isDesktopExpired = isTauriApp() && isDesktopLicenseReadOnly;
+  const salesBlocked = isSubscriptionExpired || isDesktopExpired;
 
   const { register, handleSubmit, watch, setValue, getValues, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -273,15 +281,24 @@ export default function PaymentForm({ onSaleComplete, shopSettings }: { onSaleCo
           </div>
         )}
 
+        {isDesktopExpired && !isSubscriptionExpired && (
+          <div className="p-2.5 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <p className="text-xs text-red-400 font-semibold flex items-center gap-1.5">
+              <AlertTriangle size={12} />
+              Desktop license expired or unreachable — sales are disabled. Contact your platform admin.
+            </p>
+          </div>
+        )}
+
         <button
           type="submit"
-          disabled={isSubmitting || isSubscriptionExpired}
+          disabled={isSubmitting || salesBlocked}
           className="w-full bg-stitch-primary hover:bg-stitch-primary/90 text-stitch-on-primary font-bold rounded-lg py-2.5 text-sm transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2"
         >
           {isSubmitting ? (
             <span className="w-4 h-4 border-2 border-stitch-on-primary/30 border-t-stitch-on-primary rounded-full animate-spin" />
           ) : null}
-          {isSubscriptionExpired ? 'Sales Disabled — Subscription Expired' : isSubmitting ? 'Processing…' : `Confirm Sale — ${formatPKR(total)}`}
+          {salesBlocked ? 'Sales Disabled — License Expired' : isSubmitting ? 'Processing…' : `Confirm Sale — ${formatPKR(total)}`}
         </button>
       </form>
     </div>

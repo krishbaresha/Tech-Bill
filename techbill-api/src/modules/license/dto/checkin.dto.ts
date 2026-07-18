@@ -1,11 +1,10 @@
-import { IsString, IsNotEmpty, MaxLength } from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength, IsUUID } from 'class-validator';
 
 export class CheckinDto {
-  /** Human-readable license key identifying this installation. */
-  @IsString()
+  /** The server-side License record UUID (not the human-readable license key) */
+  @IsUUID()
   @IsNotEmpty()
-  @MaxLength(30)
-  licenseKey: string;
+  licenseId: string;
 
   /** Device machine hash (same value used at activation). */
   @IsString()

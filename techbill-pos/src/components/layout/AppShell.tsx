@@ -7,6 +7,7 @@ import { useLockStore } from '../../store/lock.store';
 import { disconnectSocket, socket } from '../../api/socket';
 import { api } from '../../api/client';
 import { getRootDomain, isMainDomain } from '../../lib/domain';
+import { isTauriApp } from '../../lib/platform';
 import { SubscriptionBanner } from './SubscriptionBanner';
 import type { Notification } from '../../types';
 import * as LucideIcons from 'lucide-react';
@@ -153,10 +154,25 @@ export default function AppShell() {
     
     // 2. Clear local auth state immediately
     clearAuth();
-    
+
+    // 2a. Desktop app: there is no tenant-subdomain concept to escape to (the
+    // packaged Tauri window is always one fixed origin, tauri.localhost,
+    // regardless of which shop was logged in) — isMainDomain()'s browser
+    // subdomain logic doesn't apply and would try to navigate to a dev
+    // server URL that doesn't exist in a built app. Still do the full-reload
+    // circuit-breaker (bootstrap.ts's ?logout=true handling) for the same
+    // belt-and-suspenders storage clearing the browser path gets, just
+    // same-origin and at the root path rather than a specific route, since
+    // that's guaranteed to resolve regardless of the bundled app's static
+    // routing.
+    if (isTauriApp()) {
+      window.location.href = `${window.location.origin}/?logout=true`;
+      return;
+    }
+
     const hostname = window.location.hostname;
     const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.localhost');
-    
+
     // 3. If user is on a tenant subdomain, redirect to main domain with logout flag
     if (!isMainDomain(hostname)) {
       const protocol = isLocalhost ? 'http:' : 'https:';

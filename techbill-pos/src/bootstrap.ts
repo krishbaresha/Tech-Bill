@@ -1,17 +1,35 @@
 /**
  * ⚡ BOOTSTRAP - Global Initialization
- * 
+ *
  * This file MUST be imported at the absolute top of main.tsx
  * BEFORE any other imports, including React.
- * 
- * Purpose: Detect logout flag and clear storage BEFORE Zustand hydrates
+ *
+ * Purpose: Detect logout flag and clear storage BEFORE Zustand hydrates,
+ * and (desktop only) capture crashes that happen outside the React tree —
+ * ErrorBoundary only ever sees errors thrown during React's own render/
+ * lifecycle; an error in an event handler, a timer, or a rejected promise
+ * never reaches it. These two listeners are the rest of the coverage.
  */
+import { reportError } from './lib/errorReporting';
 
 // Extend window to add our flag
 declare global {
   interface Window {
     __APP_LOGOUT_DETECTED__: boolean;
   }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('error', (event) => {
+    reportError(event.message, { stack: event.error?.stack, source: 'window.onerror' });
+  });
+  window.addEventListener('unhandledrejection', (event) => {
+    const reason = event.reason;
+    reportError(reason instanceof Error ? reason.message : String(reason), {
+      stack: reason instanceof Error ? reason.stack : undefined,
+      source: 'unhandledrejection',
+    });
+  });
 }
 
 if (typeof window !== 'undefined') {

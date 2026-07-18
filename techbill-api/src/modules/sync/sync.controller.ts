@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import type { Request } from 'express';
 import { SyncService } from './sync.service';
 import { PushDto } from './dto/push.dto';
@@ -30,7 +38,10 @@ export class SyncController {
   }
 
   @Get('pull')
-  async pull(@Query('since') since: string | undefined, @Req() req: RequestWithUser) {
+  async pull(
+    @Query('since') since: string | undefined,
+    @Req() req: RequestWithUser,
+  ) {
     return this.syncService.pull(req.user.tenantId, since);
   }
 }

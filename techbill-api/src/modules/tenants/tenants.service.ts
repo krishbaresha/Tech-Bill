@@ -171,6 +171,7 @@ export class TenantsService {
       onlineSellingEnabled?: boolean;
       appAccessEnabled?: boolean;
       isWarehouseEnabled?: boolean;
+      desktopAccessEnabled?: boolean;
       subscriptionExpiresAt?: string | null;
     },
   ) {
@@ -341,6 +342,13 @@ export class TenantsService {
     return this.prisma.tenant.update({
       where: { id },
       data: { isWarehouseEnabled },
+    });
+  }
+
+  async toggleDesktopAccess(id: string, desktopAccessEnabled: boolean) {
+    return this.prisma.tenant.update({
+      where: { id },
+      data: { desktopAccessEnabled },
     });
   }
 

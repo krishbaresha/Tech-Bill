@@ -2,25 +2,42 @@ import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
 import { useLicenseStore } from '../../store/license.store';
+import { useDesktopLicenseStore } from '../../store/desktopLicense.store';
+import { isTauriApp } from '../../lib/platform';
 
 export const SubscriptionBanner: React.FC = () => {
   const { user } = useAuthStore();
   const { license } = useLicenseStore();
+  const isDesktopReadOnly = useDesktopLicenseStore((s) => s.isReadOnly());
 
-  if (!user || user.role === 'platform_admin' || !license) return null;
+  if (!user || user.role === 'platform_admin') return null;
+
+  const isDesktopExpired = isTauriApp() && isDesktopReadOnly;
+
+  if (!license) {
+    if (isDesktopExpired) {
+      return (
+        <div className="px-4 py-2.5 flex items-center gap-2.5 text-sm font-semibold shrink-0 bg-red-500/15 border-b border-red-500/30 text-red-400">
+          <AlertTriangle size={16} className="shrink-0" />
+          This device's desktop license is expired, revoked, or unreachable. All new transactions are disabled. Please contact the platform admin.
+        </div>
+      );
+    }
+    return null;
+  }
 
   const now = new Date();
   const expiresAt = license.expiresAt ? new Date(license.expiresAt) : null;
   const isInactive = license.status !== 'ACTIVE' && license.status !== 'TRIAL';
-  
+
   let daysLeft = Infinity;
   if (expiresAt) {
     const diffMs = expiresAt.getTime() - now.getTime();
     daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
   }
 
-  const isExpired = isInactive || license.isExpired;
-  const isExpiringSoon = expiresAt !== null && daysLeft > 0 && daysLeft <= 2 && !isInactive && !license.isExpired;
+  const isExpired = isInactive || license.isExpired || isDesktopExpired;
+  const isExpiringSoon = expiresAt !== null && daysLeft > 0 && daysLeft <= 2 && !isInactive && !license.isExpired && !isDesktopExpired;
 
   if (!isExpired && !isExpiringSoon) return null;
 
@@ -31,7 +48,9 @@ export const SubscriptionBanner: React.FC = () => {
         : 'bg-amber-500/15 border-b border-amber-500/30 text-amber-400'
     }`}>
       <AlertTriangle size={16} className="shrink-0" />
-      {isExpired
+      {isDesktopExpired
+        ? "This device's desktop license is expired, revoked, or unreachable. All new transactions are disabled. Please contact the platform admin."
+        : isExpired
         ? "Your store's subscription is currently inactive. All new transactions are disabled. Please contact the platform admin to renew."
         : `Your subscription expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}. Please contact the platform admin to renew.`}
     </div>

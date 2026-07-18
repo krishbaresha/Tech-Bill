@@ -1,4 +1,9 @@
-import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import {
   SYNC_REPOSITORY,
@@ -39,7 +44,10 @@ export class SyncService {
 
   constructor(@Inject(SYNC_REPOSITORY) private readonly repo: SyncRepository) {}
 
-  async push(tenantId: string, changes: PushChangeDto[]): Promise<PushResponseDto> {
+  async push(
+    tenantId: string,
+    changes: PushChangeDto[],
+  ): Promise<PushResponseDto> {
     const results: PushResultDto[] = [];
     for (const change of changes) {
       // An unknown table fails the whole batch, not the row: the desktop
@@ -73,15 +81,24 @@ export class SyncService {
     delete data.tenant_id; // never trusted from the wire
     // The push's base: when this till last converged on the row. Client
     // bookkeeping, consumed here for the stock rule, never stored.
-    const base = typeof data.synced_at === 'string' ? Date.parse(data.synced_at) : 0;
+    const base =
+      typeof data.synced_at === 'string' ? Date.parse(data.synced_at) : 0;
     delete data.synced_at;
     for (const [column, parentTable] of TABLE_FOREIGN_KEYS[table]) {
       const ref = data[column];
       if (ref === null || ref === undefined) continue;
       if (typeof ref !== 'string') {
-        return this.rejectMalformed(table, change, `${column} is not a string reference`);
+        return this.rejectMalformed(
+          table,
+          change,
+          `${column} is not a string reference`,
+        );
       }
-      const parent = await this.repo.findByClientRowId(tenantId, parentTable, ref);
+      const parent = await this.repo.findByClientRowId(
+        tenantId,
+        parentTable,
+        ref,
+      );
       if (!parent) {
         return this.rejectMalformed(
           table,
@@ -94,7 +111,9 @@ export class SyncService {
 
     const existing =
       (await this.repo.findByClientRowId(tenantId, table, change.localId)) ??
-      (change.remoteId ? await this.repo.findById(tenantId, table, change.remoteId) : null);
+      (change.remoteId
+        ? await this.repo.findById(tenantId, table, change.remoteId)
+        : null);
 
     if (!existing) {
       const saved = await this.repo.save({
@@ -104,7 +123,12 @@ export class SyncService {
         clientRowId: change.localId,
         data,
       });
-      return { table, localId: change.localId, outcome: 'applied', remoteId: saved.id };
+      return {
+        table,
+        localId: change.localId,
+        outcome: 'applied',
+        remoteId: saved.id,
+      };
     }
 
     // Stock: any server-side write since the till's base wins outright,
@@ -115,7 +139,8 @@ export class SyncService {
     const reject =
       table === 'inventory_units'
         ? existing.updatedAtServer.getTime() > base
-        : timestampOf(existing.data, 'stored row') >= timestampOf(data, 'pushed row');
+        : timestampOf(existing.data, 'stored row') >=
+          timestampOf(data, 'pushed row');
 
     if (reject) {
       return {
@@ -138,7 +163,12 @@ export class SyncService {
       clientRowId: existing.clientRowId ?? change.localId,
       data,
     });
-    return { table, localId: change.localId, outcome: 'applied', remoteId: saved.id };
+    return {
+      table,
+      localId: change.localId,
+      outcome: 'applied',
+      remoteId: saved.id,
+    };
   }
 
   private rejectMalformed(
@@ -149,10 +179,15 @@ export class SyncService {
     // Same rationale as unknown tables: a malformed reference means the
     // client and server disagree about the world in a way per-row conflict
     // handling can't fix, so fail loudly instead of half-applying a batch.
-    throw new BadRequestException(`rejected ${table}/${change.localId}: ${reason}`);
+    throw new BadRequestException(
+      `rejected ${table}/${change.localId}: ${reason}`,
+    );
   }
 
-  async pull(tenantId: string, since: string | undefined): Promise<PullResponseDto> {
+  async pull(
+    tenantId: string,
+    since: string | undefined,
+  ): Promise<PullResponseDto> {
     const cursor = parseCursor(since);
     const rows = await this.repo.changesSince(tenantId, cursor);
     const next = rows.length > 0 ? rows[rows.length - 1].seq : cursor;
@@ -186,7 +221,9 @@ function timestampOf(data: Record<string, unknown>, what: string): number {
   }
   const parsed = Date.parse(raw);
   if (Number.isNaN(parsed)) {
-    throw new BadRequestException(`${what} has an unreadable updated_at: ${raw}`);
+    throw new BadRequestException(
+      `${what} has an unreadable updated_at: ${raw}`,
+    );
   }
   return parsed;
 }

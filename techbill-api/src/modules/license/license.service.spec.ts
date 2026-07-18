@@ -6,22 +6,6 @@ import { LicenseStatus, DeviceStatus, LicenseType, DesktopPlan } from '@prisma/c
 
 // ─── Minimal Prisma mock ─────────────────────────────────────────────────────
 
-const mockLicense = {
-  id: 'lic-uuid-1',
-  userId: 'user-uuid-1',
-  issuedBy: 'admin-uuid-1',
-  licenseKey: 'TB-DSK-AAAA-BBBB-CCCC',
-  licenseType: LicenseType.DESKTOP,
-  plan: DesktopPlan.BASIC,
-  status: LicenseStatus.ACTIVE,
-  expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365), // 1 year ahead
-  maxDevices: 1,
-  signedToken: 'mocked-token',
-  lastUsedAt: null,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-};
-
 const mockUser = {
   id: 'user-uuid-1',
   name: 'Test User',
@@ -58,6 +42,27 @@ const mockDevice = {
   status: DeviceStatus.ACTIVE,
   createdAt: new Date(),
 };
+
+const mockLicense = {
+  id: 'lic-uuid-1',
+  tenantId: 'tenant-uuid-1',
+  userId: 'user-uuid-1',
+  user: mockUser,
+  tenant: { desktopAccessEnabled: true },
+  devices: [mockDevice],
+  issuedBy: 'admin-uuid-1',
+  licenseKey: 'TB-DSK-AAAA-BBBB-CCCC',
+  licenseType: LicenseType.DESKTOP,
+  plan: DesktopPlan.BASIC,
+  status: LicenseStatus.ACTIVE,
+  expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365), // 1 year ahead
+  maxDevices: 1,
+  signedToken: 'mocked-token',
+  lastUsedAt: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
+
 
 const prismaMock = {
   user: {
@@ -142,11 +147,35 @@ describe('LicenseService', () => {
       expect(result.status).toBe(LicenseStatus.ACTIVE);
     });
 
-    it('throws ForbiddenException when desktopAccess is false', async () => {
+    it('stores the license against the tenant, not just the issuing user (per-shop, 2026-07-17)', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(mockUser);
+      prismaMock.license.findUnique.mockResolvedValue(null);
+      prismaMock.license.create.mockResolvedValue(mockLicense);
+
+      await service.createLicense(
+        {
+          userId: 'user-uuid-1',
+          licenseType: LicenseType.DESKTOP,
+          plan: DesktopPlan.BASIC,
+          expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
+        },
+        'admin-uuid-1',
+      );
+
+      expect(prismaMock.license.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ tenantId: mockUser.tenantId }),
+        }),
+      );
+    });
+
+    it('issues a license even when the recipient has desktopAccess off (per-shop, 2026-07-17)', async () => {
       prismaMock.user.findUnique.mockResolvedValue({
         ...mockUser,
         userPermission: { ...mockUser.userPermission, desktopAccess: false },
       });
+      prismaMock.license.findUnique.mockResolvedValue(null);
+      prismaMock.license.create.mockResolvedValue(mockLicense);
 
       await expect(
         service.createLicense(
@@ -158,7 +187,7 @@ describe('LicenseService', () => {
           },
           'admin-uuid-1',
         ),
-      ).rejects.toThrow('desktop_access');
+      ).resolves.toEqual(mockLicense);
     });
 
     it('throws NotFoundException when user does not exist', async () => {
@@ -229,6 +258,27 @@ describe('LicenseService', () => {
       expect(result.signedToken).toBe('mocked-token');
     });
 
+    it('activates even when the originally-issued-for user has desktop access disabled (per-shop, 2026-07-17)', async () => {
+      // The bug being fixed: activation used to be gated on the specific
+      // user the license was created for. It no longer is — any staff
+      // member at the shop can activate, and the only real gate left is
+      // the device limit (tested separately below). Proving this by
+      // showing activation succeeds even when that user's own
+      // desktopAccess flag is false, which would have thrown before.
+      prismaMock.license.findUnique.mockResolvedValue({
+        ...mockLicense,
+        user: { ...mockUser, userPermission: { ...mockUser.userPermission, desktopAccess: false } },
+        devices: [],
+      });
+      prismaMock.device.create.mockResolvedValue(mockDevice);
+      prismaMock.license.update.mockResolvedValue(mockLicense);
+
+      const result = await service.activateLicense(activateDto);
+
+      expect(result.signedToken).toBe('mocked-token');
+      expect(prismaMock.device.create).toHaveBeenCalledTimes(1);
+    });
+
     it('blocks activation when device limit is reached', async () => {
       // BASIC plan = 1 device; already has 1 device with a different machineHash
       prismaMock.license.findUnique.mockResolvedValue({
@@ -275,37 +325,89 @@ describe('LicenseService', () => {
         'License key not found',
       );
     });
+
+    it('blocks activation when the shop has desktop access disabled (2026-07-17)', async () => {
+      prismaMock.license.findUnique.mockResolvedValue({
+        ...mockLicense,
+        tenant: { desktopAccessEnabled: false },
+        user: mockUser,
+        devices: [],
+      });
+
+      await expect(service.activateLicense(activateDto)).rejects.toThrow(
+        'Desktop access has been disabled',
+      );
+    });
   });
 
   // ── checkin ────────────────────────────────────────────────────────────────
 
   describe('checkin', () => {
     const checkinDto = {
-      licenseKey: 'TB-DSK-AAAA-BBBB-CCCC',
+      licenseId: 'lic-uuid-1',
       machineHash: 'abc123hash',
       appVersion: '1.0.1',
     };
 
     it('updates device checkin timestamp and returns current status', async () => {
       prismaMock.license.findUnique.mockResolvedValue(mockLicense);
-      prismaMock.device.findFirst.mockResolvedValue(mockDevice);
       prismaMock.device.update.mockResolvedValue(mockDevice);
       prismaMock.license.update.mockResolvedValue(mockLicense);
 
-      const result = await service.checkin(checkinDto);
+      const result = await service.checkin(checkinDto, 'tenant-uuid-1', 'user-uuid-1');
 
       expect(result.status).toBe(LicenseStatus.ACTIVE);
       expect(result.serverTimestamp).toBeDefined();
       expect(result.signedToken).toBe('mocked-token');
     });
 
-    it('rejects checkin for unregistered device', async () => {
+    it('accepts checkin from any staff member of the tenant, not just the issuing user (per-shop, 2026-07-17)', async () => {
       prismaMock.license.findUnique.mockResolvedValue(mockLicense);
-      prismaMock.device.findFirst.mockResolvedValue(null);
+      prismaMock.device.update.mockResolvedValue(mockDevice);
+      prismaMock.license.update.mockResolvedValue(mockLicense);
 
-      await expect(service.checkin(checkinDto)).rejects.toThrow(
-        'Device not registered',
-      );
+      // callerUserId is a different user than mockLicense.userId
+      // ('user-uuid-1') — same tenant, different staff member.
+      const result = await service.checkin(checkinDto, 'tenant-uuid-1', 'user-uuid-2');
+
+      expect(result.status).toBe(LicenseStatus.ACTIVE);
+    });
+
+    it('rejects checkin from a different tenant even with a valid device hash', async () => {
+      prismaMock.license.findUnique.mockResolvedValue(mockLicense);
+
+      await expect(
+        service.checkin(checkinDto, 'some-other-tenant-uuid', 'user-uuid-1'),
+      ).rejects.toThrow('does not belong to your shop');
+    });
+
+    it('rejects checkin if device limit is exceeded', async () => {
+      const fullLicense = {
+        ...mockLicense,
+        devices: [mockDevice, { ...mockDevice, id: 'device-2', machineHash: 'other-hash' }],
+        maxDevices: 1,
+      };
+      prismaMock.license.findUnique.mockResolvedValue(fullLicense);
+
+      await expect(
+        service.checkin({ ...checkinDto, machineHash: 'new-device-hash' }, 'tenant-uuid-1', 'user-uuid-1')
+      ).rejects.toThrow('Device limit reached');
+    });
+
+    it('reports desktopAccessEnabled: false so the client can go read-only without waiting on staleness (2026-07-17)', async () => {
+      prismaMock.license.findUnique.mockResolvedValue({
+        ...mockLicense,
+        tenant: { desktopAccessEnabled: false },
+      });
+      prismaMock.device.update.mockResolvedValue(mockDevice);
+      prismaMock.license.update.mockResolvedValue(mockLicense);
+
+      const result = await service.checkin(checkinDto, 'tenant-uuid-1', 'user-uuid-1');
+
+      expect(result.desktopAccessEnabled).toBe(false);
+      // Being disabled doesn't itself change the license's own ACTIVE status —
+      // it's a separate signal the client combines with status to decide readOnly.
+      expect(result.status).toBe(LicenseStatus.ACTIVE);
     });
   });
 

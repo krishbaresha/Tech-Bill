@@ -1,19 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Key, Shield, Copy, Eye, EyeOff, RotateCw, RefreshCw, X, Trash2, ShieldOff,
-  UserPlus, Plus, Laptop, Smartphone, Download
+  UserPlus, Plus, Laptop, Download, Store
 } from 'lucide-react';
 import { api } from '../../api/client';
 import type { Role } from '../../types';
 import gsap from 'gsap';
 
-interface UserLicenseInfo {
+interface LicenseRecord {
   id: string;
+  tenantId: string;
   licenseKey: string;
   licenseType: 'DESKTOP' | 'MOBILE';
   plan: 'BASIC' | 'PREMIUM' | 'ENTERPRISE';
   status: 'ACTIVE' | 'EXPIRED' | 'REVOKED' | 'SUSPENDED';
   expiresAt: string;
+  maxDevices: number;
+  signedToken?: string;
+  lastUsedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user: { id: string; name: string; email: string } | null;
+  _count?: { devices: number };
 }
 
 interface UserPermissionInfo {
@@ -34,8 +42,20 @@ interface PlatformUser {
     slug: string;
   } | null;
   userPermission: UserPermissionInfo | null;
-  licenses: UserLicenseInfo[];
+  licenses: { id: string }[];
   createdAt: string;
+}
+
+interface TenantRecord {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+  plan: string;
+  maxUsers: number;
+  ownerEmail?: string;
+  createdAt: string;
+  _count?: { users: number };
 }
 
 interface DeviceInfo {
@@ -49,18 +69,6 @@ interface DeviceInfo {
   lastLoginAt: string | null;
   lastCheckinAt: string | null;
   status: 'ACTIVE' | 'REMOVED';
-  createdAt: string;
-}
-
-interface AuditLogEntry {
-  id: string;
-  licenseKey: string;
-  licenseType: string;
-  plan: string;
-  status: string;
-  expiresAt: string;
-  maxDevices: number;
-  lastUsedAt: string | null;
   createdAt: string;
 }
 
@@ -81,26 +89,30 @@ const inputCls = 'w-full bg-stitch-surface-container-high/50 border border-white
 const labelCls = 'block text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider mb-1';
 
 export default function LicenseManagementPage() {
+  const [tenants, setTenants] = useState<TenantRecord[]>([]);
   const [users, setUsers] = useState<PlatformUser[]>([]);
-  const [tenants, setTenants] = useState<{ id: string; name: string }[]>([]);
+  const [allLicenses, setAllLicenses] = useState<LicenseRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  
-  // Detail Modal State
-  const [selectedUser, setSelectedUser] = useState<PlatformUser | null>(null);
+
+  // Detail Modal State — primary entity is now the tenant (shop), not a single user.
+  // A License is scoped to the tenant (any staff member there can use it), so all
+  // license/device management happens per-shop here, not per-user.
+  const [selectedTenant, setSelectedTenant] = useState<TenantRecord | null>(null);
   const [devices, setDevices] = useState<DeviceInfo[]>([]);
-  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [licenseLoading, setLicenseLoading] = useState(false);
   const [revealedKeys, setRevealedKeys] = useState<Record<string, boolean>>({});
-  
+
+  // Who a newly-issued license is recorded as "issued for" (audit trail only —
+  // any staff member at the shop can use it once issued). Defaults to the
+  // shop's owner when generating a license.
+  const [desktopIssueToUserId, setDesktopIssueToUserId] = useState('');
+
   // License Issuance form state (temporary variables)
   const [desktopPlan, setDesktopPlan] = useState<'BASIC' | 'PREMIUM' | 'ENTERPRISE'>('BASIC');
   const [desktopDuration, setDesktopDuration] = useState<'1m' | '6m' | '1y' | 'lifetime'>('1y');
-  
-  const [mobilePlan, setMobilePlan] = useState<'BASIC' | 'PREMIUM' | 'ENTERPRISE'>('BASIC');
-  const [mobileDuration, setMobileDuration] = useState<'1m' | '6m' | '1y' | 'lifetime'>('1y');
 
   // Renewal date state
   const [renewalLicenseId, setRenewalLicenseId] = useState<string | null>(null);
@@ -130,14 +142,16 @@ export default function LicenseManagementPage() {
     setLoading(true);
     setError('');
     try {
-      const [usersRes, tenantsRes] = await Promise.all([
+      const [tenantsRes, usersRes, licensesRes] = await Promise.all([
+        api.get<TenantRecord[]>('/tenants'),
         api.get<PlatformUser[]>('/admin/users'),
-        api.get<{ id: string; name: string }[]>('/tenants')
+        api.get<LicenseRecord[]>('/admin/licenses'),
       ]);
-      setUsers(usersRes.data);
       setTenants(tenantsRes.data);
+      setUsers(usersRes.data);
+      setAllLicenses(licensesRes.data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load user and license directories.');
+      setError(err.response?.data?.message || 'Failed to load shop and license directories.');
     } finally {
       setLoading(false);
     }
@@ -149,68 +163,48 @@ export default function LicenseManagementPage() {
 
   useEffect(() => {
     if (!loading && containerRef.current) {
-      const els = containerRef.current.querySelectorAll('.user-card-row');
+      const els = containerRef.current.querySelectorAll('.tenant-card-row');
       gsap.killTweensOf(els);
       gsap.fromTo(els,
         { opacity: 0, y: 8 },
         { opacity: 1, y: 0, duration: 0.3, stagger: 0.02, ease: 'power3.out', clearProps: 'all' }
       );
     }
-  }, [loading, users, searchQuery]);
+  }, [loading, tenants, searchQuery]);
 
-  const handleSelectUser = async (user: PlatformUser) => {
-    setSelectedUser(user);
+  // All users belonging to a given tenant — used both as the "issued for" picker
+  // and to display who's on staff at the shop in the detail modal.
+  const usersForTenant = (tenantId: string) => users.filter(u => u.tenantId === tenantId);
+
+  // All licenses belonging to a given tenant, regardless of which staff member
+  // they were originally issued to — this is the per-shop license pool.
+  const licensesForTenant = (tenantId: string) => allLicenses.filter(l => l.tenantId === tenantId);
+
+  const handleSelectTenant = async (tenant: TenantRecord) => {
+    setSelectedTenant(tenant);
     setDevices([]);
-    setAuditLogs([]);
     setRevealedKeys({});
     setRenewalLicenseId(null);
 
-    // Fetch audits and licenses history
-    try {
-      const logsRes = await api.get<AuditLogEntry[]>(`/admin/licenses?userId=${user.id}`);
-      setAuditLogs(logsRes.data);
+    const tenantUsers = usersForTenant(tenant.id);
+    const owner = tenantUsers.find(u => u.role === 'owner') || tenantUsers[0];
+    setDesktopIssueToUserId(owner?.id || '');
 
-      // If user has any licenses, load devices for them
-      const activeLicense = user.licenses.find(l => l.status === 'ACTIVE');
-      if (activeLicense) {
-        const devicesRes = await api.get<DeviceInfo[]>(`/admin/devices?licenseId=${activeLicense.id}`);
-        setDevices(devicesRes.data);
-      }
+    // Load device activations across every active license this shop holds.
+    try {
+      const activeLicenses = licensesForTenant(tenant.id).filter(l => l.status === 'ACTIVE');
+      const deviceLists = await Promise.all(
+        activeLicenses.map(l => api.get<DeviceInfo[]>(`/admin/devices?licenseId=${l.id}`))
+      );
+      setDevices(deviceLists.flatMap(res => res.data));
     } catch (err) {
-      console.error('Failed to load user licenses/devices', err);
+      console.error('Failed to load shop devices', err);
     }
   };
 
-  const handleTogglePermission = async (permField: keyof UserPermissionInfo, currentVal: boolean) => {
-    if (!selectedUser) return;
-    setLicenseLoading(true);
-    setError('');
-    
-    const permissionsPayload = {
-      webAccess: selectedUser.userPermission?.webAccess ?? true,
-      desktopAccess: selectedUser.userPermission?.desktopAccess ?? false,
-      mobileAccess: selectedUser.userPermission?.mobileAccess ?? false,
-      [permField]: !currentVal,
-    };
-
-    try {
-      const res = await api.post(`/admin/users/${selectedUser.id}/permissions`, permissionsPayload);
-      
-      const updatedUser = {
-        ...selectedUser,
-        userPermission: res.data
-      };
-      
-      // Update local lists
-      setUsers(prev => prev.map(u => u.id === selectedUser.id ? updatedUser : u));
-      setSelectedUser(updatedUser);
-      setSuccess('Access permissions updated.');
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update access permissions.');
-    } finally {
-      setLicenseLoading(false);
-    }
+  const refreshTenantLicenses = async (tenantId: string) => {
+    const res = await api.get<LicenseRecord[]>(`/admin/licenses?tenantId=${tenantId}`);
+    setAllLicenses(prev => [...prev.filter(l => l.tenantId !== tenantId), ...res.data]);
   };
 
   const calculateExpiryDate = (duration: '1m' | '6m' | '1y' | 'lifetime'): string => {
@@ -222,39 +216,28 @@ export default function LicenseManagementPage() {
     return d.toISOString();
   };
 
-  const handleGenerateLicense = async (type: 'DESKTOP' | 'MOBILE') => {
-    if (!selectedUser) return;
+  const handleGenerateLicense = async () => {
+    if (!selectedTenant) return;
+    if (!desktopIssueToUserId) {
+      setError('This shop has no staff account to record the license against yet — add a user first.');
+      return;
+    }
     setLicenseLoading(true);
     setError('');
 
-    const plan = type === 'DESKTOP' ? desktopPlan : mobilePlan;
-    const duration = type === 'DESKTOP' ? desktopDuration : mobileDuration;
-    const expiresAt = calculateExpiryDate(duration);
+    const expiresAt = calculateExpiryDate(desktopDuration);
 
     try {
-      const res = await api.post('/admin/licenses', {
-        userId: selectedUser.id,
-        licenseType: type,
-        plan,
+      await api.post('/admin/licenses', {
+        userId: desktopIssueToUserId,
+        licenseType: 'DESKTOP',
+        plan: desktopPlan,
         expiresAt,
       });
 
-      // Update state with newly created license
-      const updatedLicenses = [...selectedUser.licenses, res.data];
-      const updatedUser = { ...selectedUser, licenses: updatedLicenses };
+      await refreshTenantLicenses(selectedTenant.id);
 
-      setUsers(prev => prev.map(u => u.id === selectedUser.id ? updatedUser : u));
-      setSelectedUser(updatedUser);
-      
-      // Reload licenses / audits
-      const logsRes = await api.get<AuditLogEntry[]>(`/admin/licenses?userId=${selectedUser.id}`);
-      setAuditLogs(logsRes.data);
-      
-      // Fetch devices
-      const devicesRes = await api.get<DeviceInfo[]>(`/admin/devices?licenseId=${res.data.id}`);
-      setDevices(devicesRes.data);
-
-      setSuccess('License key generated successfully.');
+      setSuccess('License key generated successfully — any staff member at this shop can now activate it.');
       setTimeout(() => setSuccess(''), 4000);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to generate license key.');
@@ -264,30 +247,12 @@ export default function LicenseManagementPage() {
   };
 
   const handleLicenseAction = async (licenseId: string, action: 'regenerate' | 'revoke' | 'suspend') => {
-    if (!selectedUser) return;
+    if (!selectedTenant) return;
     setLicenseLoading(true);
     setError('');
     try {
-      const res = await api.post(`/admin/licenses/${licenseId}/${action}`);
-      
-      // Update local selected user
-      let updatedLicenses = selectedUser.licenses;
-      if (action === 'regenerate') {
-        updatedLicenses = selectedUser.licenses.map(l => l.id === licenseId ? { ...l, licenseKey: res.data.licenseKey, status: 'ACTIVE' as const, expiresAt: res.data.expiresAt } : l);
-      } else if (action === 'revoke') {
-        updatedLicenses = selectedUser.licenses.map(l => l.id === licenseId ? { ...l, status: 'REVOKED' as const } : l);
-      } else if (action === 'suspend') {
-        updatedLicenses = selectedUser.licenses.map(l => l.id === licenseId ? { ...l, status: 'SUSPENDED' as const } : l);
-      }
-
-      const updatedUser = { ...selectedUser, licenses: updatedLicenses };
-      setUsers(prev => prev.map(u => u.id === selectedUser.id ? updatedUser : u));
-      setSelectedUser(updatedUser);
-      
-      // Reload audits
-      const logsRes = await api.get<AuditLogEntry[]>(`/admin/licenses?userId=${selectedUser.id}`);
-      setAuditLogs(logsRes.data);
-
+      await api.post(`/admin/licenses/${licenseId}/${action}`);
+      await refreshTenantLicenses(selectedTenant.id);
       setSuccess(`License successfully ${action}d.`);
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
@@ -298,23 +263,14 @@ export default function LicenseManagementPage() {
   };
 
   const handleRenewSubmit = async (licenseId: string) => {
-    if (!selectedUser) return;
+    if (!selectedTenant) return;
     setLicenseLoading(true);
     setError('');
     const expiresAt = calculateExpiryDate(renewalDuration);
     try {
-      const res = await api.post(`/admin/licenses/${licenseId}/renew`, { expiresAt });
-      
-      const updatedLicenses = selectedUser.licenses.map(l => l.id === licenseId ? { ...l, status: 'ACTIVE' as const, expiresAt: res.data.expiresAt } : l);
-      const updatedUser = { ...selectedUser, licenses: updatedLicenses };
-      setUsers(prev => prev.map(u => u.id === selectedUser.id ? updatedUser : u));
-      setSelectedUser(updatedUser);
+      await api.post(`/admin/licenses/${licenseId}/renew`, { expiresAt });
+      await refreshTenantLicenses(selectedTenant.id);
       setRenewalLicenseId(null);
-
-      // Reload audits
-      const logsRes = await api.get<AuditLogEntry[]>(`/admin/licenses?userId=${selectedUser.id}`);
-      setAuditLogs(logsRes.data);
-
       setSuccess('License renewed successfully.');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
@@ -330,8 +286,6 @@ export default function LicenseManagementPage() {
     setError('');
     try {
       await api.post(`/admin/devices/${deviceId}/remove`);
-      
-      // Update devices list
       setDevices(prev => prev.filter(d => d.id !== deviceId));
       setSuccess('Device activation removed.');
       setTimeout(() => setSuccess(''), 3000);
@@ -342,14 +296,13 @@ export default function LicenseManagementPage() {
     }
   };
 
-
   const handleResetActivations = async (licenseId: string) => {
     if (!confirm('CAUTION: This will immediately wipe all active device registrations for this license! Continue?')) return;
     setLicenseLoading(true);
     setError('');
     try {
       await api.post(`/admin/devices/license/${licenseId}/reset`);
-      setDevices([]);
+      setDevices(prev => prev.filter(d => d.licenseId !== licenseId));
       setSuccess('All device activations have been reset.');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
@@ -359,28 +312,20 @@ export default function LicenseManagementPage() {
     }
   };
 
-  const handleDownloadLicenseFile = async (licenseId: string, name: string) => {
-    try {
-      // Find the detailed license with signedToken (needs GET /admin/licenses)
-      const res = await api.get<AuditLogEntry[]>(`/admin/licenses?userId=${selectedUser?.id}`);
-      const matchingLic = res.data.find((l: any) => l.id === licenseId);
-      if (!matchingLic || !(matchingLic as any).signedToken) {
-        alert('Could not retrieve raw license signed token.');
-        return;
-      }
-      
-      const blob = new Blob([(matchingLic as any).signedToken], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `techbill_${name.toLowerCase().replace(/\s+/g, '_')}_license.lic`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      alert('Error fetching signed token: ' + err);
+  const handleDownloadLicenseFile = (lic: LicenseRecord, name: string) => {
+    if (!lic.signedToken) {
+      alert('Could not retrieve raw license signed token.');
+      return;
     }
+    const blob = new Blob([lic.signedToken], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `techbill_${name.toLowerCase().replace(/\s+/g, '_')}_license.lic`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const handleAddUserSubmit = async (e: React.FormEvent) => {
@@ -408,7 +353,8 @@ export default function LicenseManagementPage() {
         mobileAccess: addUserForm.mobileAccess,
       });
 
-      // Issue licenses if toggled
+      // Issue licenses if toggled — these land on the shop (tenantId), this
+      // user is just recorded as who they were issued for.
       if (addUserForm.desktopAccess) {
         await api.post('/admin/licenses', {
           userId: createdUser.id,
@@ -453,12 +399,16 @@ export default function LicenseManagementPage() {
   };
 
 
-  // Filter users based on search
-  const filteredUsers = users.filter(u => 
-    u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.tenant?.name.toLowerCase().includes(searchQuery.toLowerCase())
+  // Filter tenants (shops) based on search
+  const filteredTenants = tenants.filter(t =>
+    t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (t.ownerEmail || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const selectedTenantLicenses = selectedTenant ? licensesForTenant(selectedTenant.id) : [];
+  const selectedTenantUsers = selectedTenant ? usersForTenant(selectedTenant.id) : [];
+  const selectedDesktopLic = selectedTenantLicenses.find(l => l.licenseType === 'DESKTOP' && l.status === 'ACTIVE');
 
   return (
     <div ref={containerRef} className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -470,7 +420,7 @@ export default function LicenseManagementPage() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-white font-space">License Management</h1>
-            <p className="text-xs text-stitch-on-surface-variant">Configure client app activations, permissions, and trusted clock policies</p>
+            <p className="text-xs text-stitch-on-surface-variant">Configure per-shop activations, staff access, and trusted clock policies</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -502,68 +452,56 @@ export default function LicenseManagementPage() {
       <div className="glass-card rounded-xl p-4 flex items-center gap-3">
         <input
           type="text"
-          placeholder="Search by name, email username, or tenant shop name..."
+          placeholder="Search by shop name, subdomain, or owner email..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className={inputCls}
         />
       </div>
 
-      {/* Users table list */}
+      {/* Tenants (shops) table list — a license belongs to the shop, so shops are
+          the primary row here, not individual staff users. */}
       <div className="glass-card rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="bg-stitch-surface-container-high/50 border-b border-white/5">
-                <th className="px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">User Details</th>
-                <th className="px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Tenant Shop</th>
-                <th className="px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Access Rights</th>
+                <th className="px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Shop</th>
+                <th className="px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Owner</th>
+                <th className="px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Staff</th>
                 <th className="px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Active License Keys</th>
                 <th className="px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider text-center">Manage</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {filteredUsers.length === 0 ? (
+              {filteredTenants.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-4 py-16 text-center text-stitch-on-surface-variant">
                     {loading ? (
                       <span className="inline-block w-6 h-6 border-2 border-stitch-primary/30 border-t-stitch-primary rounded-full animate-spin" />
-                    ) : 'No user credentials found.'}
+                    ) : 'No tenant shops found.'}
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((u) => {
-                  const perm = u.userPermission;
-                  const desktopLic = u.licenses.find(l => l.licenseType === 'DESKTOP' && l.status === 'ACTIVE');
-                  const mobileLic = u.licenses.find(l => l.licenseType === 'MOBILE' && l.status === 'ACTIVE');
+                filteredTenants.map((t) => {
+                  const tLicenses = licensesForTenant(t.id);
+                  const desktopLic = tLicenses.find(l => l.licenseType === 'DESKTOP' && l.status === 'ACTIVE');
                   return (
-                    <tr key={u.id} className="user-card-row hover:bg-white/5 transition-colors">
+                    <tr key={t.id} className="tenant-card-row hover:bg-white/5 transition-colors">
                       <td className="px-4 py-3.5">
-                        <p className="font-semibold text-white text-sm">{u.name}</p>
-                        <p className="text-[10px] text-stitch-on-surface-variant/70 font-mono mt-0.5">{u.email}</p>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        {u.tenant ? (
-                          <>
-                            <p className="text-xs font-medium text-stitch-on-surface">{u.tenant.name}</p>
-                            <p className="text-[10px] text-stitch-primary font-mono mt-0.5">{u.tenant.slug}.techbill.app</p>
-                          </>
-                        ) : (
-                          <span className="text-[10px] text-stitch-on-surface-variant/50 italic">None</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <div className="flex gap-1.5 flex-wrap">
-                          <span className={`inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold border ${perm?.webAccess ? 'bg-green-500/10 text-green-400 border-green-500/15' : 'bg-white/5 text-stitch-on-surface-variant/40 border-white/5'}`}>
-                            Web
-                          </span>
-                          <span className={`inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold border ${perm?.desktopAccess ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/15' : 'bg-white/5 text-stitch-on-surface-variant/40 border-white/5'}`}>
-                            Desktop
-                          </span>
-                          <span className={`inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold border ${perm?.mobileAccess ? 'bg-amber-500/10 text-amber-400 border-amber-500/15' : 'bg-white/5 text-stitch-on-surface-variant/40 border-white/5'}`}>
-                            Mobile
-                          </span>
+                        <div className="flex items-center gap-2">
+                          <Store size={13} className="text-stitch-on-surface-variant/50 shrink-0" />
+                          <div>
+                            <p className="font-semibold text-white text-sm">{t.name}</p>
+                            <p className="text-[10px] text-stitch-primary font-mono mt-0.5">{t.slug}.techbill.app</p>
+                          </div>
                         </div>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <p className="text-xs font-medium text-stitch-on-surface">{t.ownerEmail || '—'}</p>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span className="text-xs text-stitch-on-surface-variant">{t._count?.users ?? 0} user{(t._count?.users ?? 0) === 1 ? '' : 's'}</span>
                       </td>
                       <td className="px-4 py-3.5">
                         <div className="space-y-1">
@@ -574,21 +512,14 @@ export default function LicenseManagementPage() {
                               <span className={`px-1 rounded text-[8px] border capitalize ${PLAN_COLORS[desktopLic.plan]}`}>{desktopLic.plan}</span>
                             </div>
                           )}
-                          {mobileLic && (
-                            <div className="flex items-center gap-1.5">
-                              <Smartphone size={11} className="text-amber-400" />
-                              <span className="text-[10px] font-mono text-white/95">{mobileLic.licenseKey}</span>
-                              <span className={`px-1 rounded text-[8px] border capitalize ${PLAN_COLORS[mobileLic.plan]}`}>{mobileLic.plan}</span>
-                            </div>
-                          )}
-                          {!desktopLic && !mobileLic && (
-                            <span className="text-[10px] text-stitch-on-surface-variant/40 italic">No active license keys</span>
+                          {!desktopLic && (
+                            <span className="text-[10px] text-stitch-on-surface-variant/40 italic">No active license key</span>
                           )}
                         </div>
                       </td>
                       <td className="px-4 py-3.5 text-center">
                         <button
-                          onClick={() => handleSelectUser(u)}
+                          onClick={() => handleSelectTenant(t)}
                           className="px-2.5 py-1 text-xs bg-white/5 hover:bg-stitch-primary hover:text-white border border-white/10 rounded transition-all font-semibold"
                         >
                           Keys & Devices
@@ -796,312 +727,174 @@ export default function LicenseManagementPage() {
       )}
 
 
-      {/* DETAIL MODAL (License & Devices Setup) */}
-      {selectedUser && (
+      {/* DETAIL MODAL (License & Devices Setup) — scoped to the shop (tenant),
+          since licenses belong to the shop, not to any one staff member. */}
+      {selectedTenant && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="glass-modal rounded-xl p-6 w-full max-w-5xl border border-white/10 flex flex-col max-h-[90vh] overflow-hidden">
-            
+
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-white/5 pb-4 shrink-0">
               <div>
                 <h2 className="font-bold text-white text-base font-space flex items-center gap-2">
-                  <Shield className="text-stitch-primary" size={18} /> Credentials & Licenses: {selectedUser.name}
+                  <Shield className="text-stitch-primary" size={18} /> Licenses & Devices: {selectedTenant.name}
                 </h2>
                 <p className="text-[11px] text-stitch-on-surface-variant mt-0.5">
-                  Tenant: <strong className="text-white">{selectedUser.tenant?.name}</strong> • Email: <strong className="text-white">{selectedUser.email}</strong>
+                  Shop: <strong className="text-white">{selectedTenant.slug}.techbill.app</strong> • Owner: <strong className="text-white">{selectedTenant.ownerEmail || '—'}</strong> • {selectedTenantUsers.length} staff account{selectedTenantUsers.length === 1 ? '' : 's'}
                 </p>
               </div>
-              <button onClick={() => setSelectedUser(null)} className="text-stitch-on-surface-variant hover:text-white transition-colors">
+              <button onClick={() => setSelectedTenant(null)} className="text-stitch-on-surface-variant hover:text-white transition-colors">
                 <X size={20} />
               </button>
             </div>
 
             {/* Modal Content */}
             <div className="flex-1 overflow-y-auto py-5 space-y-6 pr-1">
-              
-              {/* Row 1: Access toggles & Generate Buttons */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                
+
+              <p className="text-[11px] text-stitch-on-surface-variant/80 -mt-1">
+                A license issued here can be activated by <strong className="text-white">any staff member</strong> at this shop — up to the plan's device limit. The staff member picked below is only recorded as an audit "issued for" reference.
+              </p>
+
+              {/* Row 1: Desktop license generate/manage box — one license per shop */}
+              <div className="grid grid-cols-1 gap-5">
+
                 {/* Desktop License Box */}
                 <div className="glass-card rounded-xl p-4.5 border border-white/5 flex flex-col justify-between space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center">
-                        <Laptop size={16} className="text-indigo-400" />
-                      </div>
-                      <div>
-                        <h3 className="text-xs font-bold text-white tracking-wide uppercase">Desktop App Access</h3>
-                        <p className="text-[10px] text-stitch-on-surface-variant">Toggles desktop offline POS/Inventory runtime</p>
-                      </div>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+                      <Laptop size={16} className="text-indigo-400" />
                     </div>
-                    <button
-                      onClick={() => handleTogglePermission('desktopAccess', selectedUser.userPermission?.desktopAccess ?? false)}
-                      disabled={licenseLoading}
-                      className={`w-12 h-6.5 rounded-full p-1 transition-all duration-200 ${
-                        selectedUser.userPermission?.desktopAccess ? 'bg-indigo-500' : 'bg-white/10'
-                      }`}
-                    >
-                      <div className={`w-4.5 h-4.5 rounded-full bg-white transition-transform ${
-                        selectedUser.userPermission?.desktopAccess ? 'translate-x-5.5' : 'translate-x-0'
-                      }`} />
-                    </button>
+                    <div>
+                      <h3 className="text-xs font-bold text-white tracking-wide uppercase">Desktop App Access</h3>
+                      <p className="text-[10px] text-stitch-on-surface-variant">Shared offline POS/Inventory license for this shop</p>
+                    </div>
                   </div>
 
-                  {selectedUser.userPermission?.desktopAccess ? (
+                  {selectedDesktopLic ? (
                     (() => {
-                      const activeLic = selectedUser.licenses.find(l => l.licenseType === 'DESKTOP' && l.status === 'ACTIVE');
-                      if (activeLic) {
-                        const isRevealed = revealedKeys[activeLic.id];
-                        return (
-                          <div className="bg-white/[0.02] border border-white/5 rounded-lg p-3 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[9px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">License Key</span>
-                              <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold border ${STATUS_COLORS[activeLic.status]}`}>{activeLic.status}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="text"
-                                readOnly
-                                value={isRevealed ? activeLic.licenseKey : 'TB-DSK-••••-••••-••••'}
-                                className="flex-1 bg-black/25 font-mono text-xs px-2.5 py-1.5 rounded border border-white/5 text-white/90 select-all"
-                              />
-                              <button
-                                onClick={() => setRevealedKeys(prev => ({ ...prev, [activeLic.id]: !isRevealed }))}
-                                className="p-1.5 bg-white/5 rounded border border-white/5 text-stitch-on-surface-variant hover:text-white"
-                              >
-                                {isRevealed ? <EyeOff size={13} /> : <Eye size={13} />}
-                              </button>
-                              <button
-                                onClick={() => {
-                                  navigator.clipboard.writeText(activeLic.licenseKey);
-                                  setSuccess('Copied to clipboard!');
-                                  setTimeout(() => setSuccess(''), 2000);
-                                }}
-                                className="p-1.5 bg-white/5 rounded border border-white/5 text-stitch-on-surface-variant hover:text-white"
-                              >
-                                <Copy size={13} />
-                              </button>
-                            </div>
-                            <div className="flex justify-between items-center text-[10px] text-stitch-on-surface-variant pt-1">
-                              <span>Plan: <strong className="text-white capitalize">{activeLic.plan}</strong></span>
-                              <span>Expires: <strong className="text-white">{new Date(activeLic.expiresAt).toLocaleDateString()}</strong></span>
-                            </div>
-                            
-                            {/* License Admin Actions */}
-                            <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-white/5">
-                              <button onClick={() => handleLicenseAction(activeLic.id, 'regenerate')}
-                                className="py-1 text-[9px] bg-white/5 hover:bg-indigo-500 hover:text-white rounded border border-white/5 font-semibold">
-                                Re-Gen
-                              </button>
-                              <button onClick={() => setRenewalLicenseId(activeLic.id)}
-                                className="py-1 text-[9px] bg-white/5 hover:bg-green-500 hover:text-white rounded border border-white/5 font-semibold">
-                                Renew
-                              </button>
-                              <button onClick={() => handleLicenseAction(activeLic.id, 'suspend')}
-                                className="py-1 text-[9px] bg-white/5 hover:bg-orange-500 hover:text-white rounded border border-white/5 font-semibold">
-                                Suspend
-                              </button>
-                              <button onClick={() => handleLicenseAction(activeLic.id, 'revoke')}
-                                className="py-1 text-[9px] bg-white/5 hover:bg-red-500 hover:text-white rounded border border-white/5 font-semibold">
-                                Revoke
-                              </button>
-                            </div>
-                            <div className="pt-1.5">
-                              <button
-                                onClick={() => handleDownloadLicenseFile(activeLic.id, `desktop_${selectedUser.name}`)}
-                                className="w-full py-1 px-2 text-[9px] flex items-center justify-center gap-1 bg-white/5 hover:bg-stitch-primary text-white rounded border border-white/5 font-bold"
-                              >
-                                <Download size={11} /> Download Offline License File (.lic)
-                              </button>
-                            </div>
+                      const activeLic = selectedDesktopLic;
+                      const isRevealed = revealedKeys[activeLic.id];
+                      return (
+                        <div className="bg-white/[0.02] border border-white/5 rounded-lg p-3 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">License Key</span>
+                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold border ${STATUS_COLORS[activeLic.status]}`}>{activeLic.status}</span>
                           </div>
-                        );
-                      } else {
-                        return (
-                          <div className="bg-white/[0.02] border border-white/5 rounded-lg p-3 space-y-3">
-                            <div className="grid grid-cols-2 gap-2.5">
-                              <div>
-                                <label className={labelCls}>License Plan</label>
-                                <select
-                                  value={desktopPlan}
-                                  onChange={(e: any) => setDesktopPlan(e.target.value)}
-                                  className={inputCls + " py-1.5 text-xs"}
-                                >
-                                  <option value="BASIC">Basic (1 Client Device)</option>
-                                  <option value="PREMIUM">Premium (3 Client Devices)</option>
-                                  <option value="ENTERPRISE">Enterprise (Unlimited Devices)</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label className={labelCls}>Duration Period</label>
-                                <select
-                                  value={desktopDuration}
-                                  onChange={(e: any) => setDesktopDuration(e.target.value)}
-                                  className={inputCls + " py-1.5 text-xs"}
-                                >
-                                  <option value="1m">1 Month</option>
-                                  <option value="6m">6 Months</option>
-                                  <option value="1y">1 Year</option>
-                                  <option value="lifetime">Lifetime Plan</option>
-                                </select>
-                              </div>
-                            </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              readOnly
+                              value={isRevealed ? activeLic.licenseKey : 'TB-DSK-••••-••••-••••'}
+                              className="flex-1 bg-black/25 font-mono text-xs px-2.5 py-1.5 rounded border border-white/5 text-white/90 select-all"
+                            />
                             <button
-                              onClick={() => handleGenerateLicense('DESKTOP')}
-                              className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1"
+                              onClick={() => setRevealedKeys(prev => ({ ...prev, [activeLic.id]: !isRevealed }))}
+                              className="p-1.5 bg-white/5 rounded border border-white/5 text-stitch-on-surface-variant hover:text-white"
                             >
-                              <Plus size={13} /> Generate Desktop License Key
+                              {isRevealed ? <EyeOff size={13} /> : <Eye size={13} />}
+                            </button>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(activeLic.licenseKey);
+                                setSuccess('Copied to clipboard!');
+                                setTimeout(() => setSuccess(''), 2000);
+                              }}
+                              className="p-1.5 bg-white/5 rounded border border-white/5 text-stitch-on-surface-variant hover:text-white"
+                            >
+                              <Copy size={13} />
                             </button>
                           </div>
-                        );
-                      }
-                    })()
-                  ) : (
-                    <div className="flex gap-2 p-3.5 bg-stitch-error/5 border border-stitch-error/10 rounded-lg text-xs text-stitch-on-surface-variant/80 items-start leading-normal">
-                      <ShieldOff size={15} className="text-stitch-error shrink-0 mt-0.5" />
-                      <p>Desktop offline POS access is deactivated for this user. Switch it ON above to enable activations.</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Mobile License Box */}
-                <div className="glass-card rounded-xl p-4.5 border border-white/5 flex flex-col justify-between space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                        <Smartphone size={16} className="text-amber-400" />
-                      </div>
-                      <div>
-                        <h3 className="text-xs font-bold text-white tracking-wide uppercase">Mobile App Access</h3>
-                        <p className="text-[10px] text-stitch-on-surface-variant">Toggles Android app inventory activations</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => handleTogglePermission('mobileAccess', selectedUser.userPermission?.mobileAccess ?? false)}
-                      disabled={licenseLoading}
-                      className={`w-12 h-6.5 rounded-full p-1 transition-all duration-200 ${
-                        selectedUser.userPermission?.mobileAccess ? 'bg-amber-500' : 'bg-white/10'
-                      }`}
-                    >
-                      <div className={`w-4.5 h-4.5 rounded-full bg-white transition-transform ${
-                        selectedUser.userPermission?.mobileAccess ? 'translate-x-5.5' : 'translate-x-0'
-                      }`} />
-                    </button>
-                  </div>
-
-                  {selectedUser.userPermission?.mobileAccess ? (
-                    (() => {
-                      const activeLic = selectedUser.licenses.find(l => l.licenseType === 'MOBILE' && l.status === 'ACTIVE');
-                      if (activeLic) {
-                        const isRevealed = revealedKeys[activeLic.id];
-                        return (
-                          <div className="bg-white/[0.02] border border-white/5 rounded-lg p-3 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[9px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">License Key</span>
-                              <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold border ${STATUS_COLORS[activeLic.status]}`}>{activeLic.status}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="text"
-                                readOnly
-                                value={isRevealed ? activeLic.licenseKey : 'TB-MOB-••••-••••-••••'}
-                                className="flex-1 bg-black/25 font-mono text-xs px-2.5 py-1.5 rounded border border-white/5 text-white/90 select-all"
-                              />
-                              <button
-                                onClick={() => setRevealedKeys(prev => ({ ...prev, [activeLic.id]: !isRevealed }))}
-                                className="p-1.5 bg-white/5 rounded border border-white/5 text-stitch-on-surface-variant hover:text-white"
-                              >
-                                {isRevealed ? <EyeOff size={13} /> : <Eye size={13} />}
-                              </button>
-                              <button
-                                onClick={() => {
-                                  navigator.clipboard.writeText(activeLic.licenseKey);
-                                  setSuccess('Copied to clipboard!');
-                                  setTimeout(() => setSuccess(''), 2000);
-                                }}
-                                className="p-1.5 bg-white/5 rounded border border-white/5 text-stitch-on-surface-variant hover:text-white"
-                              >
-                                <Copy size={13} />
-                              </button>
-                            </div>
-                            <div className="flex justify-between items-center text-[10px] text-stitch-on-surface-variant pt-1">
-                              <span>Plan: <strong className="text-white capitalize">{activeLic.plan}</strong></span>
-                              <span>Expires: <strong className="text-white">{new Date(activeLic.expiresAt).toLocaleDateString()}</strong></span>
-                            </div>
-                            
-                            {/* License Admin Actions */}
-                            <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-white/5">
-                              <button onClick={() => handleLicenseAction(activeLic.id, 'regenerate')}
-                                className="py-1 text-[9px] bg-white/5 hover:bg-indigo-500 hover:text-white rounded border border-white/5 font-semibold">
-                                Re-Gen
-                              </button>
-                              <button onClick={() => setRenewalLicenseId(activeLic.id)}
-                                className="py-1 text-[9px] bg-white/5 hover:bg-green-500 hover:text-white rounded border border-white/5 font-semibold">
-                                Renew
-                              </button>
-                              <button onClick={() => handleLicenseAction(activeLic.id, 'suspend')}
-                                className="py-1 text-[9px] bg-white/5 hover:bg-orange-500 hover:text-white rounded border border-white/5 font-semibold">
-                                Suspend
-                              </button>
-                              <button onClick={() => handleLicenseAction(activeLic.id, 'revoke')}
-                                className="py-1 text-[9px] bg-white/5 hover:bg-red-500 hover:text-white rounded border border-white/5 font-semibold">
-                                Revoke
-                              </button>
-                            </div>
-                            <div className="pt-1.5">
-                              <button
-                                onClick={() => handleDownloadLicenseFile(activeLic.id, `mobile_${selectedUser.name}`)}
-                                className="w-full py-1 px-2 text-[9px] flex items-center justify-center gap-1 bg-white/5 hover:bg-stitch-primary text-white rounded border border-white/5 font-bold"
-                              >
-                                <Download size={11} /> Download Offline License File (.lic)
-                              </button>
-                            </div>
+                          <div className="flex justify-between items-center text-[10px] text-stitch-on-surface-variant pt-1">
+                            <span>Plan: <strong className="text-white capitalize">{activeLic.plan}</strong></span>
+                            <span>Expires: <strong className="text-white">{new Date(activeLic.expiresAt).toLocaleDateString()}</strong></span>
                           </div>
-                        );
-                      } else {
-                        return (
-                          <div className="bg-white/[0.02] border border-white/5 rounded-lg p-3 space-y-3">
-                            <div className="grid grid-cols-2 gap-2.5">
-                              <div>
-                                <label className={labelCls}>License Plan</label>
-                                <select
-                                  value={mobilePlan}
-                                  onChange={(e: any) => setMobilePlan(e.target.value)}
-                                  className={inputCls + " py-1.5 text-xs"}
-                                >
-                                  <option value="BASIC">Basic (1 Client Device)</option>
-                                  <option value="PREMIUM">Premium (3 Client Devices)</option>
-                                  <option value="ENTERPRISE">Enterprise (Unlimited Devices)</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label className={labelCls}>Duration Period</label>
-                                <select
-                                  value={mobileDuration}
-                                  onChange={(e: any) => setMobileDuration(e.target.value)}
-                                  className={inputCls + " py-1.5 text-xs"}
-                                >
-                                  <option value="1m">1 Month</option>
-                                  <option value="6m">6 Months</option>
-                                  <option value="1y">1 Year</option>
-                                  <option value="lifetime">Lifetime Plan</option>
-                                </select>
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => handleGenerateLicense('MOBILE')}
-                              className="w-full py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1"
-                            >
-                              <Plus size={13} /> Generate Mobile License Key
+                          {activeLic.user && (
+                            <p className="text-[9px] text-stitch-on-surface-variant/60">Issued for: {activeLic.user.name}</p>
+                          )}
+
+                          {/* License Admin Actions */}
+                          <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-white/5">
+                            <button onClick={() => handleLicenseAction(activeLic.id, 'regenerate')}
+                              className="py-1 text-[9px] bg-white/5 hover:bg-indigo-500 hover:text-white rounded border border-white/5 font-semibold">
+                              Re-Gen
+                            </button>
+                            <button onClick={() => setRenewalLicenseId(activeLic.id)}
+                              className="py-1 text-[9px] bg-white/5 hover:bg-green-500 hover:text-white rounded border border-white/5 font-semibold">
+                              Renew
+                            </button>
+                            <button onClick={() => handleLicenseAction(activeLic.id, 'suspend')}
+                              className="py-1 text-[9px] bg-white/5 hover:bg-orange-500 hover:text-white rounded border border-white/5 font-semibold">
+                              Suspend
+                            </button>
+                            <button onClick={() => handleLicenseAction(activeLic.id, 'revoke')}
+                              className="py-1 text-[9px] bg-white/5 hover:bg-red-500 hover:text-white rounded border border-white/5 font-semibold">
+                              Revoke
                             </button>
                           </div>
-                        );
-                      }
+                          <div className="pt-1.5">
+                            <button
+                              onClick={() => handleDownloadLicenseFile(activeLic, `desktop_${selectedTenant.slug}`)}
+                              className="w-full py-1 px-2 text-[9px] flex items-center justify-center gap-1 bg-white/5 hover:bg-stitch-primary text-white rounded border border-white/5 font-bold"
+                            >
+                              <Download size={11} /> Download Offline License File (.lic)
+                            </button>
+                          </div>
+                        </div>
+                      );
                     })()
                   ) : (
-                    <div className="flex gap-2 p-3.5 bg-stitch-error/5 border border-stitch-error/10 rounded-lg text-xs text-stitch-on-surface-variant/80 items-start leading-normal">
-                      <ShieldOff size={15} className="text-stitch-error shrink-0 mt-0.5" />
-                      <p>Mobile Android catalog access is deactivated for this user. Switch it ON above to enable activations.</p>
+                    <div className="bg-white/[0.02] border border-white/5 rounded-lg p-3 space-y-3">
+                      {selectedTenantUsers.length === 0 ? (
+                        <div className="flex gap-2 p-2 bg-stitch-error/5 border border-stitch-error/10 rounded-lg text-xs text-stitch-on-surface-variant/80 items-start leading-normal">
+                          <ShieldOff size={15} className="text-stitch-error shrink-0 mt-0.5" />
+                          <p>This shop has no staff accounts yet — add one before issuing a license.</p>
+                        </div>
+                      ) : (
+                        <div>
+                          <label className={labelCls}>Issued For (audit record only)</label>
+                          <select
+                            value={desktopIssueToUserId}
+                            onChange={(e) => setDesktopIssueToUserId(e.target.value)}
+                            className={inputCls + " py-1.5 text-xs"}
+                          >
+                            {selectedTenantUsers.map(u => <option key={u.id} value={u.id}>{u.name} ({u.role})</option>)}
+                          </select>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div>
+                          <label className={labelCls}>License Plan</label>
+                          <select
+                            value={desktopPlan}
+                            onChange={(e: any) => setDesktopPlan(e.target.value)}
+                            className={inputCls + " py-1.5 text-xs"}
+                          >
+                            <option value="BASIC">Basic (1 Client Device)</option>
+                            <option value="PREMIUM">Premium (3 Client Devices)</option>
+                            <option value="ENTERPRISE">Enterprise (Unlimited Devices)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className={labelCls}>Duration Period</label>
+                          <select
+                            value={desktopDuration}
+                            onChange={(e: any) => setDesktopDuration(e.target.value)}
+                            className={inputCls + " py-1.5 text-xs"}
+                          >
+                            <option value="1m">1 Month</option>
+                            <option value="6m">6 Months</option>
+                            <option value="1y">1 Year</option>
+                            <option value="lifetime">Lifetime Plan</option>
+                          </select>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleGenerateLicense()}
+                        disabled={selectedTenantUsers.length === 0 || licenseLoading}
+                        className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1"
+                      >
+                        <Plus size={13} /> Generate Desktop License Key
+                      </button>
                     </div>
                   )}
                 </div>
@@ -1143,17 +936,17 @@ export default function LicenseManagementPage() {
                 </div>
               )}
 
-              {/* Row 2: Device activations list */}
-              {selectedUser.licenses.some(l => l.status === 'ACTIVE') && (
+              {/* Row 2: Device activations list — shared across all of this shop's staff */}
+              {selectedDesktopLic && (
                 <div className="glass-card rounded-xl p-5 border border-white/5 space-y-4">
                   <div className="flex items-center justify-between border-b border-white/5 pb-2.5 flex-wrap gap-2">
                     <div>
                       <h3 className="text-xs font-bold text-white uppercase tracking-wider font-space">Device Activations</h3>
-                      <p className="text-[10px] text-stitch-on-surface-variant mt-0.5">Currently registered hardware slots for active licenses</p>
+                      <p className="text-[10px] text-stitch-on-surface-variant mt-0.5">Hardware slots currently registered by any staff member at this shop</p>
                     </div>
                     {devices.length > 0 && (
                       <button
-                        onClick={() => handleResetActivations(selectedUser.licenses.find(l => l.status === 'ACTIVE')?.id || '')}
+                        onClick={() => handleResetActivations(selectedDesktopLic.id)}
                         className="flex items-center gap-1 px-2.5 py-1 bg-red-500/10 hover:bg-red-500 border border-red-500/20 text-red-400 hover:text-white rounded text-[10px] font-bold transition-all"
                       >
                         <ShieldOff size={11} /> Reset All Activations
@@ -1177,7 +970,7 @@ export default function LicenseManagementPage() {
                         {devices.length === 0 ? (
                           <tr>
                             <td colSpan={6} className="py-8 text-center text-stitch-on-surface-variant italic">
-                              No devices have been activated with this license key yet.
+                              No devices have been activated with a license from this shop yet.
                             </td>
                           </tr>
                         ) : (
@@ -1214,7 +1007,7 @@ export default function LicenseManagementPage() {
               <div className="glass-card rounded-xl p-5 border border-white/5 space-y-4">
                 <div className="border-b border-white/5 pb-2.5">
                   <h3 className="text-xs font-bold text-white uppercase tracking-wider font-space">License Issuance & Renewal History</h3>
-                  <p className="text-[10px] text-stitch-on-surface-variant mt-0.5">Historical log of all platform desktop licenses assigned to this account</p>
+                  <p className="text-[10px] text-stitch-on-surface-variant mt-0.5">Historical log of every license this shop has held, and who it was issued for</p>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
@@ -1224,32 +1017,34 @@ export default function LicenseManagementPage() {
                         <th className="py-2 px-3">Platform</th>
                         <th className="py-2 px-3">Plan</th>
                         <th className="py-2 px-3">Status</th>
+                        <th className="py-2 px-3">Issued For</th>
                         <th className="py-2 px-3">Created At</th>
                         <th className="py-2 px-3">Expires At</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                      {auditLogs.length === 0 ? (
+                      {selectedTenantLicenses.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="py-8 text-center text-stitch-on-surface-variant italic">
+                          <td colSpan={7} className="py-8 text-center text-stitch-on-surface-variant italic">
                             No historical license records found.
                           </td>
                         </tr>
                       ) : (
-                        auditLogs.map(log => (
+                        selectedTenantLicenses.map(log => (
                           <tr key={log.id} className="hover:bg-white/[0.02]">
                             <td className="py-2.5 px-3 font-mono text-[11px] text-white/90">{log.licenseKey}</td>
                             <td className="py-2.5 px-3 text-stitch-on-surface-variant">{log.licenseType}</td>
                             <td className="py-2.5 px-3">
-                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border capitalize ${PLAN_COLORS[log.plan as keyof typeof PLAN_COLORS]}`}>
+                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border capitalize ${PLAN_COLORS[log.plan]}`}>
                                 {log.plan}
                               </span>
                             </td>
                             <td className="py-2.5 px-3">
-                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border capitalize ${STATUS_COLORS[log.status as keyof typeof STATUS_COLORS]}`}>
+                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border capitalize ${STATUS_COLORS[log.status]}`}>
                                 {log.status}
                               </span>
                             </td>
+                            <td className="py-2.5 px-3 text-stitch-on-surface-variant/80">{log.user?.name || '—'}</td>
                             <td className="py-2.5 px-3 text-stitch-on-surface-variant/80">{new Date(log.createdAt).toLocaleString()}</td>
                             <td className="py-2.5 px-3 text-stitch-on-surface-variant/80">{new Date(log.expiresAt).toLocaleDateString()}</td>
                           </tr>
@@ -1266,7 +1061,7 @@ export default function LicenseManagementPage() {
             <div className="flex justify-end gap-3 pt-4 border-t border-white/5 shrink-0 bg-white/[0.01]">
               <button
                 type="button"
-                onClick={() => setSelectedUser(null)}
+                onClick={() => setSelectedTenant(null)}
                 className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-xs font-bold text-white transition-all"
               >
                 Close Portal

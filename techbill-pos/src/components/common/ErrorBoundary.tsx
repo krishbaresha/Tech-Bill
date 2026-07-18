@@ -1,5 +1,6 @@
 import React, { ErrorInfo, ReactNode } from 'react';
 import { ShieldAlert, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { reportError } from '../../lib/errorReporting';
 
 interface Props {
   children: ReactNode;
@@ -31,6 +32,10 @@ export default class ErrorBoundary extends React.Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     this.setState({ errorInfo });
     console.error('[TechBill POS Error Boundary]', error, errorInfo);
+    reportError(error.message, {
+      stack: `${error.stack ?? ''}\n${errorInfo.componentStack ?? ''}`.trim(),
+      source: 'react-error-boundary',
+    });
   }
 
   handleReset = () => {

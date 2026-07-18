@@ -157,6 +157,7 @@ model Tenant {
   onlineSellingEnabled Boolean  @default(false) @map("online_selling_enabled")
   appAccessEnabled     Boolean   @default(false) @map("app_access_enabled")
   isWarehouseEnabled   Boolean   @default(false) @map("is_warehouse_enabled")
+  desktopAccessEnabled Boolean   @default(false) @map("desktop_access_enabled")
   subscriptionExpiresAt DateTime? @map("subscription_expires_at")
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @updatedAt @map("updated_at")
@@ -180,6 +181,7 @@ model Tenant {
   notifications    Notification[]
   transactions     Transaction[]
   integrityScans   IntegrityScan[]
+  licenses         License[]
 
   // PCC additions
   subscriptionPlanId    String?   @map("subscription_plan_id") @db.Uuid
@@ -835,8 +837,15 @@ model CreditPayment {
 // ─── Licensing models ─────────────────────────────────────────────────────────
 
 /// Desktop / Mobile license issued to a specific user by a Super Admin.
+/// Per-shop, not per-user (2026-07-17 migration): the license belongs to the
+/// tenant, so any staff member at that shop may activate/use it. `userId`
+/// is kept as the historical "issued for" reference (an audit trail of who
+/// the Super Admin was asked to issue it for at creation time) but is no
+/// longer what activation/checkin authorize against — that's `tenantId`.
 model License {
   id           String        @id @default(uuid()) @db.Uuid
+  tenantId     String        @map("tenant_id") @db.Uuid
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   userId       String        @map("user_id") @db.Uuid
   user         User          @relation("LicensesIssuedTo", fields: [userId], references: [id], onDelete: Cascade)
   issuedBy     String        @map("issued_by") @db.Uuid
@@ -854,6 +863,7 @@ model License {
 
   devices      Device[]
 
+  @@index([tenantId])
   @@index([userId])
   @@index([licenseKey])
   @@map("licenses")

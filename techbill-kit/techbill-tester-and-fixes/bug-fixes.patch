@@ -1,0 +1,1823 @@
+diff --git a/techbill-api/package-lock.json b/techbill-api/package-lock.json
+index d7c705d..8dbd5f9 100644
+--- a/techbill-api/package-lock.json
++++ b/techbill-api/package-lock.json
+@@ -3688,9 +3688,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3705,9 +3702,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3722,9 +3716,6 @@
+         "loong64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3739,9 +3730,6 @@
+         "loong64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3756,9 +3744,6 @@
+         "ppc64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3773,9 +3758,6 @@
+         "riscv64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3790,9 +3772,6 @@
+         "riscv64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3807,9 +3786,6 @@
+         "s390x"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3824,9 +3800,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3841,9 +3814,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+diff --git a/techbill-api/src/app.controller.ts b/techbill-api/src/app.controller.ts
+index 8bf7305..81e602d 100644
+--- a/techbill-api/src/app.controller.ts
++++ b/techbill-api/src/app.controller.ts
+@@ -19,6 +19,4 @@ export class AppController {
+       timestamp: new Date().toISOString(),
+     };
+   }
+-
+-
+ }
+diff --git a/techbill-api/src/common/decorators/require-feature.decorator.ts b/techbill-api/src/common/decorators/require-feature.decorator.ts
+index f8b880d..54fe9ac 100644
+--- a/techbill-api/src/common/decorators/require-feature.decorator.ts
++++ b/techbill-api/src/common/decorators/require-feature.decorator.ts
+@@ -8,5 +8,7 @@ export interface RequiredFeatureMetadata {
+   requiredAccess: FeatureAccess;
+ }
+ 
+-export const RequireFeature = (featureKey: string, requiredAccess: FeatureAccess = FeatureAccess.READ) =>
+-  SetMetadata(REQUIRE_FEATURE_KEY, { featureKey, requiredAccess });
++export const RequireFeature = (
++  featureKey: string,
++  requiredAccess: FeatureAccess = FeatureAccess.READ,
++) => SetMetadata(REQUIRE_FEATURE_KEY, { featureKey, requiredAccess });
+diff --git a/techbill-api/src/common/guards/feature.guard.ts b/techbill-api/src/common/guards/feature.guard.ts
+index d3cd0aa..083eec0 100644
+--- a/techbill-api/src/common/guards/feature.guard.ts
++++ b/techbill-api/src/common/guards/feature.guard.ts
+@@ -1,7 +1,15 @@
+-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
++import {
++  Injectable,
++  CanActivate,
++  ExecutionContext,
++  ForbiddenException,
++} from '@nestjs/common';
+ import { Reflector } from '@nestjs/core';
+ import { FeaturesService } from '../../modules/features/features.service';
+-import { REQUIRE_FEATURE_KEY, RequiredFeatureMetadata } from '../decorators/require-feature.decorator';
++import {
++  REQUIRE_FEATURE_KEY,
++  RequiredFeatureMetadata,
++} from '../decorators/require-feature.decorator';
+ import { FeatureAccess } from '@prisma/client';
+ 
+ @Injectable()
+@@ -12,10 +20,11 @@ export class FeatureGuard implements CanActivate {
+   ) {}
+ 
+   async canActivate(context: ExecutionContext): Promise<boolean> {
+-    const requiredFeature = this.reflector.getAllAndOverride<RequiredFeatureMetadata>(
+-      REQUIRE_FEATURE_KEY,
+-      [context.getHandler(), context.getClass()],
+-    );
++    const requiredFeature =
++      this.reflector.getAllAndOverride<RequiredFeatureMetadata>(
++        REQUIRE_FEATURE_KEY,
++        [context.getHandler(), context.getClass()],
++      );
+ 
+     if (!requiredFeature) {
+       return true;
+@@ -29,11 +38,18 @@ export class FeatureGuard implements CanActivate {
+       return true;
+     }
+ 
+-    const license = await this.featuresService.getUserLicense(user.tenantId, user.role, user.permissions || []);
+-    const resolvedAccess = license.features[requiredFeature.featureKey] || FeatureAccess.NONE;
++    const license = await this.featuresService.getUserLicense(
++      user.tenantId,
++      user.role,
++      user.permissions || [],
++    );
++    const resolvedAccess =
++      license.features[requiredFeature.featureKey] || FeatureAccess.NONE;
+ 
+     if (resolvedAccess === FeatureAccess.NONE) {
+-      throw new ForbiddenException(`Feature "${requiredFeature.featureKey}" is disabled for this tenant`);
++      throw new ForbiddenException(
++        `Feature "${requiredFeature.featureKey}" is disabled for this tenant`,
++      );
+     }
+ 
+     // Access level hierarchy check
+@@ -45,9 +61,12 @@ export class FeatureGuard implements CanActivate {
+       [FeatureAccess.FULL]: 3,
+     };
+ 
+-    if (accessLevels[resolvedAccess] < accessLevels[requiredFeature.requiredAccess]) {
++    if (
++      accessLevels[resolvedAccess] <
++      accessLevels[requiredFeature.requiredAccess]
++    ) {
+       throw new ForbiddenException(
+-        `Insufficient access level for feature "${requiredFeature.featureKey}". Required: ${requiredFeature.requiredAccess}, Resolved: ${resolvedAccess}`
++        `Insufficient access level for feature "${requiredFeature.featureKey}". Required: ${requiredFeature.requiredAccess}, Resolved: ${resolvedAccess}`,
+       );
+     }
+ 
+diff --git a/techbill-api/src/common/guards/tenant-active.guard.ts b/techbill-api/src/common/guards/tenant-active.guard.ts
+index eac287a..686be64 100644
+--- a/techbill-api/src/common/guards/tenant-active.guard.ts
++++ b/techbill-api/src/common/guards/tenant-active.guard.ts
+@@ -1,4 +1,9 @@
+-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
++import {
++  Injectable,
++  CanActivate,
++  ExecutionContext,
++  ForbiddenException,
++} from '@nestjs/common';
+ import { FeaturesService } from '../../modules/features/features.service';
+ import { TenantStatus } from '@prisma/client';
+ 
+@@ -8,7 +13,7 @@ export class TenantActiveGuard implements CanActivate {
+ 
+   async canActivate(context: ExecutionContext): Promise<boolean> {
+     const request = context.switchToHttp().getRequest();
+-    
++
+     // Only block mutating requests (POST, PUT, PATCH, DELETE)
+     const mutatingMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
+     if (!mutatingMethods.includes(request.method)) {
+@@ -20,10 +25,17 @@ export class TenantActiveGuard implements CanActivate {
+       return true; // Pass through if no tenant ID is present (might be system/admin route)
+     }
+ 
+-    const license = await this.featuresService.getResolvedLicense(tenantId as string);
++    const license = await this.featuresService.getResolvedLicense(
++      tenantId as string,
++    );
+ 
+-    if (license.status !== TenantStatus.ACTIVE && license.status !== TenantStatus.TRIAL) {
+-      throw new ForbiddenException(`Subscription inactive. Current status: ${license.status}`);
++    if (
++      license.status !== TenantStatus.ACTIVE &&
++      license.status !== TenantStatus.TRIAL
++    ) {
++      throw new ForbiddenException(
++        `Subscription inactive. Current status: ${license.status}`,
++      );
+     }
+ 
+     if (license.isExpired) {
+diff --git a/techbill-api/src/modules/credit/credit.service.ts b/techbill-api/src/modules/credit/credit.service.ts
+index 84df78a..a156313 100644
+--- a/techbill-api/src/modules/credit/credit.service.ts
++++ b/techbill-api/src/modules/credit/credit.service.ts
+@@ -1,4 +1,8 @@
+-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
++import {
++  Injectable,
++  NotFoundException,
++  BadRequestException,
++} from '@nestjs/common';
+ import { PrismaService } from '../../prisma/prisma.service';
+ import { CreateCreditDto } from './dto/create-credit.dto';
+ import { RecordPaymentDto } from './dto/record-payment.dto';
+@@ -18,8 +22,10 @@ export class CreditService {
+         description: dto.description,
+         date: new Date(dto.date),
+         personName: dto.personName,
+-        customerId: dto.type === CreditType.CUSTOMER ? (dto.customerId ?? null) : null,
+-        supplierId: dto.type === CreditType.SUPPLIER ? (dto.supplierId ?? null) : null,
++        customerId:
++          dto.type === CreditType.CUSTOMER ? (dto.customerId ?? null) : null,
++        supplierId:
++          dto.type === CreditType.SUPPLIER ? (dto.supplierId ?? null) : null,
+         tenantId,
+       },
+       include: {
+@@ -29,7 +35,11 @@ export class CreditService {
+     });
+   }
+ 
+-  async listCredits(tenantId: string, type?: CreditType, status?: CreditStatus) {
++  async listCredits(
++    tenantId: string,
++    type?: CreditType,
++    status?: CreditStatus,
++  ) {
+     return this.prisma.creditRecord.findMany({
+       where: {
+         tenantId,
+@@ -58,7 +68,9 @@ export class CreditService {
+     const newPaid = currentPaid + dto.amount;
+ 
+     if (newPaid > totalAmount) {
+-      throw new BadRequestException(`Payment exceeds remaining due amount: ₨ ${(totalAmount - currentPaid).toFixed(2)}`);
++      throw new BadRequestException(
++        `Payment exceeds remaining due amount: ₨ ${(totalAmount - currentPaid).toFixed(2)}`,
++      );
+     }
+ 
+     const newDue = totalAmount - newPaid;
+@@ -83,8 +95,8 @@ export class CreditService {
+           amount: dto.amount,
+           tenantId,
+           // date will default to now()
+-        }
+-      })
++        },
++      }),
+     ]);
+ 
+     return updatedRecord;
+diff --git a/techbill-api/src/modules/credit/dto/create-credit.dto.ts b/techbill-api/src/modules/credit/dto/create-credit.dto.ts
+index 9ae8bb4..a59a70b 100644
+--- a/techbill-api/src/modules/credit/dto/create-credit.dto.ts
++++ b/techbill-api/src/modules/credit/dto/create-credit.dto.ts
+@@ -1,4 +1,12 @@
+-import { IsEnum, IsNumber, IsString, IsOptional, IsUUID, IsDateString, Min } from 'class-validator';
++import {
++  IsEnum,
++  IsNumber,
++  IsString,
++  IsOptional,
++  IsUUID,
++  IsDateString,
++  Min,
++} from 'class-validator';
+ import { CreditType } from '@prisma/client';
+ 
+ export class CreateCreditDto {
+diff --git a/techbill-api/src/modules/features/features.controller.ts b/techbill-api/src/modules/features/features.controller.ts
+index d8258f5..7b742ac 100644
+--- a/techbill-api/src/modules/features/features.controller.ts
++++ b/techbill-api/src/modules/features/features.controller.ts
+@@ -64,7 +64,11 @@ export class FeaturesController {
+       };
+     }
+ 
+-    return this.featuresService.getUserLicense(user.tenantId, user.role, user.permissions || []);
++    return this.featuresService.getUserLicense(
++      user.tenantId,
++      user.role,
++      user.permissions || [],
++    );
+   }
+ 
+   // ─── Super Admin Endpoints ────────────────────────────────────────────────
+@@ -107,11 +111,16 @@ export class FeaturesController {
+   @HttpCode(HttpStatus.OK)
+   async updateTenantOverrides(
+     @Param('id') tenantId: string,
+-    @Body('overrides') overrides: Array<{ featureKey: string; access: FeatureAccess }>,
++    @Body('overrides')
++    overrides: Array<{ featureKey: string; access: FeatureAccess }>,
+     @Req() req: Request,
+   ) {
+     const user = (req as Request & { user: AuthUser }).user;
+-    return this.featuresService.updateTenantOverrides(tenantId, overrides, user.email);
++    return this.featuresService.updateTenantOverrides(
++      tenantId,
++      overrides,
++      user.email,
++    );
+   }
+ 
+   @Post('tenant/:id/reset-overrides')
+diff --git a/techbill-api/src/modules/features/features.service.ts b/techbill-api/src/modules/features/features.service.ts
+index f9a8afa..0c6b244 100644
+--- a/techbill-api/src/modules/features/features.service.ts
++++ b/techbill-api/src/modules/features/features.service.ts
+@@ -1,6 +1,13 @@
+-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
++import {
++  Injectable,
++  NotFoundException,
++  ConflictException,
++} from '@nestjs/common';
+ import { PrismaService } from '../../prisma/prisma.service';
+-import { LicenseResolverService, ResolvedLicense } from './license-resolver.service';
++import {
++  LicenseResolverService,
++  ResolvedLicense,
++} from './license-resolver.service';
+ import { FeatureAccess, FeatureStatus, BillingCycle } from '@prisma/client';
+ import { EventEmitter2 } from '@nestjs/event-emitter';
+ 
+@@ -153,20 +160,31 @@ export class FeaturesService {
+     globalEnabled?: boolean;
+   }) {
+     // Check key
+-    const existing = await this.prisma.feature.findUnique({ where: { key: dto.key } });
+-    if (existing) throw new ConflictException(`Feature key "${dto.key}" already exists`);
++    const existing = await this.prisma.feature.findUnique({
++      where: { key: dto.key },
++    });
++    if (existing)
++      throw new ConflictException(`Feature key "${dto.key}" already exists`);
+ 
+     // Category
+     const category = await this.prisma.featureCategory.findUnique({
+       where: { key: dto.categoryKey },
+     });
+-    if (!category) throw new NotFoundException(`Feature Category "${dto.categoryKey}" not found`);
++    if (!category)
++      throw new NotFoundException(
++        `Feature Category "${dto.categoryKey}" not found`,
++      );
+ 
+     // Parent
+     let parentFeatureId: string | undefined;
+     if (dto.parentFeatureKey) {
+-      const parent = await this.prisma.feature.findUnique({ where: { key: dto.parentFeatureKey } });
+-      if (!parent) throw new NotFoundException(`Parent feature "${dto.parentFeatureKey}" not found`);
++      const parent = await this.prisma.feature.findUnique({
++        where: { key: dto.parentFeatureKey },
++      });
++      if (!parent)
++        throw new NotFoundException(
++          `Parent feature "${dto.parentFeatureKey}" not found`,
++        );
+       parentFeatureId = parent.id;
+     }
+ 
+@@ -239,7 +257,9 @@ export class FeaturesService {
+     });
+     if (!tenant) throw new NotFoundException(`Tenant not found`);
+ 
+-    const plan = await this.prisma.subscriptionPlan.findUnique({ where: { id: planId } });
++    const plan = await this.prisma.subscriptionPlan.findUnique({
++      where: { id: planId },
++    });
+     if (!plan) throw new NotFoundException(`Subscription Plan not found`);
+ 
+     // Determine expiration date
+@@ -288,7 +308,9 @@ export class FeaturesService {
+     overrides: Array<{ featureKey: string; access: FeatureAccess }>,
+     changedBy?: string,
+   ) {
+-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
++    const tenant = await this.prisma.tenant.findUnique({
++      where: { id: tenantId },
++    });
+     if (!tenant) throw new NotFoundException(`Tenant not found`);
+ 
+     const details: Record<string, string> = {};
+@@ -296,8 +318,11 @@ export class FeaturesService {
+     const processedFeatureIds: string[] = [];
+ 
+     for (const item of overrides) {
+-      const feature = await this.prisma.feature.findUnique({ where: { key: item.featureKey } });
+-      if (!feature) throw new NotFoundException(`Feature "${item.featureKey}" not found`);
++      const feature = await this.prisma.feature.findUnique({
++        where: { key: item.featureKey },
++      });
++      if (!feature)
++        throw new NotFoundException(`Feature "${item.featureKey}" not found`);
+ 
+       await this.prisma.tenantFeatureOverride.upsert({
+         where: {
+@@ -353,7 +378,9 @@ export class FeaturesService {
+   }
+ 
+   async resetTenantOverrides(tenantId: string, changedBy?: string) {
+-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
++    const tenant = await this.prisma.tenant.findUnique({
++      where: { id: tenantId },
++    });
+     if (!tenant) throw new NotFoundException(`Tenant not found`);
+ 
+     await this.prisma.tenantFeatureOverride.deleteMany({
+diff --git a/techbill-api/src/modules/features/license-resolver.service.ts b/techbill-api/src/modules/features/license-resolver.service.ts
+index 1aa7575..3f41b09 100644
+--- a/techbill-api/src/modules/features/license-resolver.service.ts
++++ b/techbill-api/src/modules/features/license-resolver.service.ts
+@@ -65,9 +65,11 @@ export class LicenseResolverService {
+     });
+ 
+     // 3. Determine expiration and read-only states (Phase 1 basic logic)
+-    const isExpired = 
++    const isExpired =
+       tenant.status === TenantStatus.EXPIRED ||
+-      (tenant.subscriptionExpiresAt ? new Date() > tenant.subscriptionExpiresAt : false);
++      (tenant.subscriptionExpiresAt
++        ? new Date() > tenant.subscriptionExpiresAt
++        : false);
+     const isReadOnly = false; // Phase 1 isReadOnly defaults to false (Phase 3 full grace period checker)
+ 
+     const resolvedFeatures: Record<string, FeatureAccess> = {};
+@@ -81,8 +83,8 @@ export class LicenseResolverService {
+     }> = [];
+ 
+     // 4. Check if tenant is fully blocked or suspended
+-    const isTenantBlocked = 
+-      tenant.status === TenantStatus.BLOCKED || 
++    const isTenantBlocked =
++      tenant.status === TenantStatus.BLOCKED ||
+       tenant.status === TenantStatus.SUSPENDED ||
+       tenant.status === TenantStatus.CANCELLED ||
+       isExpired;
+@@ -93,13 +95,15 @@ export class LicenseResolverService {
+ 
+       if (!isTenantBlocked && feature.globalEnabled) {
+         // Find override if exists
+-        const override = tenant.overrides.find(o => o.featureId === feature.id);
++        const override = tenant.overrides.find(
++          (o) => o.featureId === feature.id,
++        );
+         if (override) {
+           resolvedAccess = override.access;
+         } else {
+           // Fallback to subscription plan default
+           const planFeature = tenant.subscriptionPlan?.planFeatures.find(
+-            pf => pf.featureId === feature.id
++            (pf) => pf.featureId === feature.id,
+           );
+           if (planFeature) {
+             resolvedAccess = planFeature.access;
+@@ -110,7 +114,11 @@ export class LicenseResolverService {
+       resolvedFeatures[feature.key] = resolvedAccess;
+ 
+       // Add to dynamic sidebar navigation if visible and access is enabled
+-      if (feature.sidebarVisible && resolvedAccess !== FeatureAccess.NONE && feature.route) {
++      if (
++        feature.sidebarVisible &&
++        resolvedAccess !== FeatureAccess.NONE &&
++        feature.route
++      ) {
+         navigationItems.push({
+           key: feature.key,
+           title: feature.name,
+diff --git a/techbill-api/src/modules/integrity/integrity.controller.ts b/techbill-api/src/modules/integrity/integrity.controller.ts
+index ae4bc91..18ffe42 100644
+--- a/techbill-api/src/modules/integrity/integrity.controller.ts
++++ b/techbill-api/src/modules/integrity/integrity.controller.ts
+@@ -79,16 +79,26 @@ export class IntegrityController {
+     @Req() req: RequestWithUser,
+     @Res() res: Response,
+   ) {
+-    const data = await this.integrityService.getExportData(req.user.tenantId, scanId, format);
+-    
++    const data = await this.integrityService.getExportData(
++      req.user.tenantId,
++      scanId,
++      format,
++    );
++
+     if (format === 'csv') {
+       res.setHeader('Content-Type', 'text/csv');
+-      res.setHeader('Content-Disposition', `attachment; filename="integrity-report-${scanId}.csv"`);
++      res.setHeader(
++        'Content-Disposition',
++        `attachment; filename="integrity-report-${scanId}.csv"`,
++      );
+     } else {
+       res.setHeader('Content-Type', 'application/json');
+-      res.setHeader('Content-Disposition', `attachment; filename="integrity-report-${scanId}.json"`);
++      res.setHeader(
++        'Content-Disposition',
++        `attachment; filename="integrity-report-${scanId}.json"`,
++      );
+     }
+-    
++
+     return res.send(data);
+   }
+ }
+diff --git a/techbill-api/src/modules/integrity/integrity.service.ts b/techbill-api/src/modules/integrity/integrity.service.ts
+index 66ad330..6fe9bb5 100644
+--- a/techbill-api/src/modules/integrity/integrity.service.ts
++++ b/techbill-api/src/modules/integrity/integrity.service.ts
+@@ -1,9 +1,19 @@
+-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
++import {
++  Injectable,
++  NotFoundException,
++  BadRequestException,
++} from '@nestjs/common';
+ import { OnEvent } from '@nestjs/event-emitter';
+ import { Cron, CronExpression } from '@nestjs/schedule';
+ import { PrismaService } from '../../prisma/prisma.service';
+ import { AuditService } from '../audit/audit.service';
+-import { UnitStatus, SaleStatus, ReturnStatus, POStatus, TenantStatus } from '@prisma/client';
++import {
++  UnitStatus,
++  SaleStatus,
++  ReturnStatus,
++  POStatus,
++  TenantStatus,
++} from '@prisma/client';
+ 
+ @Injectable()
+ export class IntegrityService {
+@@ -181,21 +191,50 @@ export class IntegrityService {
+ 
+     for (const c of checks) {
+       if (c.status !== 'Healthy') {
+-        const penalty = c.severity === 'Critical' ? 5 : c.severity === 'High' ? 3 : c.severity === 'Medium' ? 1.5 : 0.5;
+-        
++        const penalty =
++          c.severity === 'Critical'
++            ? 5
++            : c.severity === 'High'
++              ? 3
++              : c.severity === 'Medium'
++                ? 1.5
++                : 0.5;
++
+         // Categorize penalties into modules
+         const checkNameLower = c.name.toLowerCase();
+-        if (checkNameLower.includes('serial') || checkNameLower.includes('stock') || checkNameLower.includes('orphan') || checkNameLower.includes('pricing') || checkNameLower.includes('negative')) {
++        if (
++          checkNameLower.includes('serial') ||
++          checkNameLower.includes('stock') ||
++          checkNameLower.includes('orphan') ||
++          checkNameLower.includes('pricing') ||
++          checkNameLower.includes('negative')
++        ) {
+           categories.inventory -= penalty;
+-        } else if (checkNameLower.includes('invoice') || checkNameLower.includes('ledger') || checkNameLower.includes('sale')) {
++        } else if (
++          checkNameLower.includes('invoice') ||
++          checkNameLower.includes('ledger') ||
++          checkNameLower.includes('sale')
++        ) {
+           categories.sales -= penalty;
+-        } else if (checkNameLower.includes('purchase') || checkNameLower.includes('grn') || checkNameLower.includes('purchasing')) {
++        } else if (
++          checkNameLower.includes('purchase') ||
++          checkNameLower.includes('grn') ||
++          checkNameLower.includes('purchasing')
++        ) {
+           categories.purchasing -= penalty;
+         } else if (checkNameLower.includes('return')) {
+           categories.returns -= penalty;
+-        } else if (checkNameLower.includes('summary') || checkNameLower.includes('dashboard') || checkNameLower.includes('reconciliation') || checkNameLower.includes('reports')) {
++        } else if (
++          checkNameLower.includes('summary') ||
++          checkNameLower.includes('dashboard') ||
++          checkNameLower.includes('reconciliation') ||
++          checkNameLower.includes('reports')
++        ) {
+           categories.reports -= penalty;
+-        } else if (checkNameLower.includes('database') || checkNameLower.includes('index')) {
++        } else if (
++          checkNameLower.includes('database') ||
++          checkNameLower.includes('index')
++        ) {
+           categories.database -= penalty;
+         }
+       }
+@@ -321,7 +360,10 @@ export class IntegrityService {
+       await tx.$executeRaw`ANALYZE products;`;
+     });
+ 
+-    return { status: 'success', message: 'Database statistics and caches recalculated successfully.' };
++    return {
++      status: 'success',
++      message: 'Database statistics and caches recalculated successfully.',
++    };
+   }
+ 
+   async executeRepair(
+@@ -342,10 +384,15 @@ export class IntegrityService {
+ 
+     if (issue.severity === 'Critical' && !issue.requiresConfirmation) {
+       // Critical items require manual review or confirmation
+-      throw new BadRequestException('Critical issues cannot be auto-repaired and require manual review.');
++      throw new BadRequestException(
++        'Critical issues cannot be auto-repaired and require manual review.',
++      );
+     }
+ 
+-    const estimatedChanges = (issue.estimatedChanges ?? {}) as Record<string, any>;
++    const estimatedChanges = (issue.estimatedChanges ?? {}) as Record<
++      string,
++      any
++    >;
+ 
+     const preview = {
+       affectedUnits: estimatedChanges['affectedCount'] ?? 0,
+@@ -367,12 +414,14 @@ export class IntegrityService {
+       if (issue.type === 'duplicate_serial_numbers') {
+         preview.stockAfter = initialStock - preview.affectedUnits;
+         preview.changes = (estimatedChanges['records'] ?? []).map(
+-          (r: any) => `Mark duplicate serial number ${r.serialNumber} as invalid`,
++          (r: any) =>
++            `Mark duplicate serial number ${r.serialNumber} as invalid`,
+         );
+         preview.auditLogsCreated = preview.affectedUnits;
+       } else if (issue.type === 'orphan_inventory_units') {
+         preview.changes = (estimatedChanges['records'] ?? []).map(
+-          (r: any) => `Relink orphaned unit ${r.serialNumber} to a placeholder product`,
++          (r: any) =>
++            `Relink orphaned unit ${r.serialNumber} to a placeholder product`,
+         );
+         preview.auditLogsCreated = preview.affectedUnits;
+       } else if (issue.type === 'stock_count_validation') {
+@@ -387,7 +436,7 @@ export class IntegrityService {
+ 
+     // Execute actual repair inside a transaction
+     await this.prisma.$transaction(async (tx) => {
+-      let repairLogs: string[] = [];
++      const repairLogs: string[] = [];
+ 
+       if (issue.type === 'duplicate_serial_numbers') {
+         const records = estimatedChanges['records'] ?? [];
+@@ -395,13 +444,19 @@ export class IntegrityService {
+           // Deactivate or mark status as damaged/invalid for the duplicate unit (do NOT delete)
+           await tx.inventoryUnit.update({
+             where: { id: r.id },
+-            data: { status: UnitStatus.damaged, notes: 'Auto-marked as damaged/duplicate during integrity repair.' },
++            data: {
++              status: UnitStatus.damaged,
++              notes:
++                'Auto-marked as damaged/duplicate during integrity repair.',
++            },
+           });
+-          repairLogs.push(`Updated duplicate serial unit ${r.serialNumber} ID ${r.id} status to damaged`);
++          repairLogs.push(
++            `Updated duplicate serial unit ${r.serialNumber} ID ${r.id} status to damaged`,
++          );
+         }
+       } else if (issue.type === 'orphan_inventory_units') {
+         const records = estimatedChanges['records'] ?? [];
+-        
++
+         // Find or create a fallback product
+         let fallbackProduct = await tx.product.findFirst({
+           where: { tenantId, name: 'Orphaned Fallback Product' },
+@@ -424,12 +479,16 @@ export class IntegrityService {
+             where: { id: r.id },
+             data: { productId: fallbackProduct.id },
+           });
+-          repairLogs.push(`Relinked orphan unit ${r.serialNumber} to fallback product ${fallbackProduct.id}`);
++          repairLogs.push(
++            `Relinked orphan unit ${r.serialNumber} to fallback product ${fallbackProduct.id}`,
++          );
+         }
+       } else {
+         // Safe Cache / Dashboard Repairs
+         await tx.$executeRaw`ANALYZE inventory_units;`;
+-        repairLogs.push(`Rebuilt database summary caches for tenant ${tenantId}`);
++        repairLogs.push(
++          `Rebuilt database summary caches for tenant ${tenantId}`,
++        );
+       }
+ 
+       // Record audit logs
+@@ -457,7 +516,11 @@ export class IntegrityService {
+     return { dryRun: false, success: true, preview };
+   }
+ 
+-  async getExportData(tenantId: string, scanId: string, format: 'csv' | 'json') {
++  async getExportData(
++    tenantId: string,
++    scanId: string,
++    format: 'csv' | 'json',
++  ) {
+     const scan = await this.prisma.integrityScan.findUnique({
+       where: { id: scanId },
+       include: { issues: true },
+@@ -472,7 +535,8 @@ export class IntegrityService {
+     }
+ 
+     // CSV format
+-    const header = 'Issue ID,Type,Severity,Message,Repairable,Confidence,CreatedAt\n';
++    const header =
++      'Issue ID,Type,Severity,Message,Repairable,Confidence,CreatedAt\n';
+     const rows = scan.issues
+       .map(
+         (i) =>
+@@ -485,7 +549,9 @@ export class IntegrityService {
+   // --- DIAGNOSTIC CHECKS IMPLEMENTATIONS ---
+ 
+   private async checkDuplicateSerials(tenantId: string) {
+-    const rawSerials = await this.prisma.$queryRaw<Array<{ serial_number: string; count: bigint }>>`
++    const rawSerials = await this.prisma.$queryRaw<
++      Array<{ serial_number: string; count: bigint }>
++    >`
+       SELECT LOWER(serial_number) as serial_number, COUNT(*) as count 
+       FROM inventory_units 
+       WHERE tenant_id = ${tenantId}::uuid 
+@@ -512,8 +578,12 @@ export class IntegrityService {
+       status: count === 0 ? 'Healthy' : 'Critical',
+       severity: 'Critical',
+       count,
+-      message: count === 0 ? 'No duplicate serial numbers found.' : `Found ${count} duplicate serial number(s) in active units.`,
+-      recommendedAction: 'Mark the duplicate record as invalid or check manual review.',
++      message:
++        count === 0
++          ? 'No duplicate serial numbers found.'
++          : `Found ${count} duplicate serial number(s) in active units.`,
++      recommendedAction:
++        'Mark the duplicate record as invalid or check manual review.',
+       repairable: false,
+       requiresConfirmation: true,
+       records,
+@@ -522,7 +592,14 @@ export class IntegrityService {
+ 
+   private async checkStockCountValidation(tenantId: string) {
+     // Group active units in stock to find count mismatches
+-    const productsWithMismatch = await this.prisma.$queryRaw<Array<{ product_id: string; product_name: string; expected_count: bigint; cached_count: bigint }>>`
++    const productsWithMismatch = await this.prisma.$queryRaw<
++      Array<{
++        product_id: string;
++        product_name: string;
++        expected_count: bigint;
++        cached_count: bigint;
++      }>
++    >`
+       SELECT p.id::text as product_id, p.name as product_name, 
+              COUNT(iu.id) as expected_count
+       FROM products p
+@@ -538,7 +615,8 @@ export class IntegrityService {
+       status: 'Healthy',
+       severity: 'Medium',
+       count: 0,
+-      message: 'All product stock counts match active database inventory units.',
++      message:
++        'All product stock counts match active database inventory units.',
+       recommendedAction: 'Recalculate stock count directly from InventoryUnit.',
+       repairable: true,
+       requiresConfirmation: false,
+@@ -564,7 +642,8 @@ export class IntegrityService {
+       status: ok ? 'Healthy' : 'Critical',
+       severity: 'Critical',
+       count: 0,
+-      message: 'Inventory summary counts are mathematically consistent with DB status values.',
++      message:
++        'Inventory summary counts are mathematically consistent with DB status values.',
+       recommendedAction: 'Refresh summary dashboard cache.',
+       repairable: true,
+       requiresConfirmation: false,
+@@ -578,7 +657,7 @@ export class IntegrityService {
+       where: { tenantId, status: UnitStatus.in_stock },
+       _sum: { purchasePrice: true },
+     });
+-    
++
+     const sum = Number(costAgg._sum.purchasePrice ?? 0);
+     return {
+       name: 'Cost Value Validation',
+@@ -631,13 +710,18 @@ export class IntegrityService {
+ 
+   private async checkOrphanUnits(tenantId: string) {
+     // Use raw SQL to find inventory units where the referenced product no longer exists
+-    const orphans = await this.prisma.$queryRaw<Array<{ id: string; serial_number: string }>>`
++    const orphans = await this.prisma.$queryRaw<
++      Array<{ id: string; serial_number: string }>
++    >`
+       SELECT iu.id::text, iu.serial_number
+       FROM inventory_units iu
+       LEFT JOIN products p ON p.id = iu.product_id
+       WHERE iu.tenant_id = ${tenantId}::uuid AND p.id IS NULL
+     `;
+-    const normalizedOrphans = orphans.map((o) => ({ id: o.id, serialNumber: o.serial_number }));
++    const normalizedOrphans = orphans.map((o) => ({
++      id: o.id,
++      serialNumber: o.serial_number,
++    }));
+ 
+     const count = normalizedOrphans.length;
+     return {
+@@ -645,7 +729,10 @@ export class IntegrityService {
+       status: count === 0 ? 'Healthy' : 'High',
+       severity: 'High',
+       count,
+-      message: count === 0 ? 'No orphaned inventory units found.' : `Found ${count} inventory unit(s) referencing a deleted or missing product.`,
++      message:
++        count === 0
++          ? 'No orphaned inventory units found.'
++          : `Found ${count} inventory unit(s) referencing a deleted or missing product.`,
+       recommendedAction: 'Relink these units to a valid active product.',
+       repairable: true,
+       requiresConfirmation: true,
+@@ -655,7 +742,9 @@ export class IntegrityService {
+ 
+   private async checkInvoiceIntegrity(tenantId: string) {
+     // Find sold units that don't belong to exactly one invoice (or have zero invoices)
+-    const rawInvoices = await this.prisma.$queryRaw<Array<{ id: string; serial_number: string; invoice_count: bigint }>>`
++    const rawInvoices = await this.prisma.$queryRaw<
++      Array<{ id: string; serial_number: string; invoice_count: bigint }>
++    >`
+       SELECT iu.id::text, iu.serial_number, COUNT(si.id) as invoice_count
+       FROM inventory_units iu
+       LEFT JOIN sale_items si ON si.inventory_unit_id = iu.id
+@@ -670,7 +759,10 @@ export class IntegrityService {
+       status: count === 0 ? 'Healthy' : 'Critical',
+       severity: 'Critical',
+       count,
+-      message: count === 0 ? 'All sold items map correctly to exactly one invoice.' : `Found ${count} sold items with missing or duplicate invoice records.`,
++      message:
++        count === 0
++          ? 'All sold items map correctly to exactly one invoice.'
++          : `Found ${count} sold items with missing or duplicate invoice records.`,
+       recommendedAction: 'Manual review required: Invoice conflicts.',
+       repairable: false,
+       records: rawInvoices,
+@@ -695,7 +787,8 @@ export class IntegrityService {
+       status: 'Healthy', // Treated as healthy, warnings are optional
+       severity: 'Low',
+       count: 0,
+-      message: 'All units purchased and received have valid tracking parameters.',
++      message:
++        'All units purchased and received have valid tracking parameters.',
+       records: [],
+     };
+   }
+@@ -707,7 +800,8 @@ export class IntegrityService {
+       status: 'Healthy',
+       severity: 'Medium',
+       count: 0,
+-      message: 'All return records are mathematically consistent with current sales and stock status.',
++      message:
++        'All return records are mathematically consistent with current sales and stock status.',
+       records: [],
+     };
+   }
+@@ -731,7 +825,8 @@ export class IntegrityService {
+       status: 'Healthy',
+       severity: 'High',
+       count: 0,
+-      message: 'All dashboard stock, cost, and sales metrics show identical numbers.',
++      message:
++        'All dashboard stock, cost, and sales metrics show identical numbers.',
+       records: [],
+     };
+   }
+@@ -747,7 +842,11 @@ export class IntegrityService {
+     });
+ 
+     const records = mismatches
+-      .filter((iu) => iu.purchasePrice && Number(iu.product.sellingPrice) < Number(iu.purchasePrice))
++      .filter(
++        (iu) =>
++          iu.purchasePrice &&
++          Number(iu.product.sellingPrice) < Number(iu.purchasePrice),
++      )
+       .map((iu) => ({
+         id: iu.id,
+         serialNumber: iu.serialNumber,
+@@ -762,7 +861,10 @@ export class IntegrityService {
+       status: count === 0 ? 'Healthy' : 'Warning',
+       severity: 'Low',
+       count,
+-      message: count === 0 ? 'All selling prices are greater than or equal to purchase prices.' : `Found ${count} product(s) selling below their unit cost price.`,
++      message:
++        count === 0
++          ? 'All selling prices are greater than or equal to purchase prices.'
++          : `Found ${count} product(s) selling below their unit cost price.`,
+       recommendedAction: 'Update selling price or review PO purchase costs.',
+       repairable: false,
+       records,
+@@ -793,8 +895,12 @@ export class IntegrityService {
+       status: count === 0 ? 'Healthy' : 'Warning',
+       severity: 'High',
+       count,
+-      message: count === 0 ? 'No negative pricing, stock, or profit values found.' : `Found ${count} negative amount(s) in product prices.`,
+-      recommendedAction: 'Correct the negative pricing entries in the database.',
++      message:
++        count === 0
++          ? 'No negative pricing, stock, or profit values found.'
++          : `Found ${count} negative amount(s) in product prices.`,
++      recommendedAction:
++        'Correct the negative pricing entries in the database.',
+       repairable: false,
+       records,
+     };
+@@ -816,7 +922,10 @@ export class IntegrityService {
+       status: count === 0 ? 'Healthy' : 'Warning',
+       severity: 'Low',
+       count,
+-      message: count === 0 ? 'All active products have a valid brand and category.' : `Found ${count} product(s) missing brand or category.`,
++      message:
++        count === 0
++          ? 'All active products have a valid brand and category.'
++          : `Found ${count} product(s) missing brand or category.`,
+       recommendedAction: 'Add brand/category to these products.',
+       repairable: false,
+       records: missing,
+@@ -824,7 +933,9 @@ export class IntegrityService {
+   }
+ 
+   private async checkDuplicateProducts(tenantId: string) {
+-    const rawDups = await this.prisma.$queryRaw<Array<{ name: string; brand: string; category: string; count: bigint }>>`
++    const rawDups = await this.prisma.$queryRaw<
++      Array<{ name: string; brand: string; category: string; count: bigint }>
++    >`
+       SELECT LOWER(name) as name, LOWER(brand) as brand, LOWER(category) as category, COUNT(*) as count
+       FROM products
+       WHERE tenant_id = ${tenantId}::uuid AND is_active = true
+@@ -839,8 +950,12 @@ export class IntegrityService {
+       severity: 'Low',
+       confidence: 90, // Confidence rating
+       count,
+-      message: count === 0 ? 'No duplicate product definitions found.' : `Found ${count} products with identical names and brand parameters.`,
+-      recommendedAction: 'Suggest merging duplicate product cards instead of deactivating.',
++      message:
++        count === 0
++          ? 'No duplicate product definitions found.'
++          : `Found ${count} products with identical names and brand parameters.`,
++      recommendedAction:
++        'Suggest merging duplicate product cards instead of deactivating.',
+       repairable: false,
+       records: rawDups,
+     };
+@@ -848,7 +963,9 @@ export class IntegrityService {
+ 
+   private async checkGhostProducts(tenantId: string) {
+     // Active products with 0 in-stock, 0 sold units, and no PO items
+-    const ghostProducts = await this.prisma.$queryRaw<Array<{ id: string; name: string }>>`
++    const ghostProducts = await this.prisma.$queryRaw<
++      Array<{ id: string; name: string }>
++    >`
+       SELECT p.id::text, p.name 
+       FROM products p
+       LEFT JOIN inventory_units iu ON iu.product_id = p.id
+@@ -864,7 +981,10 @@ export class IntegrityService {
+       status: count === 0 ? 'Healthy' : 'Warning',
+       severity: 'Info',
+       count,
+-      message: count === 0 ? 'No unused ghost products found.' : `Found ${count} ghost products with zero transaction history.`,
++      message:
++        count === 0
++          ? 'No unused ghost products found.'
++          : `Found ${count} ghost products with zero transaction history.`,
+       recommendedAction: 'Suggest archiving these unused products.',
+       repairable: true,
+       requiresConfirmation: true,
+@@ -878,7 +998,8 @@ export class IntegrityService {
+       status: 'Healthy',
+       severity: 'High',
+       count: 0,
+-      message: 'Financial flows: Cost + Sold + Returned matches Purchased value within 0.1% tolerance.',
++      message:
++        'Financial flows: Cost + Sold + Returned matches Purchased value within 0.1% tolerance.',
+       records: [],
+     };
+   }
+@@ -889,7 +1010,8 @@ export class IntegrityService {
+       status: 'Healthy',
+       severity: 'Medium',
+       count: 0,
+-      message: 'All inventory status transitions are accounted for in the Audit Log.',
++      message:
++        'All inventory status transitions are accounted for in the Audit Log.',
+       records: [],
+     };
+   }
+@@ -902,7 +1024,8 @@ export class IntegrityService {
+       status: 'Healthy',
+       severity: 'Medium',
+       count: 0,
+-      message: 'Warranty validity constraints and expiry parameters are correct.',
++      message:
++        'Warranty validity constraints and expiry parameters are correct.',
+       records: [],
+     };
+   }
+@@ -917,7 +1040,13 @@ export class IntegrityService {
+           { status: 'PENDING', dueAmount: { equals: 0 } },
+         ],
+       },
+-      select: { id: true, amount: true, paidAmount: true, dueAmount: true, status: true },
++      select: {
++        id: true,
++        amount: true,
++        paidAmount: true,
++        dueAmount: true,
++        status: true,
++      },
+     });
+ 
+     const count = ledgerMismatches.length;
+@@ -926,7 +1055,10 @@ export class IntegrityService {
+       status: count === 0 ? 'Healthy' : 'Warning',
+       severity: 'High',
+       count,
+-      message: count === 0 ? 'All customer ledgers and outstanding credit balances are consistent.' : `Found ${count} credit record(s) with mismatched due amounts.`,
++      message:
++        count === 0
++          ? 'All customer ledgers and outstanding credit balances are consistent.'
++          : `Found ${count} credit record(s) with mismatched due amounts.`,
+       recommendedAction: 'Recalculate credit record due balances.',
+       repairable: true,
+       records: ledgerMismatches,
+@@ -939,14 +1071,17 @@ export class IntegrityService {
+       status: 'Healthy',
+       severity: 'Medium',
+       count: 0,
+-      message: 'Serial numbers correctly transition from In-Stock -> Sold -> Returned.',
++      message:
++        'Serial numbers correctly transition from In-Stock -> Sold -> Returned.',
+       records: [],
+     };
+   }
+ 
+   private async checkDuplicateInvoices(tenantId: string) {
+     // Detect duplicate invoice numbers within the same tenant
+-    const rawInvoices = await this.prisma.$queryRaw<Array<{ invoice_number: string; count: bigint }>>`
++    const rawInvoices = await this.prisma.$queryRaw<
++      Array<{ invoice_number: string; count: bigint }>
++    >`
+       SELECT LOWER(invoice_number) as invoice_number, COUNT(*) as count
+       FROM sales
+       WHERE tenant_id = ${tenantId}::uuid
+@@ -960,7 +1095,10 @@ export class IntegrityService {
+       status: count === 0 ? 'Healthy' : 'Critical',
+       severity: 'Critical',
+       count,
+-      message: count === 0 ? 'All invoice numbers in the database are unique.' : `Found ${count} duplicate invoice number(s).`,
++      message:
++        count === 0
++          ? 'All invoice numbers in the database are unique.'
++          : `Found ${count} duplicate invoice number(s).`,
+       recommendedAction: 'Manual review required: Invoice ID duplication.',
+       repairable: false,
+       records: rawInvoices,
+@@ -973,7 +1111,8 @@ export class IntegrityService {
+       status: 'Healthy',
+       severity: 'Medium',
+       count: 0,
+-      message: 'No circular references found (e.g. Return pointing to Invoice which points back to Return).',
++      message:
++        'No circular references found (e.g. Return pointing to Invoice which points back to Return).',
+       records: [],
+     };
+   }
+@@ -1009,7 +1148,10 @@ export class IntegrityService {
+         status: count === 0 ? 'Healthy' : 'Warning',
+         severity: 'Low',
+         count,
+-        message: count === 0 ? 'All database foreign keys are properly indexed.' : `Found ${count} unindexed foreign key column(s) which could cause slow queries.`,
++        message:
++          count === 0
++            ? 'All database foreign keys are properly indexed.'
++            : `Found ${count} unindexed foreign key column(s) which could cause slow queries.`,
+         recommendedAction: 'Create index on the orphaned foreign key columns.',
+         repairable: false,
+         records: unindexedFKs,
+diff --git a/techbill-api/src/modules/inventory/inventory.service.ts b/techbill-api/src/modules/inventory/inventory.service.ts
+index eb45bc7..e4edab0 100644
+--- a/techbill-api/src/modules/inventory/inventory.service.ts
++++ b/techbill-api/src/modules/inventory/inventory.service.ts
+@@ -317,9 +317,7 @@ export class InventoryService {
+     ]);
+ 
+     // Out-of-stock: active products with 0 in-stock units
+-    const stockByProductId = new Map(
+-      cards.map((c) => [c.id, c.inStockCount]),
+-    );
++    const stockByProductId = new Map(cards.map((c) => [c.id, c.inStockCount]));
+     const totalOutOfStock = cards.filter(
+       (c) => (stockByProductId.get(c.id) ?? 0) === 0,
+     ).length;
+@@ -502,13 +500,21 @@ export class InventoryService {
+     }
+ 
+     // Attach soldAt from the most recent sale for warranty calculation
+-    const soldAt = unit.status === 'sold' ? (unit.saleItems[0]?.sale?.createdAt ?? null) : null;
++    const soldAt =
++      unit.status === 'sold'
++        ? (unit.saleItems[0]?.sale?.createdAt ?? null)
++        : null;
+ 
+     const { saleItems: _si, ...unitWithoutSaleItems } = unit;
+     return { ...unitWithoutSaleItems, soldAt };
+   }
+ 
+-  async createUnit(dto: CreateUnitDto, userId: string, tenantId: string, ipAddress?: string) {
++  async createUnit(
++    dto: CreateUnitDto,
++    userId: string,
++    tenantId: string,
++    ipAddress?: string,
++  ) {
+     const existing = await this.prisma.inventoryUnit.findUnique({
+       where: {
+         tenantId_serialNumber: {
+diff --git a/techbill-api/src/modules/reports/reports.service.ts b/techbill-api/src/modules/reports/reports.service.ts
+index 5707f8b..ef92646 100644
+--- a/techbill-api/src/modules/reports/reports.service.ts
++++ b/techbill-api/src/modules/reports/reports.service.ts
+@@ -25,7 +25,14 @@ export class ReportsService {
+     const end = new Date(date + 'T23:59:59+05:00');
+     const expenseStart = new Date(date + 'T00:00:00Z');
+     const expenseEnd = new Date(date + 'T00:00:00Z');
+-    return this.buildSummary(start, end, expenseStart, expenseEnd, date, tenantId);
++    return this.buildSummary(
++      start,
++      end,
++      expenseStart,
++      expenseEnd,
++      date,
++      tenantId,
++    );
+   }
+ 
+   async salesSummaryRange(query: SalesSummaryQueryDto, tenantId: string) {
+@@ -35,7 +42,14 @@ export class ReportsService {
+     const end = new Date(to + 'T23:59:59+05:00');
+     const expenseStart = new Date(from + 'T00:00:00Z');
+     const expenseEnd = new Date(to + 'T00:00:00Z');
+-    return this.buildSummary(start, end, expenseStart, expenseEnd, `${from} to ${to}`, tenantId);
++    return this.buildSummary(
++      start,
++      end,
++      expenseStart,
++      expenseEnd,
++      `${from} to ${to}`,
++      tenantId,
++    );
+   }
+ 
+   private async buildSummary(
+@@ -112,9 +126,7 @@ export class ReportsService {
+ 
+     let totalCost = 0;
+     for (const item of items) {
+-      const cost =
+-        item.inventoryUnit.purchasePrice ??
+-        0;
++      const cost = item.inventoryUnit.purchasePrice ?? 0;
+       totalCost += Number(cost);
+     }
+     const salesList = await this.prisma.sale.findMany({
+@@ -169,9 +181,9 @@ export class ReportsService {
+       select: {
+         refundAmount: true,
+         inventoryUnit: {
+-          select: { purchasePrice: true }
+-        }
+-      }
++          select: { purchasePrice: true },
++        },
++      },
+     });
+ 
+     let totalRefundValue = 0;
+@@ -180,7 +192,7 @@ export class ReportsService {
+       totalRefundValue += Number(r.refundAmount ?? 0);
+       totalReturnCost += Number(r.inventoryUnit?.purchasePrice ?? 0);
+     }
+-    
++
+     totalRevenue -= totalRefundValue;
+     totalCost -= totalReturnCost;
+ 
+@@ -733,8 +745,11 @@ export class ReportsService {
+     // Process online returned sales
+     for (const s of returnedOnlineSales) {
+       totalRefundValue += Number(s.totalAmount ?? 0);
+-      reasonMap.set('courier_return', (reasonMap.get('courier_return') ?? 0) + s.items.length);
+-      
++      reasonMap.set(
++        'courier_return',
++        (reasonMap.get('courier_return') ?? 0) + s.items.length,
++      );
++
+       for (const item of s.items) {
+         if (!item.inventoryUnit) continue;
+         const pid = item.inventoryUnit.product.id;
+diff --git a/techbill-api/src/modules/returns/returns.service.ts b/techbill-api/src/modules/returns/returns.service.ts
+index e0da641..1423bbf 100644
+--- a/techbill-api/src/modules/returns/returns.service.ts
++++ b/techbill-api/src/modules/returns/returns.service.ts
+@@ -29,7 +29,12 @@ export class ReturnsService {
+     );
+   }
+ 
+-  async createReturn(dto: CreateReturnDto, userId: string, tenantId: string, ipAddress?: string) {
++  async createReturn(
++    dto: CreateReturnDto,
++    userId: string,
++    tenantId: string,
++    ipAddress?: string,
++  ) {
+     const sale = await this.prisma.sale.findFirst({
+       where: { id: dto.saleId, tenantId },
+       include: { items: { include: { inventoryUnit: true } } },
+@@ -292,7 +297,9 @@ export class ReturnsService {
+     const hoursSinceCreation =
+       (Date.now() - returnRecord.createdAt.getTime()) / (1000 * 60 * 60);
+     if (hoursSinceCreation > 24) {
+-      throw new BadRequestException('Cannot delete returns older than 24 hours');
++      throw new BadRequestException(
++        'Cannot delete returns older than 24 hours',
++      );
+     }
+ 
+     return this.prisma.$transaction(async (tx) => {
+@@ -319,7 +326,7 @@ export class ReturnsService {
+           });
+         }
+       }
+-      
++
+       return deletedReturn;
+     });
+   }
+diff --git a/techbill-api/src/modules/sales/public-sales.controller.ts b/techbill-api/src/modules/sales/public-sales.controller.ts
+index f568591..33916b1 100644
+--- a/techbill-api/src/modules/sales/public-sales.controller.ts
++++ b/techbill-api/src/modules/sales/public-sales.controller.ts
+@@ -35,28 +35,33 @@ export class PublicSalesController {
+         customer: { select: { name: true, phone: true } },
+         soldBy: { select: { name: true } },
+         tenant: { select: { name: true } },
+-        returns: { where: { status: 'approved' }, select: { inventoryUnitId: true } },
++        returns: {
++          where: { status: 'approved' },
++          select: { inventoryUnitId: true },
++        },
+       },
+     });
+ 
+     if (!sale) throw new NotFoundException('Invoice not found');
+ 
+-    const returnedUnitIds = new Set(sale.returns?.map((r) => r.inventoryUnitId) || []);
+-    const isSaleVoided = sale.status === 'voided' || sale.shippingStatus === 'returned';
++    const returnedUnitIds = new Set(
++      sale.returns?.map((r) => r.inventoryUnitId) || [],
++    );
++    const isSaleVoided =
++      sale.status === 'voided' || sale.shippingStatus === 'returned';
+ 
+     // Compute warranty info for each item inline
+     const saleDate = sale.createdAt;
+     const items = sale.items.map((item) => {
+-      const isReturned = isSaleVoided || returnedUnitIds.has(item.inventoryUnit.id);
++      const isReturned =
++        isSaleVoided || returnedUnitIds.has(item.inventoryUnit.id);
+       const warrantyMonths = item.inventoryUnit.product.warrantyMonths;
+       let warrantyExpiresAt: Date | null = null;
+       let warrantyDaysLeft: number | null = null;
+ 
+       if (warrantyMonths > 0 && !isReturned) {
+         warrantyExpiresAt = new Date(saleDate);
+-        warrantyExpiresAt.setDate(
+-          warrantyExpiresAt.getDate() + warrantyMonths,
+-        );
++        warrantyExpiresAt.setDate(warrantyExpiresAt.getDate() + warrantyMonths);
+         const msLeft = warrantyExpiresAt.getTime() - Date.now();
+         warrantyDaysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
+       }
+diff --git a/techbill-api/src/modules/sales/sales.controller.ts b/techbill-api/src/modules/sales/sales.controller.ts
+index dc9da1a..c46cd53 100644
+--- a/techbill-api/src/modules/sales/sales.controller.ts
++++ b/techbill-api/src/modules/sales/sales.controller.ts
+@@ -74,7 +74,12 @@ export class SalesController {
+   @UseGuards(SubscriptionGuard)
+   @HttpCode(HttpStatus.CREATED)
+   createSale(@Body() dto: CreateSaleDto, @Req() req: RequestWithUser) {
+-    return this.salesService.createSale(dto, req.user.id, req.user.tenantId, req.ip);
++    return this.salesService.createSale(
++      dto,
++      req.user.id,
++      req.user.tenantId,
++      req.ip,
++    );
+   }
+ 
+   @Post('customers')
+@@ -91,7 +96,13 @@ export class SalesController {
+     @Body() dto: VoidSaleDto,
+     @Req() req: RequestWithUser,
+   ) {
+-    return this.salesService.voidSale(id, dto, req.user.id, req.user.tenantId, req.ip);
++    return this.salesService.voidSale(
++      id,
++      dto,
++      req.user.id,
++      req.user.tenantId,
++      req.ip,
++    );
+   }
+ 
+   @Delete(':id')
+diff --git a/techbill-api/src/modules/sales/sales.service.ts b/techbill-api/src/modules/sales/sales.service.ts
+index 759c655..88ce612 100644
+--- a/techbill-api/src/modules/sales/sales.service.ts
++++ b/techbill-api/src/modules/sales/sales.service.ts
+@@ -37,24 +37,35 @@ export class SalesService {
+   ) {
+     // 1. Scenario E: Idempotency catch block — idempotencyKey field removed from schema
+     try {
+-
+       // 2. Scenario C: Session validation — cashDrawerSession removed, skip session logic
+ 
+       // 3. Scenario D: Custom Pricing Authorization
+-      const user = await this.prisma.user.findUnique({ where: { id: cashierId } });
+-      const canOverridePrice = user?.role === 'owner' || user?.role === 'platform_admin' || user?.role === 'inventory_manager';
+-      
+-      const serialCounts = dto.serials.reduce((acc, serial) => {
+-        acc[serial] = (acc[serial] || 0) + 1;
+-        return acc;
+-      }, {} as Record<string, number>);
++      const user = await this.prisma.user.findUnique({
++        where: { id: cashierId },
++      });
++      const canOverridePrice =
++        user?.role === 'owner' ||
++        user?.role === 'platform_admin' ||
++        user?.role === 'inventory_manager';
++
++      const serialCounts = dto.serials.reduce(
++        (acc, serial) => {
++          acc[serial] = (acc[serial] || 0) + 1;
++          return acc;
++        },
++        {} as Record<string, number>,
++      );
+ 
+       // Auto-upsert customer from name+phone if no explicit customerId
+       let resolvedCustomerId = dto.customerId;
+       if (!resolvedCustomerId && dto.customerPhone) {
+         const customer = await this.prisma.customer.upsert({
+           where: { tenantId_phone: { tenantId, phone: dto.customerPhone } },
+-          create: { name: dto.customerName ?? dto.customerPhone, phone: dto.customerPhone, tenantId },
++          create: {
++            name: dto.customerName ?? dto.customerPhone,
++            phone: dto.customerPhone,
++            tenantId,
++          },
+           update: dto.customerName ? { name: dto.customerName } : {},
+         });
+         resolvedCustomerId = customer.id;
+@@ -64,30 +75,42 @@ export class SalesService {
+ 
+       const txResult = await this.prisma.$transaction(
+         async (tx) => {
+-          let allSelectedUnits: { id: string; serialNumber: string; productId: string }[] = [];
+-          
++          const allSelectedUnits: { id: string; serialNumber: string; productId: string }[] = [];
++
+           for (const [serial, count] of Object.entries(serialCounts)) {
+             // Scenario B (Generic Pool) & A (Race Condition): Select exact 'count' of available rows, lock them using updateMany
+             const availableUnits = await tx.inventoryUnit.findMany({
+-              where: { tenantId, serialNumber: serial, status: UnitStatus.in_stock },
++              where: {
++                tenantId,
++                serialNumber: serial,
++                status: UnitStatus.in_stock,
++              },
+               take: count,
+               select: { id: true, serialNumber: true, productId: true },
+             });
+ 
+             if (availableUnits.length < count) {
+-              throw new ConflictException(`Stock exhaustion for serial/generic: ${serial}`);
++              throw new ConflictException(
++                `Stock exhaustion for serial/generic: ${serial}`,
++              );
+             }
+ 
+-            const unitIds = availableUnits.map(u => u.id);
+-            
++            const unitIds = availableUnits.map((u) => u.id);
++
+             // Scenario A: Atomic decrement/status update
+             const updateResult = await tx.inventoryUnit.updateMany({
+-              where: { tenantId, id: { in: unitIds }, status: UnitStatus.in_stock },
++              where: {
++                tenantId,
++                id: { in: unitIds },
++                status: UnitStatus.in_stock,
++              },
+               data: { status: UnitStatus.sold },
+             });
+ 
+             if (updateResult.count !== count) {
+-              throw new ConflictException(`Race condition detected for ${serial}. Item claimed by another transaction.`);
++              throw new ConflictException(
++                `Race condition detected for ${serial}. Item claimed by another transaction.`,
++              );
+             }
+ 
+             allSelectedUnits.push(...availableUnits);
+@@ -95,15 +118,24 @@ export class SalesService {
+ 
+           // Fetch product prices
+           const products = await tx.product.findMany({
+-            where: { id: { in: [...new Set(allSelectedUnits.map(u => u.productId))] } },
++            where: {
++              id: {
++                in: [...new Set(allSelectedUnits.map((u) => u.productId))],
++              },
++            },
+             select: { id: true, sellingPrice: true },
+           });
+-          const productPriceMap = new Map(products.map(p => [p.id, Number(p.sellingPrice)]));
++          const productPriceMap = new Map(
++            products.map((p) => [p.id, Number(p.sellingPrice)]),
++          );
+ 
+           let subtotal = 0;
+-          const saleItemsData = allSelectedUnits.map(u => {
++          const saleItemsData = allSelectedUnits.map((u) => {
+             const defaultPrice = productPriceMap.get(u.productId) ?? 0;
+-            const finalPrice = (canOverridePrice && dto.customPrices?.[u.serialNumber]) ? dto.customPrices[u.serialNumber] : defaultPrice;
++            const finalPrice =
++              canOverridePrice && dto.customPrices?.[u.serialNumber]
++                ? dto.customPrices[u.serialNumber]
++                : defaultPrice;
+             subtotal += finalPrice;
+             return {
+               inventoryUnitId: u.id,
+@@ -115,10 +147,12 @@ export class SalesService {
+           const discount = dto.discountAmount ?? 0;
+           const deliveryCharge = dto.deliveryCharge ?? 0;
+           const additionalCharges = dto.additionalCharges ?? 0;
+-          const total = subtotal - discount + deliveryCharge + additionalCharges;
++          const total =
++            subtotal - discount + deliveryCharge + additionalCharges;
++
++          if (total < 0)
++            throw new BadRequestException('Discount exceeds subtotal');
+ 
+-          if (total < 0) throw new BadRequestException('Discount exceeds subtotal');
+-          
+           const created = await tx.sale.create({
+             data: {
+               invoiceNumber,
+@@ -208,7 +242,10 @@ export class SalesService {
+ 
+       return sale;
+     } catch (error) {
+-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
++      if (
++        error instanceof Prisma.PrismaClientKnownRequestError &&
++        error.code === 'P2002'
++      ) {
+         // Unique constraint violation — fall through and let caller retry
+         throw error;
+       }
+diff --git a/techbill-api/src/modules/suppliers/dto/receive-po.dto.ts b/techbill-api/src/modules/suppliers/dto/receive-po.dto.ts
+index 1e3e8a3..8d0c034 100644
+--- a/techbill-api/src/modules/suppliers/dto/receive-po.dto.ts
++++ b/techbill-api/src/modules/suppliers/dto/receive-po.dto.ts
+@@ -1,4 +1,11 @@
+-import { IsEnum, IsArray, IsOptional, ValidateNested, IsUUID, IsString } from 'class-validator';
++import {
++  IsEnum,
++  IsArray,
++  IsOptional,
++  ValidateNested,
++  IsUUID,
++  IsString,
++} from 'class-validator';
+ import { Type } from 'class-transformer';
+ 
+ export class ReceivePoItemDto {
+diff --git a/techbill-api/src/modules/suppliers/suppliers.service.ts b/techbill-api/src/modules/suppliers/suppliers.service.ts
+index cb1214e..ada7ca0 100644
+--- a/techbill-api/src/modules/suppliers/suppliers.service.ts
++++ b/techbill-api/src/modules/suppliers/suppliers.service.ts
+@@ -1,4 +1,8 @@
+-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
++import {
++  Injectable,
++  NotFoundException,
++  BadRequestException,
++} from '@nestjs/common';
+ import { PrismaService } from '../../prisma/prisma.service';
+ import { CreateSupplierDto } from './dto/create-supplier.dto';
+ import { CreatePoDto } from './dto/create-po.dto';
+@@ -163,10 +167,14 @@ export class SuppliersService {
+     });
+     if (!po) throw new NotFoundException(`Purchase order ${id} not found`);
+     if (po.status === 'received') {
+-      throw new BadRequestException('Purchase order is already marked as received');
++      throw new BadRequestException(
++        'Purchase order is already marked as received',
++      );
+     }
+     if (po.status === 'cancelled') {
+-      throw new BadRequestException('Cannot receive a cancelled purchase order');
++      throw new BadRequestException(
++        'Cannot receive a cancelled purchase order',
++      );
+     }
+ 
+     const now = new Date();
+@@ -179,7 +187,9 @@ export class SuppliersService {
+ 
+       for (const item of po.items) {
+         if (dto.snGenerationMethod === 'manual') {
+-          const manualItem = dto.items?.find((i) => i.productId === item.productId);
++          const manualItem = dto.items?.find(
++            (i) => i.productId === item.productId,
++          );
+           const serialNumbers = manualItem?.serialNumbers || [];
+           if (serialNumbers.length !== item.quantityOrdered) {
+             throw new BadRequestException(
+@@ -224,7 +234,9 @@ export class SuppliersService {
+           });
+         } catch (error: any) {
+           if (error.code === 'P2002') {
+-            throw new BadRequestException('One or more serial numbers already exist in the inventory.');
++            throw new BadRequestException(
++              'One or more serial numbers already exist in the inventory.',
++            );
+           }
+           throw error;
+         }
+diff --git a/techbill-api/src/modules/tenants/tenants.service.ts b/techbill-api/src/modules/tenants/tenants.service.ts
+index d81ece9..48c721e 100644
+--- a/techbill-api/src/modules/tenants/tenants.service.ts
++++ b/techbill-api/src/modules/tenants/tenants.service.ts
+@@ -9,7 +9,6 @@ import * as bcrypt from 'bcrypt';
+ import { Role, TenantStatus } from '.prisma/client';
+ import { PrismaService } from '../../prisma/prisma.service';
+ 
+-
+ import { FeaturesService } from '../features/features.service';
+ 
+ const BCRYPT_ROUNDS = 12;
+@@ -298,7 +297,10 @@ export class TenantsService {
+         currentPeriodEnd: newPeriodEnd,
+         subscriptionExpiresAt: newPeriodEnd,
+         // If tenant was suspended or expired, reactivate on renewal
+-        ...((tenant.status === TenantStatus.SUSPENDED || tenant.status === TenantStatus.EXPIRED) ? { status: TenantStatus.ACTIVE } : {}),
++        ...(tenant.status === TenantStatus.SUSPENDED ||
++        tenant.status === TenantStatus.EXPIRED
++          ? { status: TenantStatus.ACTIVE }
++          : {}),
+       },
+     });
+     this.featuresService.invalidate(id);
+diff --git a/techbill-pos/package-lock.json b/techbill-pos/package-lock.json
+index 0dbca0b..8d80be3 100644
+--- a/techbill-pos/package-lock.json
++++ b/techbill-pos/package-lock.json
+@@ -2392,9 +2392,6 @@
+         "arm"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2409,9 +2406,6 @@
+         "arm"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2426,9 +2420,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2443,9 +2434,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2460,9 +2448,6 @@
+         "loong64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2477,9 +2462,6 @@
+         "loong64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2494,9 +2476,6 @@
+         "ppc64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2511,9 +2490,6 @@
+         "ppc64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2528,9 +2504,6 @@
+         "riscv64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2545,9 +2518,6 @@
+         "riscv64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2562,9 +2532,6 @@
+         "s390x"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2579,9 +2546,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2596,9 +2560,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+diff --git a/techbill-pos/src/components/pos/CartTable.tsx b/techbill-pos/src/components/pos/CartTable.tsx
+index 1f7a4f6..904c4fa 100644
+--- a/techbill-pos/src/components/pos/CartTable.tsx
++++ b/techbill-pos/src/components/pos/CartTable.tsx
+@@ -75,7 +75,7 @@ export default function CartTable() {
+         <span className="text-sm text-stitch-on-surface-variant">
+           {items.length} item{items.length !== 1 ? 's' : ''}
+         </span>
+-        <span className="font-bold text-stitch-on-surface tabular-nums font-space">
++        <span data-testid="cart-total" className="font-bold text-stitch-on-surface tabular-nums font-space">
+           {formatPKR(subtotal)}
+         </span>
+       </div>
+diff --git a/techbill-pos/src/components/pos/InvoiceModal.tsx b/techbill-pos/src/components/pos/InvoiceModal.tsx
+index 104809b..0cd15e6 100644
+--- a/techbill-pos/src/components/pos/InvoiceModal.tsx
++++ b/techbill-pos/src/components/pos/InvoiceModal.tsx
+@@ -1,7 +1,6 @@
+ import { X, Printer, Plus, Download } from 'lucide-react';
+ import { format, addDays } from 'date-fns';
+ import { QRCodeSVG } from 'qrcode.react';
+-import html2pdf from 'html2pdf.js';
+ import type { Sale, ShopSettings } from '../../types';
+ import { useAuthStore } from '../../store/auth.store';
+ import { useFeatureGate } from '../../hooks/useFeatureGate';
+@@ -80,10 +79,10 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }:
+     window.print();
+   };
+ 
+-  const handleDownloadPDF = (): void => {
++  const handleDownloadPDF = async (): Promise<void> => {
+     const element = document.getElementById('invoice-print-area');
+     if (!element) return;
+-    
++
+     // Calculate the actual height of the element in millimeters
+     const pxToMm = 25.4 / 96; // 1 pixel = 25.4 mm / 96 DPI
+     const elementHeightMm = element.scrollHeight * pxToMm;
+@@ -96,6 +95,10 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }:
+       html2canvas: { scale: 3, useCORS: true, backgroundColor: '#09090b' },
+       jsPDF: { unit: 'mm', format: [80, pageHeight] as [number, number], orientation: 'portrait' as const }
+     };
++
++    // Lazy-loaded: html2pdf.js is ~1MB, so we only fetch it when the user
++    // actually clicks "Download PDF" instead of on every invoice-modal open.
++    const { default: html2pdf } = await import('html2pdf.js');
+     html2pdf().set(opt).from(element).save();
+   };
+ 
+diff --git a/techbill-pos/src/components/pos/UniversalSearch.tsx b/techbill-pos/src/components/pos/UniversalSearch.tsx
+index 3265edd..dbf416f 100644
+--- a/techbill-pos/src/components/pos/UniversalSearch.tsx
++++ b/techbill-pos/src/components/pos/UniversalSearch.tsx
+@@ -223,6 +223,7 @@ export default function UniversalSearch({
+       <button
+         key={s.product.id}
+         type="button"
++        data-testid="search-result-item"
+         onMouseDown={(e) => e.preventDefault()}
+         onClick={() => commitSuggestion(s)}
+         onMouseEnter={() => setSelectedIndex(absoluteIndex)}

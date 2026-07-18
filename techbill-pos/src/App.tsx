@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth.store';
 import { api } from './api/client';
 import { getRootDomain } from './lib/domain';
+import { isTauriApp } from './lib/platform';
 
 const Login = lazy(() => import('./pages/Login'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -43,6 +44,8 @@ import LockOverlay from './components/auth/LockOverlay';
 import { useLockStore } from './store/lock.store';
 import ToastContainer from './components/common/ToastContainer';
 import { useLicenseStore } from './store/license.store';
+import { useDesktopLicenseStore } from './store/desktopLicense.store';
+import ActivationScreen from './pages/license/ActivationScreen';
 import { socket } from './api/socket';
 
 
@@ -71,9 +74,13 @@ function RequireAuth({
     return <Navigate to="/login" replace />;
   }
 
-  // Subdomain enforcement for logged-in users
+  // Subdomain enforcement for logged-in users. Skipped entirely on desktop:
+  // the packaged Tauri app has no multi-tenant subdomain routing at all —
+  // it's always one fixed origin (tauri.localhost) regardless of which shop
+  // is logged in, so there is no "wrong subdomain" for it to be on.
   const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  if (!isLocalhost && user.role !== 'platform_admin') {
+  const skipDomainEnforcement = isLocalhost || isTauriApp();
+  if (!skipDomainEnforcement && user.role !== 'platform_admin') {
     if (!user.subdomain) {
       // Legacy session without subdomain claim: force logout so they re-authenticate and get a valid token payload
       useAuthStore.getState().clearAuth();
@@ -92,8 +99,8 @@ function RequireAuth({
     }
   }
 
-  // Platform Admin enforcement
-  if (!isLocalhost && user.role === 'platform_admin') {
+  // Platform Admin enforcement — same reasoning, skipped on desktop.
+  if (!skipDomainEnforcement && user.role === 'platform_admin') {
     if (window.location.hostname !== `admin.${getRootDomain()}`) {
       const u = encodeURIComponent(btoa(JSON.stringify(user)));
       const qs = `?token=${accessToken}&refresh_token=${refreshToken || ''}&u=${u}`;
@@ -155,6 +162,48 @@ function RequireFeature({
 
   if (!hasFeatureAccess(feature, requiredAccess)) {
     return <Navigate to="/feature-disabled" replace />;
+  }
+
+  return children;
+}
+
+/**
+ * Tauri-only license activation gate. `/license/checkin` needs the user's
+ * JWT, so unlike LICENSE_SYSTEM.md's literal "activate-then-login" ordering,
+ * this sits inside RequireAuth (after login) rather than before it — a
+ * deliberate adaptation to this app's existing shared-login architecture,
+ * not a limitation (/license/activate itself has no auth requirement).
+ * No-ops entirely in the browser webapp.
+ */
+function RequireDesktopLicense({ children }: { children: React.ReactElement }) {
+  const { user } = useAuthStore();
+  const { hydrated, licenseId, hydrate, checkin } = useDesktopLicenseStore();
+
+  useEffect(() => {
+    if (isTauriApp()) hydrate();
+  }, []);
+
+  useEffect(() => {
+    if (!isTauriApp() || !hydrated || !licenseId) return;
+    checkin();
+    const interval = setInterval(checkin, 24 * 60 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [hydrated, licenseId]);
+
+  if (!isTauriApp() || user?.role === 'platform_admin') {
+    return children;
+  }
+
+  if (!hydrated) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-stitch-surface">
+        <span className="w-8 h-8 border-2 border-stitch-primary/30 border-t-stitch-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!licenseId) {
+    return <ActivationScreen />;
   }
 
   return children;
@@ -332,7 +381,9 @@ export default function App() {
         <Route
           element={
             <RequireAuth>
-              <AppShell />
+              <RequireDesktopLicense>
+                <AppShell />
+              </RequireDesktopLicense>
             </RequireAuth>
           }
         >

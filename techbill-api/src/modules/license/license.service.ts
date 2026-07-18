@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { DesktopPlan, LicenseStatus, DeviceStatus, Role } from '@prisma/client';
 import * as ed from '@noble/ed25519';
 import * as bcrypt from 'bcrypt';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreateLicenseDto,
@@ -20,7 +21,6 @@ import { ActivateLicenseDto } from './dto/activate-license.dto';
 import { CheckinDto } from './dto/checkin.dto';
 
 const BCRYPT_ROUNDS = 12;
-
 
 /** Device limits per plan (matches LICENSE_SYSTEM.md §2). */
 const PLAN_DEVICE_LIMITS: Record<DesktopPlan, number> = {
@@ -47,7 +47,7 @@ export class LicenseService {
     if (!key) {
       throw new Error(
         'LICENSE_SIGNING_PRIVATE_KEY is not set in environment variables. ' +
-          'Generate a 32-byte hex key with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"',
+          "Generate a 32-byte hex key with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"",
       );
     }
     this.privateKeyBytes = ed.etc.hexToBytes(key);
@@ -63,32 +63,31 @@ export class LicenseService {
     return `${prefix}-${segment()}-${segment()}-${segment()}`;
   }
 
-  /** Sign a JSON payload and return a base64url-encoded bundle {payload, sig}. */
+  /** Sign a JSON payload and return a dot-separated base64url bundle `TB-PRO-<payload>.<sig>`. */
   private async signPayload(payload: Record<string, unknown>): Promise<string> {
-    const message = new TextEncoder().encode(JSON.stringify(payload));
-    const signature = await ed.signAsync(message, this.privateKeyBytes);
-    const bundle = {
-      payload,
-      sig: Buffer.from(signature).toString('base64url'),
-    };
-    return Buffer.from(JSON.stringify(bundle)).toString('base64url');
+    const json = Buffer.from(JSON.stringify(payload), 'utf8');
+    const signature = await ed.signAsync(json, this.privateKeyBytes);
+    return `TB-PRO-${json.toString('base64url')}.${Buffer.from(signature).toString('base64url')}`;
   }
 
   // ─── Super Admin: license CRUD ───────────────────────────────────────────────
 
   async createLicense(dto: CreateLicenseDto, issuedBy: string) {
+    // Per-shop, not per-user (2026-07-17): a license is issued against the
+    // tenant, so it no longer matters whether the specific "issued for" user
+    // has their own desktopAccess/mobileAccess toggle on — that per-user
+    // toggle is a UI-only preference now, not an issuance gate. Dropping this
+    // check makes createLicense consistent with activateLicense/checkin,
+    // which already stopped enforcing it.
     const user = await this.prisma.user.findUnique({
       where: { id: dto.userId },
-      include: { userPermission: true },
     });
     if (!user) throw new NotFoundException('User not found');
 
-    const permissionField =
-      dto.licenseType === 'DESKTOP' ? 'desktopAccess' : 'mobileAccess';
-    if (!user.userPermission?.[permissionField]) {
-      throw new ForbiddenException(
-        `User does not have ${dto.licenseType.toLowerCase()}_access enabled. ` +
-          `Enable it first via POST /admin/users/:id/permissions`,
+    const tenantId = user.tenantId;
+    if (!tenantId) {
+      throw new BadRequestException(
+        'Selected user does not belong to any tenant',
       );
     }
 
@@ -113,19 +112,20 @@ export class LicenseService {
       }
     }
 
+    const licenseId = randomUUID();
     const payload = {
-      userId: dto.userId,
-      licenseType: dto.licenseType,
-      plan: dto.plan,
-      maxDevices,
-      expiresAt: expiresAt.toISOString(),
-      issuedAt: new Date().toISOString(),
-      licenseKey,
+      license_id: licenseId,
+      tenant_id: tenantId,
+      plan_id: dto.plan,
+      issued_at: new Date().toISOString(),
+      expires_at: expiresAt.toISOString(),
     };
     const signedToken = await this.signPayload(payload);
 
     return this.prisma.license.create({
       data: {
+        id: licenseId,
+        tenantId,
         userId: dto.userId,
         issuedBy,
         licenseKey,
@@ -150,7 +150,8 @@ export class LicenseService {
   }
 
   async regenerateLicense(id: string, issuedBy: string) {
-    const license = await this.findLicenseOrThrow(id);
+    const license = await this.prisma.license.findUnique({ where: { id } });
+    if (!license) throw new NotFoundException('License not found');
 
     let licenseKey = '';
     for (let attempt = 0; attempt < 5; attempt++) {
@@ -168,42 +169,52 @@ export class LicenseService {
     }
 
     const payload = {
-      userId: license.userId,
-      licenseType: license.licenseType,
-      plan: license.plan,
-      maxDevices: license.maxDevices,
-      expiresAt: license.expiresAt.toISOString(),
-      issuedAt: new Date().toISOString(),
-      licenseKey,
+      license_id: license.id,
+      tenant_id: license.tenantId,
+      plan_id: license.plan,
+      issued_at: new Date().toISOString(),
+      expires_at: license.expiresAt.toISOString(),
     };
     const signedToken = await this.signPayload(payload);
 
     return this.prisma.license.update({
       where: { id },
       data: { licenseKey, signedToken, issuedBy, status: LicenseStatus.ACTIVE },
-      select: { id: true, licenseKey: true, plan: true, status: true, expiresAt: true },
+      select: {
+        id: true,
+        licenseKey: true,
+        plan: true,
+        status: true,
+        expiresAt: true,
+      },
     });
   }
 
   async renewLicense(id: string, dto: RenewLicenseDto, issuedBy: string) {
-    const license = await this.findLicenseOrThrow(id);
+    const license = await this.prisma.license.findUnique({ where: { id } });
+    if (!license) throw new NotFoundException('License not found');
+
     const expiresAt = new Date(dto.expiresAt);
 
     const payload = {
-      userId: license.userId,
-      licenseType: license.licenseType,
-      plan: license.plan,
-      maxDevices: license.maxDevices,
-      expiresAt: expiresAt.toISOString(),
-      issuedAt: new Date().toISOString(),
-      licenseKey: license.licenseKey,
+      license_id: license.id,
+      tenant_id: license.tenantId,
+      plan_id: license.plan,
+      issued_at: new Date().toISOString(),
+      expires_at: expiresAt.toISOString(),
     };
     const signedToken = await this.signPayload(payload);
 
     return this.prisma.license.update({
       where: { id },
       data: { expiresAt, signedToken, issuedBy, status: LicenseStatus.ACTIVE },
-      select: { id: true, licenseKey: true, plan: true, status: true, expiresAt: true },
+      select: {
+        id: true,
+        licenseKey: true,
+        plan: true,
+        status: true,
+        expiresAt: true,
+      },
     });
   }
 
@@ -225,17 +236,22 @@ export class LicenseService {
     });
   }
 
-  async listLicenses(userId?: string) {
+  async listLicenses(userId?: string, tenantId?: string) {
     return this.prisma.license.findMany({
-      where: userId ? { userId } : undefined,
+      where: {
+        ...(userId && { userId }),
+        ...(tenantId && { tenantId }),
+      },
       select: {
         id: true,
+        tenantId: true,
         licenseKey: true,
         licenseType: true,
         plan: true,
         status: true,
         expiresAt: true,
         maxDevices: true,
+        signedToken: true,
         lastUsedAt: true,
         createdAt: true,
         updatedAt: true,
@@ -284,19 +300,25 @@ export class LicenseService {
     });
   }
 
-
   // ─── Desktop client endpoints ────────────────────────────────────────────────
 
   async activateLicense(dto: ActivateLicenseDto) {
     const license = await this.prisma.license.findUnique({
       where: { licenseKey: dto.licenseKey },
       include: {
-        user: { include: { userPermission: true } },
+        user: true,
+        tenant: { select: { desktopAccessEnabled: true } },
         devices: { where: { status: DeviceStatus.ACTIVE } },
       },
     });
 
     if (!license) throw new NotFoundException('License key not found');
+
+    if (!license.tenant.desktopAccessEnabled) {
+      throw new ForbiddenException(
+        'Desktop access has been disabled for this shop by the platform admin.',
+      );
+    }
 
     if (license.status !== LicenseStatus.ACTIVE) {
       throw new ForbiddenException(
@@ -308,12 +330,10 @@ export class LicenseService {
       throw new ForbiddenException('License has expired');
     }
 
-    if (!license.user.userPermission?.desktopAccess) {
-      throw new ForbiddenException(
-        'Desktop access is not enabled for this user',
-      );
-    }
-
+    // Per-shop, not per-user (2026-07-17): any staff member at this
+    // license's shop may activate it — there is no per-user gate here
+    // anymore. The device-limit check below is the real enforcement
+    // (already correctly per-License, i.e. per-shop).
     const existingDevice = license.devices.find(
       (d) => d.machineHash === dto.machineHash,
     );
@@ -366,21 +386,89 @@ export class LicenseService {
     };
   }
 
-  async checkin(dto: CheckinDto) {
+  async checkin(dto: CheckinDto, callerTenantId: string, callerUserId: string) {
     const license = await this.prisma.license.findUnique({
-      where: { licenseKey: dto.licenseKey },
+      where: { id: dto.licenseId },
+      include: {
+        tenant: { select: { desktopAccessEnabled: true } },
+        devices: { where: { status: DeviceStatus.ACTIVE } },
+      },
     });
     if (!license) throw new UnauthorizedException('License not found');
 
-    const device = await this.prisma.device.findFirst({
-      where: { licenseId: license.id, machineHash: dto.machineHash },
-    });
-    if (!device) throw new UnauthorizedException('Device not registered');
+    // Security check: The license must belong to the caller's tenant/shop!
+    if (license.tenantId !== callerTenantId) {
+      throw new ForbiddenException('License does not belong to your shop');
+    }
 
-    await this.prisma.device.update({
-      where: { id: device.id },
-      data: { lastCheckinAt: new Date(), appVersion: dto.appVersion },
-    });
+    // desktopAccessEnabled is a soft, tenant-level kill-switch: unlike the
+    // license's own status/expiry it doesn't get persisted onto the
+    // license row, it's just echoed back so the client can flip to
+    // read-only immediately rather than waiting out its offline-staleness
+    // grace window.
+    const desktopAccessEnabled = license.tenant.desktopAccessEnabled;
+
+    if (license.status === LicenseStatus.REVOKED) {
+      return {
+        status: LicenseStatus.REVOKED,
+        expiresAt: license.expiresAt,
+        serverTime: new Date().toISOString(),
+        serverTimestamp: new Date().toISOString(),
+        signedToken: license.signedToken,
+        desktopAccessEnabled,
+      };
+    }
+
+    if (new Date() > license.expiresAt) {
+      if (license.status !== LicenseStatus.EXPIRED) {
+        await this.prisma.license.update({
+          where: { id: license.id },
+          data: { status: LicenseStatus.EXPIRED },
+        });
+      }
+      return {
+        status: LicenseStatus.EXPIRED,
+        expiresAt: license.expiresAt,
+        serverTime: new Date().toISOString(),
+        serverTimestamp: new Date().toISOString(),
+        signedToken: license.signedToken,
+        desktopAccessEnabled,
+      };
+    }
+
+    // Check device registrations
+    const existingDevice = license.devices.find(
+      (d) => d.machineHash === dto.machineHash,
+    );
+
+    if (!existingDevice) {
+      if (license.devices.length >= license.maxDevices) {
+        throw new ForbiddenException(
+          `Device limit reached (${license.maxDevices} device${license.maxDevices === 1 ? '' : 's'} ` +
+            `allowed on the ${license.plan} plan). Ask your admin to remove an old device first.`,
+        );
+      }
+
+      await this.prisma.device.create({
+        data: {
+          licenseId: license.id,
+          userId: callerUserId,
+          deviceName: 'Desktop Client',
+          deviceType: 'desktop',
+          os: 'Windows',
+          machineHash: dto.machineHash,
+          hardwareId: dto.machineHash,
+          appVersion: dto.appVersion,
+          lastLoginAt: new Date(),
+          lastCheckinAt: new Date(),
+        },
+      });
+    } else {
+      await this.prisma.device.update({
+        where: { id: existingDevice.id },
+        data: { lastCheckinAt: new Date(), appVersion: dto.appVersion },
+      });
+    }
 
     await this.prisma.license.update({
       where: { id: license.id },
@@ -390,8 +478,10 @@ export class LicenseService {
     return {
       status: license.status,
       expiresAt: license.expiresAt,
+      serverTime: new Date().toISOString(),
       serverTimestamp: new Date().toISOString(),
       signedToken: license.signedToken,
+      desktopAccessEnabled,
     };
   }
 
@@ -475,13 +565,16 @@ export class LicenseService {
     });
   }
 
-  async adminUpdateUser(id: string, dto: {
-    name?: string;
-    role?: Role;
-    isActive?: boolean;
-    permissions?: string[];
-    password?: string;
-  }) {
+  async adminUpdateUser(
+    id: string,
+    dto: {
+      name?: string;
+      role?: Role;
+      isActive?: boolean;
+      permissions?: string[];
+      password?: string;
+    },
+  ) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -516,4 +609,3 @@ export class LicenseService {
     return license;
   }
 }
-

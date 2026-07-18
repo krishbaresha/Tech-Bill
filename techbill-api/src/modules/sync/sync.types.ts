@@ -24,21 +24,22 @@ export type SyncedTable = (typeof SYNCED_TABLES)[number];
 /** FK columns per table and the parent table each references. Push bodies
  *  carry these as the *client's* local ids; the service resolves them to
  *  server ids before anything is stored. Must match the Rust registry. */
-export const TABLE_FOREIGN_KEYS: Record<SyncedTable, [string, SyncedTable][]> = {
-  products: [],
-  customers: [],
-  inventory_units: [['product_local_id', 'products']],
-  sales: [['customer_local_id', 'customers']],
-  sale_items: [
-    ['sale_local_id', 'sales'],
-    ['inventory_unit_local_id', 'inventory_units'],
-  ],
-  returns: [
-    ['sale_local_id', 'sales'],
-    ['inventory_unit_local_id', 'inventory_units'],
-  ],
-  credit_records: [['customer_local_id', 'customers']],
-};
+export const TABLE_FOREIGN_KEYS: Record<SyncedTable, [string, SyncedTable][]> =
+  {
+    products: [],
+    customers: [],
+    inventory_units: [['product_local_id', 'products']],
+    sales: [['customer_local_id', 'customers']],
+    sale_items: [
+      ['sale_local_id', 'sales'],
+      ['inventory_unit_local_id', 'inventory_units'],
+    ],
+    returns: [
+      ['sale_local_id', 'sales'],
+      ['inventory_unit_local_id', 'inventory_units'],
+    ],
+    credit_records: [['customer_local_id', 'customers']],
+  };
 
 /** One synced row as the server holds it. `data` is the domain columns with
  *  FK values already in server-id space; `seq` is the tenant-scoped change
@@ -60,7 +61,11 @@ export interface SyncedRow {
 }
 
 export interface SyncRepository {
-  findById(tenantId: string, table: SyncedTable, id: string): Promise<SyncedRow | null>;
+  findById(
+    tenantId: string,
+    table: SyncedTable,
+    id: string,
+  ): Promise<SyncedRow | null>;
   findByClientRowId(
     tenantId: string,
     table: SyncedTable,

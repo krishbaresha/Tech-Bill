@@ -98,6 +98,7 @@ export class TenantsController {
       onlineSellingEnabled?: boolean;
       appAccessEnabled?: boolean;
       isWarehouseEnabled?: boolean;
+      desktopAccessEnabled?: boolean;
       subscriptionExpiresAt?: string | null;
     },
   ) {
@@ -145,5 +146,14 @@ export class TenantsController {
     @Body('isWarehouseEnabled') isWarehouseEnabled: boolean,
   ) {
     return this.tenantsService.toggleWarehouseAccess(id, isWarehouseEnabled);
+  }
+
+  @Patch(':id/desktop-access')
+  @HttpCode(HttpStatus.OK)
+  toggleDesktopAccess(
+    @Param('id') id: string,
+    @Body('desktopAccessEnabled') desktopAccessEnabled: boolean,
+  ) {
+    return this.tenantsService.toggleDesktopAccess(id, desktopAccessEnabled);
   }
 }

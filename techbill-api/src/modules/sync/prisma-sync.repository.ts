@@ -28,7 +28,11 @@ export class PrismaSyncRepository implements SyncRepository {
     }
   }
 
-  async findById(tenantId: string, table: SyncedTable, id: string): Promise<SyncedRow | null> {
+  async findById(
+    tenantId: string,
+    table: SyncedTable,
+    id: string,
+  ): Promise<SyncedRow | null> {
     const delegate = this.getPrismaDelegate(table);
     if (!delegate) return null;
     const row = await (delegate as any).findFirst({
@@ -75,13 +79,16 @@ export class PrismaSyncRepository implements SyncRepository {
     return this.toSyncedRow(table, row, meta);
   }
 
-  async save(row: Omit<SyncedRow, 'seq' | 'updatedAtServer'>): Promise<SyncedRow> {
+  async save(
+    row: Omit<SyncedRow, 'seq' | 'updatedAtServer'>,
+  ): Promise<SyncedRow> {
     const delegate = this.getPrismaDelegate(row.table);
     if (!delegate) {
       throw new BadRequestException(`Unknown table: ${row.table}`);
     }
 
-    const isDeleted = row.data.deleted_at !== null && row.data.deleted_at !== undefined;
+    const isDeleted =
+      row.data.deleted_at !== null && row.data.deleted_at !== undefined;
 
     if (isDeleted) {
       // Hard delete from the domain table
@@ -138,7 +145,10 @@ export class PrismaSyncRepository implements SyncRepository {
         tenantId: row.tenantId,
         table: row.table,
         clientRowId: row.clientRowId,
-        data: { deleted_at: row.data.deleted_at, updated_at: row.data.updated_at },
+        data: {
+          deleted_at: row.data.deleted_at,
+          updated_at: row.data.updated_at,
+        },
         seq: Number(meta.seq),
         updatedAtServer: meta.updatedAt,
       };
@@ -176,7 +186,10 @@ export class PrismaSyncRepository implements SyncRepository {
           tenantId,
           table,
           clientRowId: meta.clientRowId,
-          data: { deleted_at: meta.updatedAt.toISOString(), updated_at: meta.updatedAt.toISOString() },
+          data: {
+            deleted_at: meta.updatedAt.toISOString(),
+            updated_at: meta.updatedAt.toISOString(),
+          },
           seq: Number(meta.seq),
           updatedAtServer: meta.updatedAt,
         });
@@ -219,9 +232,13 @@ export class PrismaSyncRepository implements SyncRepository {
         data.image_url = row.imageUrl;
         data.tags = row.tags;
         data.specifications = row.specifications;
-        data.cost_price_minor = row.costPrice ? Math.round(Number(row.costPrice) * 100) : null;
+        data.cost_price_minor = row.costPrice
+          ? Math.round(Number(row.costPrice) * 100)
+          : null;
         data.selling_price_minor = Math.round(Number(row.sellingPrice) * 100);
-        data.compare_price_minor = row.comparePrice ? Math.round(Number(row.comparePrice) * 100) : null;
+        data.compare_price_minor = row.comparePrice
+          ? Math.round(Number(row.comparePrice) * 100)
+          : null;
         data.warranty_months = row.warrantyMonths;
         data.is_active = row.isActive;
         data.created_by_id = row.createdById;
@@ -238,7 +255,9 @@ export class PrismaSyncRepository implements SyncRepository {
         data.product_local_id = row.productId;
         data.status = row.status;
         data.condition = row.condition;
-        data.purchase_price_minor = row.purchasePrice ? Math.round(Number(row.purchasePrice) * 100) : null;
+        data.purchase_price_minor = row.purchasePrice
+          ? Math.round(Number(row.purchasePrice) * 100)
+          : null;
         data.received_at = row.receivedAt.toISOString();
         data.grn_remote_id = row.grnId;
         data.notes = row.notes;
@@ -250,7 +269,9 @@ export class PrismaSyncRepository implements SyncRepository {
         data.sold_by_id = row.soldById;
         data.payment_method = row.paymentMethod;
         data.subtotal_minor = Math.round(Number(row.subtotal) * 100);
-        data.discount_amount_minor = Math.round(Number(row.discountAmount) * 100);
+        data.discount_amount_minor = Math.round(
+          Number(row.discountAmount) * 100,
+        );
         data.discount_approved_by_id = row.discountApprovedById;
         data.total_amount_minor = Math.round(Number(row.totalAmount) * 100);
         data.status = row.status;
@@ -259,10 +280,14 @@ export class PrismaSyncRepository implements SyncRepository {
         data.is_online = row.isOnline;
         data.customer_city = row.customerCity;
         data.tracking_id = row.trackingId;
-        data.delivery_charge_minor = Math.round(Number(row.deliveryCharge) * 100);
+        data.delivery_charge_minor = Math.round(
+          Number(row.deliveryCharge) * 100,
+        );
         data.advance_amount_minor = Math.round(Number(row.advanceAmount) * 100);
         data.cod_amount_minor = Math.round(Number(row.codAmount) * 100);
-        data.additional_charges_minor = Math.round(Number(row.additionalCharges) * 100);
+        data.additional_charges_minor = Math.round(
+          Number(row.additionalCharges) * 100,
+        );
         data.description = row.description;
         data.shipping_status = row.shippingStatus;
         break;
@@ -284,7 +309,9 @@ export class PrismaSyncRepository implements SyncRepository {
         data.suspicious_flag = row.suspiciousFlag;
         data.reviewed_by_id = row.reviewedById;
         data.review_notes = row.reviewNotes;
-        data.refund_amount_minor = row.refundAmount ? Math.round(Number(row.refundAmount) * 100) : null;
+        data.refund_amount_minor = row.refundAmount
+          ? Math.round(Number(row.refundAmount) * 100)
+          : null;
         data.resolved_at = row.resolvedAt ? row.resolvedAt.toISOString() : null;
         break;
 
@@ -302,11 +329,21 @@ export class PrismaSyncRepository implements SyncRepository {
     return data;
   }
 
-  private toPrismaData(table: SyncedTable, data: any, tenantId: string): Record<string, any> {
+  private toPrismaData(
+    table: SyncedTable,
+    data: any,
+    tenantId: string,
+  ): Record<string, any> {
     const prismaData: Record<string, any> = { tenantId };
 
+    // `updatedAt` is deliberately never set here: none of the 7 synced
+    // models accept a manually-supplied value for it (products, customers,
+    // inventory_units, sales, sale_items, returns have no updatedAt column
+    // at all; credit_records' is @updatedAt-managed) — Prisma rejects it as
+    // an unknown argument on create/update either way. Confirmed in
+    // production 2026-07-18: every push crashed with
+    // "Unknown argument `updatedAt`. Did you mean `createdAt`?".
     if (data.created_at) prismaData.createdAt = new Date(data.created_at);
-    if (data.updated_at) prismaData.updatedAt = new Date(data.updated_at);
 
     switch (table) {
       case 'products':
@@ -319,13 +356,18 @@ export class PrismaSyncRepository implements SyncRepository {
         prismaData.imageUrl = data.image_url;
         prismaData.tags = Array.isArray(data.tags) ? data.tags : [];
         prismaData.specifications = data.specifications;
-        prismaData.costPrice = data.cost_price_minor !== null && data.cost_price_minor !== undefined
-          ? new Prisma.Decimal(data.cost_price_minor).div(100)
-          : null;
-        prismaData.sellingPrice = new Prisma.Decimal(data.selling_price_minor).div(100);
-        prismaData.comparePrice = data.compare_price_minor !== null && data.compare_price_minor !== undefined
-          ? new Prisma.Decimal(data.compare_price_minor).div(100)
-          : null;
+        prismaData.costPrice =
+          data.cost_price_minor !== null && data.cost_price_minor !== undefined
+            ? new Prisma.Decimal(data.cost_price_minor).div(100)
+            : null;
+        prismaData.sellingPrice = new Prisma.Decimal(
+          data.selling_price_minor,
+        ).div(100);
+        prismaData.comparePrice =
+          data.compare_price_minor !== null &&
+          data.compare_price_minor !== undefined
+            ? new Prisma.Decimal(data.compare_price_minor).div(100)
+            : null;
         prismaData.warrantyMonths = data.warranty_months;
         prismaData.isActive = !!data.is_active;
         prismaData.createdById = data.created_by_id;
@@ -342,9 +384,11 @@ export class PrismaSyncRepository implements SyncRepository {
         prismaData.productId = data.product_local_id;
         prismaData.status = data.status;
         prismaData.condition = data.condition;
-        prismaData.purchasePrice = data.purchase_price_minor !== null && data.purchase_price_minor !== undefined
-          ? new Prisma.Decimal(data.purchase_price_minor).div(100)
-          : null;
+        prismaData.purchasePrice =
+          data.purchase_price_minor !== null &&
+          data.purchase_price_minor !== undefined
+            ? new Prisma.Decimal(data.purchase_price_minor).div(100)
+            : null;
         prismaData.receivedAt = new Date(data.received_at);
         prismaData.grnId = data.grn_remote_id;
         prismaData.notes = data.notes;
@@ -356,19 +400,31 @@ export class PrismaSyncRepository implements SyncRepository {
         prismaData.soldById = data.sold_by_id;
         prismaData.paymentMethod = data.payment_method;
         prismaData.subtotal = new Prisma.Decimal(data.subtotal_minor).div(100);
-        prismaData.discountAmount = new Prisma.Decimal(data.discount_amount_minor).div(100);
+        prismaData.discountAmount = new Prisma.Decimal(
+          data.discount_amount_minor,
+        ).div(100);
         prismaData.discountApprovedById = data.discount_approved_by_id;
-        prismaData.totalAmount = new Prisma.Decimal(data.total_amount_minor).div(100);
+        prismaData.totalAmount = new Prisma.Decimal(
+          data.total_amount_minor,
+        ).div(100);
         prismaData.status = data.status;
         prismaData.voidReason = data.void_reason;
         prismaData.voidedById = data.voided_by_id;
         prismaData.isOnline = !!data.is_online;
         prismaData.customerCity = data.customer_city;
         prismaData.trackingId = data.tracking_id;
-        prismaData.deliveryCharge = new Prisma.Decimal(data.delivery_charge_minor).div(100);
-        prismaData.advanceAmount = new Prisma.Decimal(data.advance_amount_minor).div(100);
-        prismaData.codAmount = new Prisma.Decimal(data.cod_amount_minor).div(100);
-        prismaData.additionalCharges = new Prisma.Decimal(data.additional_charges_minor).div(100);
+        prismaData.deliveryCharge = new Prisma.Decimal(
+          data.delivery_charge_minor,
+        ).div(100);
+        prismaData.advanceAmount = new Prisma.Decimal(
+          data.advance_amount_minor,
+        ).div(100);
+        prismaData.codAmount = new Prisma.Decimal(data.cod_amount_minor).div(
+          100,
+        );
+        prismaData.additionalCharges = new Prisma.Decimal(
+          data.additional_charges_minor,
+        ).div(100);
         prismaData.description = data.description;
         prismaData.shippingStatus = data.shipping_status;
         break;
@@ -376,7 +432,9 @@ export class PrismaSyncRepository implements SyncRepository {
       case 'sale_items':
         prismaData.saleId = data.sale_local_id;
         prismaData.inventoryUnitId = data.inventory_unit_local_id;
-        prismaData.sellingPrice = new Prisma.Decimal(data.selling_price_minor).div(100);
+        prismaData.sellingPrice = new Prisma.Decimal(
+          data.selling_price_minor,
+        ).div(100);
         prismaData.discount = new Prisma.Decimal(data.discount_minor).div(100);
         break;
 
@@ -390,18 +448,26 @@ export class PrismaSyncRepository implements SyncRepository {
         prismaData.suspiciousFlag = !!data.suspicious_flag;
         prismaData.reviewedById = data.reviewed_by_id;
         prismaData.reviewNotes = data.review_notes;
-        prismaData.refundAmount = data.refund_amount_minor !== null && data.refund_amount_minor !== undefined
-          ? new Prisma.Decimal(data.refund_amount_minor).div(100)
+        prismaData.refundAmount =
+          data.refund_amount_minor !== null &&
+          data.refund_amount_minor !== undefined
+            ? new Prisma.Decimal(data.refund_amount_minor).div(100)
+            : null;
+        prismaData.resolvedAt = data.resolved_at
+          ? new Date(data.resolved_at)
           : null;
-        prismaData.resolvedAt = data.resolved_at ? new Date(data.resolved_at) : null;
         break;
 
       case 'credit_records':
         prismaData.type = data.type;
         prismaData.status = data.status;
         prismaData.amount = new Prisma.Decimal(data.amount_minor).div(100);
-        prismaData.paidAmount = new Prisma.Decimal(data.paid_amount_minor).div(100);
-        prismaData.dueAmount = new Prisma.Decimal(data.due_amount_minor).div(100);
+        prismaData.paidAmount = new Prisma.Decimal(data.paid_amount_minor).div(
+          100,
+        );
+        prismaData.dueAmount = new Prisma.Decimal(data.due_amount_minor).div(
+          100,
+        );
         prismaData.description = data.description;
         prismaData.date = new Date(data.date);
         break;

@@ -13,10 +13,15 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { LicenseService } from './license.service';
-import { CreateLicenseDto, RenewLicenseDto, SetUserPermissionsDto } from './dto/create-license.dto';
+import {
+  CreateLicenseDto,
+  RenewLicenseDto,
+  SetUserPermissionsDto,
+} from './dto/create-license.dto';
 import { ActivateLicenseDto } from './dto/activate-license.dto';
 import { CheckinDto } from './dto/checkin.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { TenantGuard } from '../../common/guards/tenant.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 
@@ -38,20 +43,14 @@ export class LicenseController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('platform_admin')
   @HttpCode(HttpStatus.CREATED)
-  createLicense(
-    @Body() dto: CreateLicenseDto,
-    @Req() req: RequestWithUser,
-  ) {
+  createLicense(@Body() dto: CreateLicenseDto, @Req() req: RequestWithUser) {
     return this.licenseService.createLicense(dto, req.user.id);
   }
 
   @Post('admin/licenses/:id/regenerate')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('platform_admin')
-  regenerateLicense(
-    @Param('id') id: string,
-    @Req() req: RequestWithUser,
-  ) {
+  regenerateLicense(@Param('id') id: string, @Req() req: RequestWithUser) {
     return this.licenseService.regenerateLicense(id, req.user.id);
   }
 
@@ -85,8 +84,11 @@ export class LicenseController {
   @Get('admin/licenses')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('platform_admin')
-  listLicenses(@Query('userId') userId?: string) {
-    return this.licenseService.listLicenses(userId);
+  listLicenses(
+    @Query('userId') userId?: string,
+    @Query('tenantId') tenantId?: string,
+  ) {
+    return this.licenseService.listLicenses(userId, tenantId);
   }
 
   @Get('admin/users')
@@ -101,7 +103,8 @@ export class LicenseController {
   @Roles('platform_admin')
   @HttpCode(HttpStatus.CREATED)
   adminCreateUser(
-    @Body() dto: {
+    @Body()
+    dto: {
       name: string;
       username: string;
       password: string;
@@ -118,7 +121,8 @@ export class LicenseController {
   @Roles('platform_admin')
   adminUpdateUser(
     @Param('id') id: string,
-    @Body() dto: {
+    @Body()
+    dto: {
       name?: string;
       role?: any;
       isActive?: boolean;
@@ -128,8 +132,6 @@ export class LicenseController {
   ) {
     return this.licenseService.adminUpdateUser(id, dto);
   }
-
-
 
   // ─── Super Admin: user permissions ──────────────────────────────────────────
 
@@ -159,8 +161,9 @@ export class LicenseController {
   }
 
   @Post('license/checkin')
+  @UseGuards(JwtAuthGuard, TenantGuard)
   @HttpCode(HttpStatus.OK)
-  checkin(@Body() dto: CheckinDto) {
-    return this.licenseService.checkin(dto);
+  checkin(@Body() dto: CheckinDto, @Req() req: RequestWithUser) {
+    return this.licenseService.checkin(dto, req.user.tenantId, req.user.id);
   }
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Plus, RefreshCw, X, ShieldAlert, CheckCircle, Ban, Edit3, Building2, Trash2, RotateCcw, CreditCard, Calendar, Key, Smartphone } from 'lucide-react';
+import { Plus, RefreshCw, X, ShieldAlert, CheckCircle, Ban, Edit3, Building2, Trash2, RotateCcw, CreditCard, Calendar, Key, Smartphone, Monitor } from 'lucide-react';
 import { api } from '../../api/client';
 import type { Tenant } from '../../types';
 import gsap from 'gsap';
@@ -273,6 +273,20 @@ export default function TenantsPage() {
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
       setError(e.response?.data?.message ?? 'Failed to toggle app access.');
+    }
+  };
+
+  const handleToggleDesktopAccess = async (tenant: Tenant) => {
+    setError('');
+    try {
+      const newVal = !tenant.desktopAccessEnabled;
+      await api.patch(`/tenants/${tenant.id}/desktop-access`, { desktopAccessEnabled: newVal });
+      setTenants((prev) => prev.map((t) => t.id === tenant.id ? { ...t, desktopAccessEnabled: newVal } : t));
+      setSuccessMsg(`Desktop access ${newVal ? 'enabled' : 'disabled'} for ${tenant.name}`);
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setError(e.response?.data?.message ?? 'Failed to toggle desktop access.');
     }
   };
 
@@ -800,6 +814,16 @@ export default function TenantsPage() {
                               : 'text-stitch-on-surface-variant hover:text-green-400 hover:bg-green-500/10'
                           }`}>
                           <Smartphone size={14} className={!t.appAccessEnabled ? 'opacity-50' : ''} />
+                        </button>
+                        <button
+                          onClick={() => handleToggleDesktopAccess(t)}
+                          title={t.desktopAccessEnabled ? 'Disable Desktop Access' : 'Enable Desktop Access'}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            t.desktopAccessEnabled
+                              ? 'text-green-400 hover:text-green-300 hover:bg-green-500/10'
+                              : 'text-stitch-on-surface-variant hover:text-green-400 hover:bg-green-500/10'
+                          }`}>
+                          <Monitor size={14} className={!t.desktopAccessEnabled ? 'opacity-50' : ''} />
                         </button>
                         <button
                           onClick={() => { setResettingPasswordTenant(t); setNewOwnerPassword(''); }}

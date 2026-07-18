@@ -318,6 +318,7 @@ export interface Tenant {
   maxUsers: number;
   onlineSellingEnabled: boolean;
   appAccessEnabled: boolean;
+  desktopAccessEnabled: boolean;
   subscriptionPlanId?: string | null;
   subscriptionStartAt?: string | null;
   subscriptionExpiresAt?: string | null;

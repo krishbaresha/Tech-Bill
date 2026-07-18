@@ -79,15 +79,16 @@ export default function LockOverlay() {
     } catch (e) {
       // ignore
     }
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    if (!isLocalhost && window.location.hostname !== 'techbill.app' && window.location.hostname !== 'test-techbill.vercel.app') {
-      window.history.replaceState(null, '', '?action=logout');
-    }
     clearPin(); // reset lock status
     clearAuth();
-    if (isLocalhost || window.location.hostname === 'techbill.app' || window.location.hostname === 'test-techbill.vercel.app') {
-      navigate('/login', { replace: true });
-    }
+    // Always navigate client-side: this is a same-origin route change
+    // (React Router), never a cross-origin URL, so it's correct regardless
+    // of hostname — the previous hostname allowlist (localhost /
+    // techbill.app / vercel) left every other origin, including a real
+    // tenant subdomain like ali-mobiles.techbill.app and the desktop app's
+    // tauri.localhost, stuck: auth state got cleared but nothing navigated
+    // the user off the locked screen.
+    navigate('/login', { replace: true });
   };
 
   const handleResetSubmit = async (e: React.FormEvent) => {

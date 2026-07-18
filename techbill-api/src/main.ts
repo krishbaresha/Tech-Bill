@@ -4,10 +4,39 @@ import { ValidationPipe } from '@nestjs/common';
 const cookieParser = require('cookie-parser');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const helmet = require('helmet');
+import { appendFileSync } from 'fs';
 import { AppModule } from './app.module';
+import {
+  FileLogger,
+  todaysLogFilePath,
+} from './common/logger/file-logger.service';
+
+/**
+ * Last line of defense: an exception that escapes every try/catch and every
+ * Nest exception filter still needs one line on disk, because by the time
+ * this fires, Nest's own DI/logger may be in whatever state caused the crash
+ * in the first place — this writes directly, with no dependency on anything
+ * else in the app still working.
+ */
+function logFatal(kind: string, error: unknown): void {
+  const line = `[${new Date().toISOString()}] [FATAL] [${kind}] ${
+    error instanceof Error ? `${error.message}\n${error.stack}` : String(error)
+  }\n`;
+  try {
+    appendFileSync(todaysLogFilePath(), line);
+  } catch {
+    // Nothing left to fall back to — the console output below is the floor.
+  }
+  console.error(`[FATAL] [${kind}]`, error);
+}
+
+process.on('uncaughtException', (err) => logFatal('uncaughtException', err));
+process.on('unhandledRejection', (reason) =>
+  logFatal('unhandledRejection', reason),
+);
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { logger: new FileLogger() });
 
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
 
@@ -56,5 +85,6 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT ?? 3000);
   console.log('API is running...');
+  console.log(`Logs are being written to ${todaysLogFilePath()}`);
 }
 void bootstrap();
