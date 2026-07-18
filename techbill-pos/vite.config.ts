@@ -34,6 +34,12 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
+    // Don't watch Rust build output — Cargo rewrites these constantly during
+    // `tauri dev`, and Vite's watcher hitting a mid-write file causes an
+    // EBUSY crash on Windows.
+    watch: {
+      ignored: ['**/src-tauri/**'],
+    },
   },
   build: {
     outDir: 'dist',
