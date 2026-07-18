@@ -27,7 +27,7 @@ export class InventoryService {
 
   async listProducts(tenantId: string) {
     const products = await this.prisma.product.findMany({
-      where: { isActive: true, tenantId },
+      where: { isDeleted: false, tenantId },
       orderBy: { name: 'asc' },
       include: {
         _count: {
@@ -324,6 +324,7 @@ export class InventoryService {
 
     return {
       categories,
+      allProducts: cards,
       lowStock,
       recentlyAdded,
       fastSelling,
@@ -647,13 +648,32 @@ export class InventoryService {
     return updated;
   }
 
-  async softDeleteProduct(id: string, tenantId: string) {
+  async softDeleteProduct(id: string, tenantId: string, hardDeleteUnits = false) {
+    await this.findProductOrThrow(id, tenantId);
+    
+    await this.prisma.$transaction(async (tx) => {
+      if (hardDeleteUnits) {
+        await tx.inventoryUnit.deleteMany({
+          where: { productId: id, tenantId, status: UnitStatus.in_stock }
+        });
+      }
+      
+      await tx.product.update({
+        where: { id },
+        data: hardDeleteUnits ? { isActive: false, isDeleted: true } : { isActive: false },
+      });
+    });
+    
+    return { message: hardDeleteUnits ? 'Product deactivated and in-stock units deleted' : 'Product deactivated' };
+  }
+
+  async activateProduct(id: string, tenantId: string) {
     await this.findProductOrThrow(id, tenantId);
     await this.prisma.product.update({
       where: { id },
-      data: { isActive: false },
+      data: { isActive: true },
     });
-    return { message: 'Product deactivated' };
+    return { message: 'Product activated' };
   }
 
   // ─── Suppliers ───────────────────────────────────────────────────────────────

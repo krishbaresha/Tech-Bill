@@ -115,11 +115,7 @@ export default function PosScreen() {
 
   const allProducts = useMemo<ProductCard[]>(() => {
     if (!dashboard) return [];
-    const map = new Map<string, ProductCard>();
-    [...dashboard.recentlyAdded, ...dashboard.fastSelling, ...dashboard.lowStock].forEach((p) => {
-      if (!map.has(p.id)) map.set(p.id, p);
-    });
-    return Array.from(map.values());
+    return dashboard.allProducts ?? [];
   }, [dashboard]);
 
   useEffect(() => {
@@ -201,7 +197,10 @@ export default function PosScreen() {
   // Memoized handlers passed down to SectionedGrid / ProductGrid
   // to prevent prop-identity churn on every cart state update.
   const handleAddToCart = useCallback(async (p: ProductCard) => {
-    if (p.inStockCount <= 0) return;
+    if (p.inStockCount <= 0) {
+      toast.warning(`Product ${p.name} is out of stock (count: ${p.inStockCount}).`);
+      return;
+    }
     try {
       let units = unitsCacheRef.current[p.id];
       if (!units) {
@@ -226,8 +225,9 @@ export default function PosScreen() {
       } else {
         toast.warning(`No available units for ${p.name} that aren't already in your cart.`);
       }
-    } catch (err) {
-      toast.error(`Failed to auto-add ${p.name}.`);
+    } catch (err: any) {
+      console.error('Add to cart error:', err.response?.data || err);
+      toast.error(`Failed to auto-add ${p.name}: ${err.response?.data?.message || err.message}`);
     }
   }, [toast]);
 
@@ -236,27 +236,25 @@ export default function PosScreen() {
   }, [openUnitPicker]);
 
   const handleProductSelect = useCallback((product: SearchProduct) => {
-    openUnitPicker({
+    const card: ProductCard = {
       id: product.id,
       name: product.name,
       brand: product.brand,
       category: product.category,
       sellingPrice: Number(product.sellingPrice),
-      inStockCount: product.inStockCount ?? 0,
+      inStockCount: product.inStockCount ?? product.stockCount ?? 0,
       soldCount: 0,
       returnedCount: 0,
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    };
+    handleAddToCart(card);
+  }, [handleAddToCart]);
 
   const handleSerialAdd = useCallback(async (serial: string) => {
     try {
       const res = await api.get<any>(
-        `/inventory/units?serialNumber=${encodeURIComponent(serial)}&limit=1`
+        `/inventory/units/lookup/${encodeURIComponent(serial)}`
       );
-      const payload = res.data;
-      const units = Array.isArray(payload) ? payload : payload.data ?? payload.units ?? [];
-      const unit = units[0];
+      const unit = res.data;
 
       if (!unit) {
         toast.error(`Serial number "${serial}" not found in inventory.`);
@@ -270,11 +268,11 @@ export default function PosScreen() {
         addItem({
           serialNumber: unit.serialNumber,
           productId: unit.productId,
-          productName: unit.productName ?? 'Unknown',
-          brand: unit.brand ?? null,
-          sellingPrice: unit.sellingPrice,
+          productName: unit.product?.name ?? 'Unknown',
+          brand: unit.product?.brand ?? null,
+          sellingPrice: unit.sellingPrice ?? unit.product?.sellingPrice ?? 0,
         });
-        toast.success(`Added ${unit.productName ?? 'product'} (${unit.serialNumber}) to cart.`);
+        toast.success(`Added ${unit.product?.name ?? 'product'} (${unit.serialNumber}) to cart.`);
       } else {
         toast.warning(`Serial "${unit.serialNumber}" cannot be sold (status: ${unit.status.replace(/_/g, ' ')}).`);
       }

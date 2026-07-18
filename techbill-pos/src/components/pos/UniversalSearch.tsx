@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, Camera, Package, Barcode, Loader, Tag } from 'lucide-react';
+import { Search, Camera, Package, Barcode, Loader, Tag, Plus } from 'lucide-react';
 
 import BarcodeScanner from './BarcodeScanner';
 import { useInventoryStore } from '../../store/inventory.store';
@@ -18,6 +18,7 @@ export interface SearchProduct {
   category: string | null;
   sellingPrice: number | string;
   inStockCount?: number;
+  stockCount?: number;
   tags?: string[];
   specifications?: Record<string, string> | null;
   shortDescription?: string | null;
@@ -67,6 +68,7 @@ export default function UniversalSearch({
 
   const inputWrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Trigger background sync on mount, but instantly use cached products
   useEffect(() => {
@@ -82,7 +84,12 @@ export default function UniversalSearch({
   // Close on outside click
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      if (inputWrapperRef.current && !inputWrapperRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        inputWrapperRef.current &&
+        !inputWrapperRef.current.contains(target) &&
+        (!dropdownRef.current || !dropdownRef.current.contains(target))
+      ) {
         setOpen(false);
         setSelectedIndex(-1);
       }
@@ -218,7 +225,7 @@ export default function UniversalSearch({
 
   const renderProductRow = (s: ProductSuggestion, absoluteIndex: number) => {
     const isSelected = absoluteIndex === selectedIndex;
-    const stock = s.product.inStockCount ?? 0;
+    const stock = s.product.inStockCount ?? s.product.stockCount ?? 0;
     return (
       <button
         key={s.product.id}
@@ -254,17 +261,24 @@ export default function UniversalSearch({
           <span className="text-xs font-mono text-stitch-tertiary tabular-nums">
             {formatPkr(s.product.sellingPrice)}
           </span>
-          {s.product.inStockCount !== undefined && (
-            <span
-              className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                stock > 0
-                  ? 'bg-emerald-500/15 text-emerald-300'
-                  : 'bg-stitch-error/15 text-stitch-error'
-              }`}
-            >
-              {stock > 0 ? `${stock} in stock` : 'Out'}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {s.product.inStockCount !== undefined && (
+              <span
+                className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                  stock > 0
+                    ? 'bg-emerald-500/15 text-emerald-300'
+                    : 'bg-stitch-error/15 text-stitch-error'
+                }`}
+              >
+                {stock > 0 ? `${stock} in stock` : 'Out'}
+              </span>
+            )}
+            {stock > 0 && (
+              <div className="flex items-center gap-1 bg-stitch-primary text-stitch-on-primary px-2 py-0.5 rounded text-[10px] font-bold shadow-sm transition-transform active:scale-95">
+                <Plus size={10} /> Add
+              </div>
+            )}
+          </div>
         </div>
       </button>
     );
@@ -299,6 +313,7 @@ export default function UniversalSearch({
     open && suggestions.length > 0 && dropdownRect
       ? createPortal(
           <div
+            ref={dropdownRef}
             className="glass-modal rounded-lg border border-white/10 shadow-2xl overflow-hidden"
             style={{
               position: 'fixed',

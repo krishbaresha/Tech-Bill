@@ -299,6 +299,7 @@ model Product {
   comparePrice     Decimal? @map("compare_price") @db.Decimal(10, 2)
   warrantyMonths   Int      @default(0) @map("warranty_months")
   isActive         Boolean  @default(true) @map("is_active")
+  isDeleted        Boolean  @default(false) @map("is_deleted")
   createdById      String?  @map("created_by_id") @db.Uuid
   createdBy        User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
   tenantId         String   @map("tenant_id") @db.Uuid

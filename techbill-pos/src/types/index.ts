@@ -75,6 +75,7 @@ export interface ProductCard {
 
 export interface DashboardData {
   categories: string[];
+  allProducts: ProductCard[];
   lowStock: ProductCard[];
   recentlyAdded: ProductCard[];
   fastSelling: ProductCard[];
