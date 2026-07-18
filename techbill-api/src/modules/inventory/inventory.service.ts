@@ -92,7 +92,7 @@ export class InventoryService {
       }),
       // 6. Total active products
       this.prisma.product.count({
-        where: { tenantId, isActive: true },
+        where: { tenantId, isActive: true, isDeleted: false },
       }),
       // 7. Per-product in-stock counts — O(products), never O(units)
       this.prisma.inventoryUnit.groupBy({
@@ -128,7 +128,7 @@ export class InventoryService {
     //    Need all active product IDs to detect products with 0 in-stock units
     const allActiveProductIds = (
       await this.prisma.product.findMany({
-        where: { tenantId, isActive: true },
+        where: { tenantId, isActive: true, isDeleted: false },
         select: { id: true },
       })
     ).map((p) => p.id);
@@ -173,7 +173,7 @@ export class InventoryService {
 
   async listCategories(tenantId: string): Promise<string[]> {
     const rows = await this.prisma.product.findMany({
-      where: { tenantId, isActive: true, category: { not: null } },
+      where: { tenantId, isActive: true, isDeleted: false, category: { not: null } },
       select: { category: true },
       distinct: ['category'],
       orderBy: { category: 'asc' },
@@ -191,7 +191,7 @@ export class InventoryService {
 
     // 2. Fetch all active products
     const products = await this.prisma.product.findMany({
-      where: { tenantId, isActive: true },
+      where: { tenantId, isActive: true, isDeleted: false },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -671,7 +671,7 @@ export class InventoryService {
     await this.findProductOrThrow(id, tenantId);
     await this.prisma.product.update({
       where: { id },
-      data: { isActive: true },
+      data: { isActive: true, isDeleted: false },
     });
     return { message: 'Product activated' };
   }
