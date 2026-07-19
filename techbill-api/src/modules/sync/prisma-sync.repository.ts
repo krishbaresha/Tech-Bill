@@ -203,14 +203,26 @@ export class PrismaSyncRepository implements SyncRepository {
   // ─── Mapping helpers ────────────────────────────────────────────────────────
 
   private toSyncedRow(table: SyncedTable, row: any, meta: any): SyncedRow {
+    const updatedAtServer: Date =
+      meta?.updatedAt ?? row.updatedAt ?? row.createdAt;
+    const data = this.toWireData(table, row);
+    // The wire contract (and the service's LWW conflict check) treats
+    // `updated_at` as present on every row, but only credit_records has an
+    // updatedAt column for toWireData to read — the other six models have
+    // none, so every UPDATE push for them used to die in timestampOf() with
+    // "stored row has no updated_at". The server's own last-write time is
+    // the truthful stand-in.
+    if (data.updated_at === undefined && updatedAtServer) {
+      data.updated_at = updatedAtServer.toISOString();
+    }
     return {
       id: row.id,
       tenantId: row.tenantId,
       table,
       clientRowId: meta?.clientRowId ?? null,
-      data: this.toWireData(table, row),
+      data,
       seq: meta ? Number(meta.seq) : 0,
-      updatedAtServer: meta?.updatedAt ?? row.updatedAt ?? row.createdAt,
+      updatedAtServer,
     };
   }
 

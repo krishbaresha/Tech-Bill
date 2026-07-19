@@ -43,7 +43,9 @@ export const TABLE_FOREIGN_KEYS: Record<SyncedTable, [string, SyncedTable][]> =
 
 /** One synced row as the server holds it. `data` is the domain columns with
  *  FK values already in server-id space; `seq` is the tenant-scoped change
- *  counter the pull cursor walks. */
+ *  counter the pull cursor walks. Repositories must guarantee `data` carries
+ *  an `updated_at` on every row (the LWW conflict check reads it): when the
+ *  domain model has no such column, substitute the server's last-write time. */
 export interface SyncedRow {
   id: string;
   tenantId: string;
