@@ -193,7 +193,6 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: 
     }
   };
 
-  const selectedSizeLabel = PAGE_SIZES.find(p => p.value === pageSize)?.label ?? 'A4';
 
   return (
     <>
