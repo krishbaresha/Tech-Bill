@@ -1,6 +1,7 @@
-import { X, Printer, Plus, Download } from 'lucide-react';
+import { X, Printer, Plus, Download, ChevronDown, Loader2 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { QRCodeSVG } from 'qrcode.react';
+import { useState, useRef } from 'react';
 import type { Sale, ShopSettings } from '../../types';
 import { useAuthStore } from '../../store/auth.store';
 import { useFeatureGate } from '../../hooks/useFeatureGate';
@@ -12,6 +13,15 @@ interface InvoiceModalProps {
   onClose: () => void;
 }
 
+type PageSize = 'A4' | 'A5' | 'A3' | 'invoice';
+
+const PAGE_SIZES: { label: string; value: PageSize; mmW: number; mmH: number | 'auto' }[] = [
+  { label: 'A4',      value: 'A4',      mmW: 210, mmH: 297 },
+  { label: 'A5',      value: 'A5',      mmW: 148, mmH: 210 },
+  { label: 'A3',      value: 'A3',      mmW: 297, mmH: 420 },
+  { label: 'Invoice', value: 'invoice', mmW: 80,  mmH: 'auto' },
+];
+
 const PAYMENT_LABELS: Record<string, string> = {
   cash: 'Cash',
   easypaisa: 'Easypaisa',
@@ -20,24 +30,24 @@ const PAYMENT_LABELS: Record<string, string> = {
   bank_transfer: 'Bank Transfer',
 };
 
-const PAYMENT_BADGE_CLASSES: Record<string, string> = {
-  cash: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30',
-  easypaisa: 'bg-green-500/15 text-green-300 border-green-400/30',
-  jazzcash: 'bg-orange-500/15 text-orange-300 border-orange-400/30',
-  card: 'bg-blue-500/15 text-blue-300 border-blue-400/30',
-  bank_transfer: 'bg-purple-500/15 text-purple-300 border-purple-400/30',
+const PAYMENT_BADGE_STYLES: Record<string, { background: string; color: string; border: string }> = {
+  cash:          { background: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
+  easypaisa:     { background: '#f0fdf4', color: '#166534', border: '#86efac' },
+  jazzcash:      { background: '#fff7ed', color: '#c2410c', border: '#fed7aa' },
+  card:          { background: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
+  bank_transfer: { background: '#faf5ff', color: '#7e22ce', border: '#e9d5ff' },
 };
 
 function formatCurrency(value: number): string {
-  return `₨ ${Number(value).toLocaleString('en-PK')}`;
+  return `Rs. ${Number(value).toLocaleString('en-PK')}`;
 }
 
 function getPaymentLabel(method: string): string {
   return PAYMENT_LABELS[method] ?? method.replace(/_/g, ' ');
 }
 
-function getPaymentBadgeClass(method: string): string {
-  return PAYMENT_BADGE_CLASSES[method] ?? 'bg-white/10 text-white/70 border-white/20';
+function getPaymentBadgeStyle(method: string) {
+  return PAYMENT_BADGE_STYLES[method] ?? { background: '#f9fafb', color: '#374151', border: '#e5e7eb' };
 }
 
 function getWarrantyText(warrantyDays: number, saleDate: Date): string {
@@ -55,13 +65,16 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: 
   const { limits } = useFeatureGate();
   const isAdvanced = limits.qrInvoices;
 
-  const accentColor = isAdvanced ? (shopSettings?.invoiceAccentColor ?? '#14b8a6') : '#ffffff';
-  const primaryColor = isAdvanced ? (shopSettings?.invoicePrimaryColor ?? '#ffffff') : '#ffffff';
+  const accentColor = isAdvanced ? (shopSettings?.invoiceAccentColor ?? '#0f766e') : '#0f766e';
   const fontFamily = isAdvanced ? (shopSettings?.invoiceFontFamily ?? 'Inter') : 'system-ui, sans-serif';
   const footerNotes = shopSettings?.invoiceFooterNotes ?? null;
   const showWatermark = isAdvanced ? (shopSettings?.invoiceShowWatermark ?? false) : false;
   const watermarkText = isAdvanced ? (shopSettings?.invoiceWatermarkText ?? '') : '';
   const logoUrl = isAdvanced ? (shopSettings?.logoUrl ?? null) : null;
+
+  const [pageSize, setPageSize] = useState<PageSize>('A4');
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const invoiceRef = useRef<HTMLDivElement>(null);
 
   const subtotal = sale.items.reduce((s, i) => s + Number(i.sellingPrice), 0);
   const discount = Number(sale.discountAmount);
@@ -72,7 +85,6 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: 
   const isSaleVoided = sale.status === 'voided' || sale.shippingStatus === 'returned';
   const hasReturns = (sale.returns && sale.returns.length > 0) || sale.status === 'partial_return';
 
-  // Secure UUID-based URL â€” no sequential IDs, prevents IDOR attacks
   const publicInvoiceUrl = `${window.location.origin}/public/invoice/${sale.id}`;
 
   const handlePrint = (): void => {
@@ -80,82 +92,180 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: 
   };
 
   const handleDownloadPDF = async (): Promise<void> => {
-    const element = document.getElementById('invoice-print-area');
-    if (!element) return;
+    const element = invoiceRef.current;
+    if (!element || pdfLoading) return;
 
-    // Calculate the actual height of the element in millimeters
-    const pxToMm = 25.4 / 96; // 1 pixel = 25.4 mm / 96 DPI
-    const elementHeightMm = element.scrollHeight * pxToMm;
-    const pageHeight = Math.max(200, elementHeightMm);
+    setPdfLoading(true);
 
-    const opt = {
-      margin: 0,
-      filename: `Receipt_${sale.invoiceNumber}.pdf`,
-      image: { type: 'jpeg' as const, quality: 1 },
-      html2canvas: { scale: 3, useCORS: true, backgroundColor: '#09090b' },
-      jsPDF: { unit: 'mm', format: [80, pageHeight] as [number, number], orientation: 'portrait' as const }
-    };
+    // Use a wrapper so html2canvas can measure correctly
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = `
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      overflow: visible;
+      pointer-events: none;
+    `;
+    document.body.appendChild(wrapper);
 
-    // Lazy-loaded: html2pdf.js is ~1MB, so we only fetch it when the user
-    // actually clicks "Download PDF" instead of on every invoice-modal open.
-    const { default: html2pdf } = await import('html2pdf.js');
-    html2pdf().set(opt).from(element).save();
+    let clone: HTMLElement | null = null;
+    try {
+      const selected = PAGE_SIZES.find(p => p.value === pageSize) ?? PAGE_SIZES[0];
+      const widthPx = Math.round(selected.mmW * (96 / 25.4)); // mm → px at 96dpi
+
+      // Clone AFTER wrapper is in DOM so getComputedStyle works on original
+      clone = element.cloneNode(true) as HTMLElement;
+      clone.style.cssText = `
+        width: ${widthPx}px;
+        background: #ffffff;
+        color: #111111;
+        font-family: ${fontFamily}, system-ui, sans-serif;
+        box-sizing: border-box;
+        overflow: visible;
+        border-radius: 0;
+        box-shadow: none;
+        margin: 0;
+        padding: 0;
+      `;
+      wrapper.appendChild(clone);
+
+      // NOW the clone is in the DOM — getComputedStyle will return real values
+      const allEls = clone.querySelectorAll<HTMLElement>('*');
+      allEls.forEach(el => {
+        const cs = window.getComputedStyle(el);
+        const bg = cs.backgroundColor;
+        if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
+          el.style.backgroundColor = bg;
+        }
+        const color = cs.color;
+        if (color) el.style.color = color;
+        el.style.borderColor = cs.borderColor;
+      });
+
+      // Measure actual rendered height AFTER styles applied
+      const cloneHeightMm = clone.scrollHeight * (25.4 / 96);
+
+      let pdfFormat: [number, number] | string;
+      if (selected.mmH === 'auto') {
+        pdfFormat = [selected.mmW, Math.max(80, cloneHeightMm)];
+      } else if (selected.mmH < cloneHeightMm) {
+        // Content taller than selected page — expand to fit content on one page
+        pdfFormat = [selected.mmW, cloneHeightMm];
+      } else {
+        pdfFormat = [selected.mmW, selected.mmH];
+      }
+
+      const opt = {
+        margin: 0,
+        filename: `Invoice_${sale.invoiceNumber}.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.92 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          width: widthPx,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: widthPx,
+          onclone: (_doc: Document, clonedEl: HTMLElement) => {
+            // Ensure the cloned element is fully visible to html2canvas
+            clonedEl.style.position = 'static';
+            clonedEl.style.left = '0';
+            clonedEl.style.top = '0';
+          },
+        },
+        jsPDF: {
+          unit: 'mm',
+          format: pdfFormat,
+          orientation: 'portrait' as const,
+          compress: true,
+        },
+      };
+
+      const { default: html2pdf } = await import('html2pdf.js');
+      await html2pdf().set(opt).from(clone).save();
+    } finally {
+      if (wrapper && wrapper.parentNode) {
+        document.body.removeChild(wrapper);
+      }
+      setPdfLoading(false);
+    }
   };
+
 
   return (
     <>
       <style>{`
         @media print {
           @page {
-            size: 80mm auto;
-            margin: 0;
+            size: ${pageSize === 'invoice' ? '80mm auto' : pageSize};
+            margin: ${pageSize === 'invoice' ? '0' : '10mm'};
           }
           body * { visibility: hidden !important; }
           #invoice-print-area, #invoice-print-area * { visibility: visible !important; }
           #invoice-print-area {
             position: fixed !important;
             left: 0; top: 0;
-            width: 80mm !important;
+            width: ${pageSize === 'invoice' ? '80mm' : '100%'} !important;
             background: #ffffff !important;
-            color: #000000 !important;
-            padding: 8mm 6mm !important;
-            font-size: 10pt !important;
+            color: #111111 !important;
+            padding: ${pageSize === 'invoice' ? '6mm 5mm' : '0'} !important;
+            font-family: ${fontFamily}, system-ui, sans-serif !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+          }
+          #invoice-print-area * {
+            color: inherit !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-          #invoice-print-area * {
-            color: #000000 !important;
-            border-color: #cccccc !important;
-            background: transparent !important;
-          }
-          #invoice-print-area .print-total { font-size: 13pt !important; font-weight: bold !important; }
           .no-print { display: none !important; }
         }
       `}</style>
 
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-        <div className="w-full max-w-[480px] max-h-[94vh] flex flex-col bg-zinc-900/95 border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+        <div className="w-full max-w-[520px] max-h-[94vh] flex flex-col bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden">
 
-          <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/5 shrink-0 no-print">
-            <p className="text-[11px] uppercase tracking-[0.22em] text-white/40">Receipt</p>
+          {/* Toolbar */}
+          <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 shrink-0 no-print bg-gray-50">
+            <p className="text-[11px] uppercase tracking-[0.22em] text-gray-400 font-medium">Invoice</p>
             <div className="flex items-center gap-1.5">
+
+              {/* Page Size Selector */}
+              <div className="relative">
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(e.target.value as PageSize)}
+                  className="appearance-none bg-transparent outline-none flex items-center gap-1 pl-2.5 pr-6 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 border border-gray-200 hover:border-gray-300 hover:bg-white rounded-lg transition-all cursor-pointer"
+                >
+                  {PAGE_SIZES.map(ps => (
+                    <option key={ps.value} value={ps.value}>{ps.label}</option>
+                  ))}
+                </select>
+                <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500" />
+              </div>
+
               <button
                 onClick={handleDownloadPDF}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white/80 hover:text-white border border-white/10 hover:border-white/25 hover:bg-white/5 rounded-lg transition-all"
+                disabled={pdfLoading}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 border border-gray-200 hover:border-gray-300 hover:bg-white rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <Download size={13} />
-                PDF
+                {pdfLoading ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+                {pdfLoading ? 'Generating...' : 'PDF'}
               </button>
               <button
                 onClick={handlePrint}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white/80 hover:text-white border border-white/10 hover:border-white/25 hover:bg-white/5 rounded-lg transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 border border-gray-200 hover:border-gray-300 hover:bg-white rounded-lg transition-all"
               >
                 <Printer size={13} />
                 Print
               </button>
               <button
                 onClick={onClose}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-900 bg-white hover:bg-white/90 rounded-lg transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-all"
               >
                 <Plus size={13} />
                 New Sale
@@ -163,28 +273,27 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: 
               <button
                 onClick={onClose}
                 aria-label="Close"
-                className="ml-1 p-1.5 text-white/50 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+                className="ml-1 p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all"
               >
                 <X size={16} />
               </button>
             </div>
           </div>
 
+          {/* Invoice Body */}
           <div className="overflow-auto flex-1">
             <div
               id="invoice-print-area"
-              className="relative bg-zinc-950 text-white"
-              style={{
-                fontFamily: `${fontFamily}, system-ui, sans-serif`,
-                backgroundImage: 'linear-gradient(to bottom, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0) 30%)',
-              }}
+              ref={invoiceRef}
+              className="relative bg-white text-gray-900"
+              style={{ fontFamily: `${fontFamily}, system-ui, sans-serif` }}
             >
               {/* Watermark */}
               {isSaleVoided ? (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden z-0">
                   <span
-                    className="text-6xl font-black uppercase whitespace-nowrap opacity-[0.15]"
-                    style={{ transform: 'rotate(-30deg)', color: '#ef4444' }}
+                    className="text-6xl font-black uppercase whitespace-nowrap"
+                    style={{ transform: 'rotate(-30deg)', color: '#ef4444', opacity: 0.08 }}
                   >
                     {sale.status === 'voided' ? 'VOID' : 'RETURNED'}
                   </span>
@@ -192,8 +301,8 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: 
               ) : hasReturns ? (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden z-0">
                   <span
-                    className="text-6xl font-black uppercase whitespace-nowrap opacity-[0.15]"
-                    style={{ transform: 'rotate(-30deg)', color: '#ef4444' }}
+                    className="text-6xl font-black uppercase whitespace-nowrap"
+                    style={{ transform: 'rotate(-30deg)', color: '#ef4444', opacity: 0.08 }}
                   >
                     PARTIAL RETURN
                   </span>
@@ -201,74 +310,71 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: 
               ) : (showWatermark && watermarkText) ? (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden z-0">
                   <span
-                    className="text-6xl font-black uppercase whitespace-nowrap opacity-[0.04]"
-                    style={{ transform: 'rotate(-30deg)', color: primaryColor }}
+                    className="text-6xl font-black uppercase whitespace-nowrap"
+                    style={{ transform: 'rotate(-30deg)', color: '#000000', opacity: 0.04 }}
                   >
                     {watermarkText}
                   </span>
                 </div>
               ) : null}
 
-              <div className="px-7 pt-7 pb-5 relative z-10">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
+              {/* Header */}
+              <div style={{ padding: '28px 28px 20px', borderBottom: '1px solid #f3f4f6', position: 'relative', zIndex: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     {logoUrl && (
                       <img
                         src={logoUrl}
                         alt={resolvedShopName}
-                        className="h-10 w-auto object-contain rounded"
+                        style={{ height: '40px', width: 'auto', objectFit: 'contain', borderRadius: '4px' }}
                         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                       />
                     )}
                     <div>
-                      <h2 className="text-xl font-medium tracking-tight leading-tight" style={{ color: primaryColor }}>
+                      <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#111827', margin: 0, lineHeight: 1.3 }}>
                         {resolvedShopName}
                       </h2>
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-white/40 mt-1.5">
-                        Tax Invoice · <span className="font-mono normal-case tracking-normal text-white/60">{sale.invoiceNumber}</span>
+                      <p style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.18em', color: '#9ca3af', marginTop: '6px' }}>
+                        Invoice · <span style={{ fontFamily: 'monospace', textTransform: 'none', letterSpacing: 'normal', color: '#4b5563' }}>{sale.invoiceNumber}</span>
                       </p>
                     </div>
                   </div>
                   {isAdvanced && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold tracking-wide bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 rounded-full">
-                      <span className="text-[11px] leading-none">✓</span> VERIFIED
+                    <span style={{ display: 'inline-block', verticalAlign: 'middle', lineHeight: '14px', textAlign: 'center', padding: '2px 8px', fontSize: '10px', fontWeight: 600, letterSpacing: '0.05em', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '9999px' }}>
+                      ✓ VERIFIED
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-white/50 mt-3 tabular-nums">
+                <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '10px' }}>
                   {format(saleDate, 'dd MMM yyyy, h:mm a')}
                 </p>
               </div>
 
-              <div className="h-px bg-white/10 mx-7" />
-
-              <div className="px-7 py-5">
-                <p className="text-[10px] uppercase tracking-[0.22em] text-white/40 mb-3">Sold To</p>
-                <div className="space-y-1.5 text-sm">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span className="text-white font-medium">
-                      {sale.customer?.name ?? 'Walk-in Customer'}
-                    </span>
-                    {!sale.customer && (
-                      <span className="text-[10px] uppercase tracking-wider text-white/40">Walk-in</span>
-                    )}
-                  </div>
-                  {sale.customer?.phone && (
-                    <p className="text-white/60 font-mono text-xs">{sale.customer.phone}</p>
-                  )}
-                  {sale.soldBy?.name && (
-                    <p className="text-white/50 text-xs pt-1">
-                      Cashier • <span className="text-white/70">{sale.soldBy.name}</span>
-                    </p>
+              {/* Sold To */}
+              <div style={{ padding: '18px 28px', borderBottom: '1px solid #f3f4f6', position: 'relative', zIndex: 10 }}>
+                <p style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.22em', color: '#9ca3af', marginBottom: '10px' }}>Sold To</p>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 500, color: '#111827' }}>
+                    {sale.customer?.name ?? 'Walk-in Customer'}
+                  </span>
+                  {!sale.customer && (
+                    <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#9ca3af' }}>Walk-in</span>
                   )}
                 </div>
+                {sale.customer?.phone && (
+                  <p style={{ fontSize: '12px', fontFamily: 'monospace', color: '#6b7280', marginTop: '4px' }}>{sale.customer.phone}</p>
+                )}
+                {sale.soldBy?.name && (
+                  <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '6px' }}>
+                    Cashier · <span style={{ color: '#4b5563' }}>{sale.soldBy.name}</span>
+                  </p>
+                )}
               </div>
 
-              <div className="h-px bg-white/10 mx-7" />
-
-              <div className="px-7 py-5">
-                <p className="text-[10px] uppercase tracking-[0.22em] text-white/40 mb-4">Items</p>
-                <div className="space-y-4">
+              {/* Items */}
+              <div style={{ padding: '18px 28px', borderBottom: '1px solid #f3f4f6', position: 'relative', zIndex: 10 }}>
+                <p style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.22em', color: '#9ca3af', marginBottom: '14px' }}>Items</p>
+                <div>
                   {sale.items.map((item, idx) => {
                     const product = item.inventoryUnit?.product;
                     const serial = item.inventoryUnit?.serialNumber;
@@ -276,35 +382,35 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: 
                     const isItemReturned = isSaleVoided || returnedUnitIds.has(item.inventoryUnit?.id);
                     const warrantyText = isItemReturned ? '' : getWarrantyText(wDays, saleDate);
                     return (
-                      <div key={item.id ?? idx} className="space-y-1">
-                        <div className="flex items-baseline justify-between gap-3">
-                          <p className="text-sm text-white font-medium leading-snug">
+                      <div key={item.id ?? idx} style={{ marginBottom: idx < sale.items.length - 1 ? '14px' : 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px' }}>
+                          <p style={{ fontSize: '14px', fontWeight: 500, color: '#111827', margin: 0, lineHeight: 1.4 }}>
                             {product?.name ?? 'Item'}
                           </p>
-                          <p className="text-sm text-white tabular-nums whitespace-nowrap font-medium">
+                          <p style={{ fontSize: '14px', fontWeight: 600, color: '#111827', margin: 0, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
                             {formatCurrency(item.sellingPrice)}
                           </p>
                         </div>
                         {product?.brand && (
-                          <p className="text-[11px] text-white/45">{product.brand}</p>
+                          <p style={{ fontSize: '11px', color: '#9ca3af', margin: '2px 0 0' }}>{product.brand}</p>
                         )}
                         {serial && (
-                          <div className="flex items-center gap-2">
-                            <p className="text-[11px] font-mono" style={{ color: accentColor, opacity: 0.8 }}>
-                              SN • {serial}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '3px' }}>
+                            <p style={{ fontSize: '11px', fontFamily: 'monospace', color: accentColor, margin: 0 }}>
+                              SN · {serial}
                             </p>
                             {isItemReturned && (
-                              <span className="text-[9px] font-bold text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded uppercase">Returned</span>
+                              <span style={{ fontSize: '9px', fontWeight: 700, color: '#dc2626', background: '#fef2f2', padding: '2px 6px', borderRadius: '4px', border: '1px solid #fecaca', textTransform: 'uppercase' }}>Returned</span>
                             )}
                           </div>
                         )}
                         {warrantyText && (
-                          <p className="text-[10px] text-white/35">
+                          <p style={{ fontSize: '10px', color: '#9ca3af', margin: '3px 0 0' }}>
                             Warranty: {warrantyText}
                           </p>
                         )}
                         {idx < sale.items.length - 1 && (
-                          <div className="h-px bg-white/5 mt-4" />
+                          <div style={{ height: '1px', background: '#f3f4f6', marginTop: '14px' }} />
                         )}
                       </div>
                     );
@@ -312,82 +418,86 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: 
                 </div>
               </div>
 
-              <div className="h-px bg-white/10 mx-7" />
-
-              <div className="px-7 py-5 space-y-2">
-                <div className="flex items-baseline justify-between text-sm">
-                  <span className="text-white/55">Subtotal</span>
-                  <span className="text-white/80 tabular-nums">{formatCurrency(subtotal)}</span>
+              {/* Totals */}
+              <div style={{ padding: '18px 28px', position: 'relative', zIndex: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '6px' }}>
+                  <span style={{ color: '#6b7280' }}>Subtotal</span>
+                  <span style={{ color: '#374151', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(subtotal)}</span>
                 </div>
                 {discount > 0 && (
-                  <div className="flex items-baseline justify-between text-sm">
-                    <span className="text-white/55">Discount</span>
-                    <span className="text-rose-300 tabular-nums">− {formatCurrency(discount)}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '6px' }}>
+                    <span style={{ color: '#6b7280' }}>Discount</span>
+                    <span style={{ color: '#dc2626', fontVariantNumeric: 'tabular-nums' }}>− {formatCurrency(discount)}</span>
                   </div>
                 )}
                 {Number(sale.additionalCharges) > 0 && (
-                  <div className="flex items-baseline justify-between text-sm">
-                    <span className="text-white/55">Additional Charges</span>
-                    <span className="text-emerald-300 tabular-nums">+ {formatCurrency(Number(sale.additionalCharges))}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '6px' }}>
+                    <span style={{ color: '#6b7280' }}>Additional Charges</span>
+                    <span style={{ color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>+ {formatCurrency(Number(sale.additionalCharges))}</span>
                   </div>
                 )}
                 {sale.description && (
-                  <div className="text-xs text-white/40 mt-1 italic">
+                  <p style={{ fontSize: '12px', color: '#9ca3af', fontStyle: 'italic', marginTop: '4px' }}>
                     Note: {sale.description}
-                  </div>
+                  </p>
                 )}
-                <div className="h-px bg-white/15 my-3" />
-                <div className="flex items-baseline justify-between">
-                  <span className="text-[11px] uppercase tracking-[0.22em] text-white/50">Total</span>
-                  <span className="text-2xl font-medium text-white tabular-nums tracking-tight print-total">
+                <div style={{ height: '1px', background: '#e5e7eb', margin: '12px 0' }} />
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.22em', color: '#6b7280' }}>Total</span>
+                  <span style={{ fontSize: '22px', fontWeight: 700, color: '#111827', fontVariantNumeric: 'tabular-nums' }}>
                     {formatCurrency(total)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between pt-3">
-                  <span className="text-xs text-white/50">Payment</span>
-                  <span
-                    className={`inline-flex items-center px-2.5 py-0.5 text-[10px] font-semibold tracking-wider uppercase border rounded-full ${getPaymentBadgeClass(sale.paymentMethod)}`}
-                  >
-                    {getPaymentLabel(sale.paymentMethod)}
-                  </span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px' }}>
+                  <span style={{ fontSize: '12px', color: '#6b7280' }}>Payment</span>
+                   {(() => {
+                    const badge = getPaymentBadgeStyle(sale.paymentMethod);
+                    return (
+                      <span style={{ display: 'inline-block', verticalAlign: 'middle', lineHeight: '14px', textAlign: 'center', padding: '2px 10px', fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', background: badge.background, color: badge.color, border: `1px solid ${badge.border}`, borderRadius: '9999px' }}>
+                        {getPaymentLabel(sale.paymentMethod)}
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
 
-              <div className="h-px bg-white/10 mx-7" />
+              <div style={{ height: '1px', background: '#f3f4f6', margin: '0 28px' }} />
 
-              {/* Real QR Code or Basic Receipt Footer */}
-              <div className="px-7 py-7 flex flex-col items-center gap-4">
+              {/* QR / Footer */}
+              <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', position: 'relative', zIndex: 10 }}>
                 {isAdvanced ? (
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="p-3 bg-white rounded-xl">
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                    {/* QR code rendered at exact pixel size — no scaling artifacts */}
+                    <div style={{ padding: '10px', background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '10px' }}>
                       <QRCodeSVG
                         value={publicInvoiceUrl}
-                        size={96}
-                        level="H"
-                        fgColor="#000000"
+                        size={80}
+                        level="M"
+                        fgColor="#111111"
                         bgColor="#ffffff"
                       />
                     </div>
-                    <div className="text-center">
-                      <p className="text-[10px] uppercase tracking-[0.18em] text-white/40">Scan to verify</p>
-                      <p className="font-mono text-xs text-white/80 mt-1">{sale.invoiceNumber}</p>
+                    <div style={{ textAlign: 'center' }}>
+                      <p style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.18em', color: '#9ca3af' }}>Scan to verify</p>
+                      <p style={{ fontFamily: 'monospace', fontSize: '12px', color: '#4b5563', marginTop: '4px' }}>{sale.invoiceNumber}</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center">
-                    <p className="font-mono text-xs text-white/50 mt-1">Receipt Ref • {sale.invoiceNumber}</p>
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{ fontFamily: 'monospace', fontSize: '12px', color: '#9ca3af' }}>Receipt Ref · {sale.invoiceNumber}</p>
                   </div>
                 )}
-                <div className="text-center pt-2 space-y-1">
-                  <p className="text-sm text-white/80">Thank you for your purchase</p>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ fontSize: '13px', color: '#374151' }}>Thank you for your purchase</p>
                   {footerNotes && (
-                    <p className="text-xs text-white/50 max-w-xs mx-auto mt-2 leading-relaxed">{footerNotes}</p>
+                    <p style={{ fontSize: '12px', color: '#9ca3af', maxWidth: '280px', margin: '6px auto 0', lineHeight: 1.6 }}>{footerNotes}</p>
                   )}
-                  <p className="text-[10px] uppercase tracking-[0.22em] text-white/35 mt-1">
-                    {resolvedShopName} • TechBill POS
+                  <p style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.22em', color: '#d1d5db', marginTop: '6px' }}>
+                    {resolvedShopName}
                   </p>
                 </div>
               </div>
+
             </div>
           </div>
         </div>
