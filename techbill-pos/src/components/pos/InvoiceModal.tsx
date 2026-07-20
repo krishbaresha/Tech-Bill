@@ -106,7 +106,7 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: 
     }
 
     const opt = {
-      margin: selected.value === 'invoice' ? 0 : [8, 10, 8, 10],
+      margin: (selected.value === 'invoice' ? 0 : [8, 10, 8, 10] as [number, number, number, number]),
       filename: `Invoice_${sale.invoiceNumber}.pdf`,
       image: { type: 'jpeg' as const, quality: 1 },
       html2canvas: { scale: 3, useCORS: true, backgroundColor: '#ffffff' },
