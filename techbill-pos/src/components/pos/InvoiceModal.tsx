@@ -73,12 +73,8 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: 
   const logoUrl = isAdvanced ? (shopSettings?.logoUrl ?? null) : null;
 
   const [pageSize, setPageSize] = useState<PageSize>('A4');
-  const [showSizeMenu, setShowSizeMenu] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const invoiceRef = useRef<HTMLDivElement>(null);
-  const sizeMenuRef = useRef<HTMLDivElement>(null);
-
-  const handleSizeMenuToggle = () => setShowSizeMenu(v => !v);
 
   const subtotal = sale.items.reduce((s, i) => s + Number(i.sellingPrice), 0);
   const discount = Number(sale.discountAmount);
@@ -100,8 +96,6 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: 
     if (!element || pdfLoading) return;
 
     setPdfLoading(true);
-    // Hide size menu while generating
-    setShowSizeMenu(false);
 
     // Use a wrapper so html2canvas can measure correctly
     const wrapper = document.createElement('div');
@@ -242,42 +236,17 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: 
             <div className="flex items-center gap-1.5">
 
               {/* Page Size Selector */}
-              <div className="relative" ref={sizeMenuRef}>
-                <button
-                  onClick={handleSizeMenuToggle}
-                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 border border-gray-200 hover:border-gray-300 hover:bg-white rounded-lg transition-all"
+              <div className="relative">
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(e.target.value as PageSize)}
+                  className="appearance-none bg-transparent outline-none flex items-center gap-1 pl-2.5 pr-6 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 border border-gray-200 hover:border-gray-300 hover:bg-white rounded-lg transition-all cursor-pointer"
                 >
-                  {selectedSizeLabel}
-                  <ChevronDown size={11} className={`transition-transform ${showSizeMenu ? 'rotate-180' : ''}`} />
-                </button>
-                {showSizeMenu && (
-                  <>
-                    {/* Backdrop to close on outside click */}
-                    <div
-                      className="fixed inset-0 z-[9]"
-                      onClick={() => setShowSizeMenu(false)}
-                    />
-                    <div className="absolute right-0 mt-1 w-28 bg-white border border-gray-200 rounded-xl shadow-lg z-10 py-1 overflow-hidden">
-                      {PAGE_SIZES.map(ps => (
-                        <button
-                          key={ps.value}
-                          onMouseDown={(e) => {
-                            e.preventDefault(); // prevent backdrop from firing first
-                            setPageSize(ps.value);
-                            setShowSizeMenu(false);
-                          }}
-                          className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
-                            pageSize === ps.value
-                              ? 'bg-teal-50 text-teal-700 font-semibold'
-                              : 'text-gray-700 hover:bg-gray-50'
-                          }`}
-                        >
-                          {ps.label}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
+                  {PAGE_SIZES.map(ps => (
+                    <option key={ps.value} value={ps.value}>{ps.label}</option>
+                  ))}
+                </select>
+                <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500" />
               </div>
 
               <button
@@ -372,7 +341,7 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: 
                     </div>
                   </div>
                   {isAdvanced && (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', fontSize: '10px', fontWeight: 600, letterSpacing: '0.05em', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '9999px' }}>
+                    <span style={{ display: 'inline-block', verticalAlign: 'middle', lineHeight: '14px', textAlign: 'center', padding: '2px 8px', fontSize: '10px', fontWeight: 600, letterSpacing: '0.05em', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '9999px' }}>
                       ✓ VERIFIED
                     </span>
                   )}
@@ -482,10 +451,10 @@ export default function InvoiceModal({ sale, shopSettings, shopName, onClose }: 
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px' }}>
                   <span style={{ fontSize: '12px', color: '#6b7280' }}>Payment</span>
-                  {(() => {
+                   {(() => {
                     const badge = getPaymentBadgeStyle(sale.paymentMethod);
                     return (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 10px', fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', background: badge.background, color: badge.color, border: `1px solid ${badge.border}`, borderRadius: '9999px' }}>
+                      <span style={{ display: 'inline-block', verticalAlign: 'middle', lineHeight: '14px', textAlign: 'center', padding: '2px 10px', fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', background: badge.background, color: badge.color, border: `1px solid ${badge.border}`, borderRadius: '9999px' }}>
                         {getPaymentLabel(sale.paymentMethod)}
                       </span>
                     );
