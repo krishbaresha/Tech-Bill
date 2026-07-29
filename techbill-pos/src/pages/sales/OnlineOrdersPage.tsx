@@ -131,9 +131,9 @@ export default function OnlineOrdersPage() {
   );
 
   return (
-    <div className="flex flex-col h-full overflow-hidden p-6 gap-6 max-w-7xl mx-auto w-full">
-      <div className="max-w-6xl mx-auto space-y-6 w-full">
-        <div className="flex items-center justify-between">
+    <div className="flex flex-col h-full p-6 gap-6 max-w-7xl mx-auto w-full">
+      <div className="flex flex-col h-full max-w-6xl mx-auto space-y-6 w-full">
+        <div className="flex items-center justify-between shrink-0">
           <div>
             <h1 className="text-2xl font-black text-white font-space uppercase tracking-tight flex items-center gap-2">
               <Truck className="text-stitch-primary" size={28} />

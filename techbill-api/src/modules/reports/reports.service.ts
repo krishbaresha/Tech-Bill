@@ -148,10 +148,12 @@ export class ReportsService {
     let offlineSalesCount = 0;
     let onlineSalesCount = 0;
 
+    let totalOnlineAccrual = 0;
     for (const s of salesList) {
       totalDiscounts += Number(s.discountAmount ?? 0);
       if (s.isOnline) {
-        onlineRevenue += Number(s.totalAmount ?? 0);
+        totalOnlineAccrual += Number(s.totalAmount ?? 0);
+        onlineRevenue += Number(s.advanceAmount ?? 0);
         onlineSalesCount += 1;
       } else {
         offlineRevenue += Number(s.totalAmount ?? 0);
@@ -159,7 +161,7 @@ export class ReportsService {
       }
     }
 
-    // Payouts tracked for cash flow, NOT added to Revenue again to avoid double counting
+    // Payouts tracked for cash flow, AND added to onlineRevenue per user request
     const payouts = await this.prisma.courierPayout.aggregate({
       where: {
         tenantId,
@@ -168,6 +170,7 @@ export class ReportsService {
       _sum: { amount: true },
     });
     const courierPayouts = Number(payouts._sum.amount ?? 0);
+    onlineRevenue += courierPayouts;
 
     totalRevenue = offlineRevenue + onlineRevenue;
 
