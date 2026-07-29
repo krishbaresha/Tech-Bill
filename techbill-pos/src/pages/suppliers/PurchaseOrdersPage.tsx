@@ -13,6 +13,7 @@ interface PurchaseOrder {
   totalAmount: number | null;
   paidAmount: number | null;
   paymentMethod: string | null;
+  creditRecordId: string | null;
   notes: string | null;
   createdAt: string;
   supplier: { id: string; name: string } | null;
@@ -340,6 +341,7 @@ export default function PurchaseOrdersPage() {
                   <th className="text-left px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Method</th>
                   <th className="text-right px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Total</th>
                   <th className="text-right px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Paid Amount</th>
+                  <th className="text-right px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Credit Amount</th>
                 </tr>
               )}
             </thead>
@@ -354,15 +356,19 @@ export default function PurchaseOrdersPage() {
                   </td>
                 </tr>
               )}
-              {activeTab === 'payments' && !loading && filtered.filter(po => Number(po.paidAmount) > 0).length === 0 && (
+              {activeTab === 'payments' && !loading && filtered.filter(po => Number(po.paidAmount) > 0 || !!po.creditRecordId).length === 0 && (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-stitch-on-surface-variant">
+                  <td colSpan={7} className="text-center py-12 text-stitch-on-surface-variant">
                     No payments found
                   </td>
                 </tr>
               )}
               {activeTab === 'payments' ? (
-                filtered.filter(po => Number(po.paidAmount) > 0).map((po) => (
+                filtered.filter(po => Number(po.paidAmount) > 0 || !!po.creditRecordId).map((po) => {
+                  const total = po.totalAmount != null ? Number(po.totalAmount) : 0;
+                  const paid = po.paidAmount != null ? Number(po.paidAmount) : 0;
+                  const credit = Math.max(0, total - paid);
+                  return (
                   <tr key={po.id} className="hover:bg-white/[0.03] transition-colors">
                     <td className="px-4 py-3 text-sm text-stitch-on-surface-variant">
                       {format(new Date(po.createdAt), 'dd MMM yyyy')}
@@ -377,16 +383,25 @@ export default function PurchaseOrdersPage() {
                       {po.supplier?.name ?? <span className="text-white/20">—</span>}
                     </td>
                     <td className="px-4 py-3 text-sm text-stitch-on-surface">
-                      <span className="capitalize">{po.paymentMethod || 'cash'}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="capitalize">{po.paymentMethod || 'cash'}</span>
+                        {credit > 0 && (
+                          <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">Credit</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-sm font-bold text-stitch-on-surface">
                       {po.totalAmount != null ? `₨ ${Number(po.totalAmount).toLocaleString()}` : '—'}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-sm font-bold text-stitch-primary">
-                      ₨ {Number(po.paidAmount).toLocaleString()}
+                      ₨ {paid.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums text-sm font-bold text-amber-400">
+                      {credit > 0 ? `₨ ${credit.toLocaleString()}` : '—'}
                     </td>
                   </tr>
-                ))
+                  );
+                })
               ) : (
                 filtered.map((po) => (
                   <React.Fragment key={po.id}>

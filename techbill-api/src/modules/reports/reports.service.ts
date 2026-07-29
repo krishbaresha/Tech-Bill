@@ -24,7 +24,7 @@ export class ReportsService {
     const start = new Date(date + 'T00:00:00+05:00');
     const end = new Date(date + 'T23:59:59+05:00');
     const expenseStart = new Date(date + 'T00:00:00Z');
-    const expenseEnd = new Date(date + 'T00:00:00Z');
+    const expenseEnd = new Date(date + 'T23:59:59Z');
     return this.buildSummary(
       start,
       end,
@@ -41,7 +41,7 @@ export class ReportsService {
     const start = new Date(from + 'T00:00:00+05:00');
     const end = new Date(to + 'T23:59:59+05:00');
     const expenseStart = new Date(from + 'T00:00:00Z');
-    const expenseEnd = new Date(to + 'T00:00:00Z');
+    const expenseEnd = new Date(to + 'T23:59:59Z');
     return this.buildSummary(
       start,
       end,
