@@ -21,14 +21,9 @@ async function main() {
 
     const ref = match[1];
     
-    // Find all POs and filter by endsWith(ref) because endsWith isn't directly supported in standard Prisma where clause without wildcards,
-    // actually Prisma supports `endsWith` in StringFilters for PostgreSQL!
-    
-    const poList = await prisma.purchaseOrder.findMany({
-      where: {
-        id: { endsWith: ref.toLowerCase(), mode: 'insensitive' }
-      }
-    });
+    // Find all POs and filter by endsWith(ref) in JS since id is UUID in DB
+    const allPos = await prisma.purchaseOrder.findMany();
+    const poList = allPos.filter(p => p.id.toLowerCase().endsWith(ref.toLowerCase()));
 
     if (poList.length === 0) {
       console.log(`Warning: PO ref ${ref} not found for expense ${expense.id}. Skipping...`);
