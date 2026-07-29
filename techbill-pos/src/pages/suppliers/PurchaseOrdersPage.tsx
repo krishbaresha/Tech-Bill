@@ -11,6 +11,8 @@ interface PurchaseOrder {
   id: string;
   status: string;
   totalAmount: number | null;
+  paidAmount: number | null;
+  paymentMethod: string | null;
   notes: string | null;
   createdAt: string;
   supplier: { id: string; name: string } | null;
@@ -38,6 +40,7 @@ export default function PurchaseOrdersPage() {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [activeTab, setActiveTab] = useState<'orders' | 'payments'>('orders');
   
   // Expanded row state
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
@@ -50,6 +53,12 @@ export default function PurchaseOrdersPage() {
   const [paidAmount, setPaidAmount] = useState<number | ''>('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Edit Payment Modal state
+  const [editPaymentPoId, setEditPaymentPoId] = useState<string | null>(null);
+  const [editPaymentMethod, setEditPaymentMethod] = useState<'cash' | 'bank'>('cash');
+  const [editPaidAmount, setEditPaidAmount] = useState<number | ''>('');
+  const [editingPayment, setEditingPayment] = useState(false);
 
   // Receive PO Modal state
   const [receivePoId, setReceivePoId] = useState<string | null>(null);
@@ -223,6 +232,31 @@ export default function PurchaseOrdersPage() {
     }
   };
 
+  const openEditPayment = (po: PurchaseOrder, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditPaymentPoId(po.id);
+    setEditPaymentMethod(po.paymentMethod as 'cash' | 'bank' || 'cash');
+    setEditPaidAmount(po.paidAmount != null ? Number(po.paidAmount) : '');
+  };
+
+  const handleSavePaymentEdit = async () => {
+    if (!editPaymentPoId) return;
+    setEditingPayment(true);
+    try {
+      await api.patch(`/purchase-orders/${editPaymentPoId}/payment`, {
+        paidAmount: editPaidAmount === '' ? 0 : Number(editPaidAmount),
+        paymentMethod: editPaymentMethod,
+      });
+      setEditPaymentPoId(null);
+      void fetchOrders();
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Failed to update payment');
+    } finally {
+      setEditingPayment(false);
+    }
+  };
+
   const toggleRow = (id: string) => {
     setExpandedRow(prev => prev === id ? null : id);
   };
@@ -242,13 +276,33 @@ export default function PurchaseOrdersPage() {
             <p className="text-xs text-stitch-on-surface-variant">Manage supplier purchase orders</p>
           </div>
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-1.5 px-4 py-2 bg-stitch-primary text-stitch-on-primary text-sm font-bold rounded-lg hover:bg-stitch-primary/90 transition-all active:scale-95 self-start sm:self-auto"
-        >
-          <Plus size={14} />
-          New PO
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="bg-white/5 p-1 rounded-lg flex items-center">
+            <button
+              onClick={() => setActiveTab('orders')}
+              className={`px-4 py-1.5 rounded-md text-sm font-bold transition-colors ${
+                activeTab === 'orders' ? 'bg-white/10 text-white' : 'text-stitch-on-surface-variant hover:text-white'
+              }`}
+            >
+              Orders
+            </button>
+            <button
+              onClick={() => setActiveTab('payments')}
+              className={`px-4 py-1.5 rounded-md text-sm font-bold transition-colors ${
+                activeTab === 'payments' ? 'bg-white/10 text-white' : 'text-stitch-on-surface-variant hover:text-white'
+              }`}
+            >
+              Payments
+            </button>
+          </div>
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-1.5 px-4 py-2 bg-stitch-primary text-stitch-on-primary text-sm font-bold rounded-lg hover:bg-stitch-primary/90 transition-all active:scale-95"
+          >
+            <Plus size={14} />
+            New PO
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -267,16 +321,27 @@ export default function PurchaseOrdersPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-white/[0.03] border-b border-white/5">
-                <th className="w-10 px-4 py-3"></th>
-                <th className="text-left px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">PO Ref</th>
-                <th className="text-left px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider hidden sm:table-cell">Supplier</th>
-                <th className="text-left px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider hidden md:table-cell">Items</th>
-                <th className="text-left px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Status</th>
-                <th className="text-left px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider hidden lg:table-cell">Date</th>
-                <th className="text-right px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Total</th>
-                <th className="text-right px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Actions</th>
-              </tr>
+              {activeTab === 'orders' ? (
+                <tr className="bg-white/[0.03] border-b border-white/5">
+                  <th className="w-10 px-4 py-3"></th>
+                  <th className="text-left px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">PO Ref</th>
+                  <th className="text-left px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider hidden sm:table-cell">Supplier</th>
+                  <th className="text-left px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider hidden md:table-cell">Items</th>
+                  <th className="text-left px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Status</th>
+                  <th className="text-left px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider hidden lg:table-cell">Date</th>
+                  <th className="text-right px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Total</th>
+                  <th className="text-right px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Actions</th>
+                </tr>
+              ) : (
+                <tr className="bg-white/[0.03] border-b border-white/5">
+                  <th className="text-left px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Date</th>
+                  <th className="text-left px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">PO Ref</th>
+                  <th className="text-left px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider hidden sm:table-cell">Supplier</th>
+                  <th className="text-left px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Method</th>
+                  <th className="text-right px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Total</th>
+                  <th className="text-right px-4 py-3 text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Paid Amount</th>
+                </tr>
+              )}
             </thead>
             <tbody className="divide-y divide-white/5">
               {loading && (
@@ -289,8 +354,42 @@ export default function PurchaseOrdersPage() {
                   </td>
                 </tr>
               )}
-              {filtered.map((po) => (
-                <React.Fragment key={po.id}>
+              {activeTab === 'payments' && !loading && filtered.filter(po => Number(po.paidAmount) > 0).length === 0 && (
+                <tr>
+                  <td colSpan={6} className="text-center py-12 text-stitch-on-surface-variant">
+                    No payments found
+                  </td>
+                </tr>
+              )}
+              {activeTab === 'payments' ? (
+                filtered.filter(po => Number(po.paidAmount) > 0).map((po) => (
+                  <tr key={po.id} className="hover:bg-white/[0.03] transition-colors">
+                    <td className="px-4 py-3 text-sm text-stitch-on-surface-variant">
+                      {format(new Date(po.createdAt), 'dd MMM yyyy')}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <ShoppingBag size={13} className="text-stitch-primary/60 shrink-0" />
+                        <span className="font-mono text-xs text-stitch-on-surface">{po.id.slice(-8).toUpperCase()}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-stitch-on-surface-variant hidden sm:table-cell">
+                      {po.supplier?.name ?? <span className="text-white/20">—</span>}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-stitch-on-surface">
+                      <span className="capitalize">{po.paymentMethod || 'cash'}</span>
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums text-sm font-bold text-stitch-on-surface">
+                      {po.totalAmount != null ? `₨ ${Number(po.totalAmount).toLocaleString()}` : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums text-sm font-bold text-stitch-primary">
+                      ₨ {Number(po.paidAmount).toLocaleString()}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                filtered.map((po) => (
+                  <React.Fragment key={po.id}>
                   <tr 
                     className="po-row hover:bg-white/[0.03] transition-colors cursor-pointer"
                     onClick={() => toggleRow(po.id)}
@@ -371,11 +470,37 @@ export default function PurchaseOrdersPage() {
                             </div>
                           )}
                         </div>
+
+                        {/* Edit Payment Section */}
+                        {po.status !== 'cancelled' && (Date.now() - new Date(po.createdAt).getTime()) / (1000 * 60 * 60) <= 24 && (
+                          <div className="mt-4 max-w-2xl bg-white/5 p-4 rounded-lg border border-white/5">
+                            <div className="flex items-center justify-between mb-3">
+                              <p className="text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">Payment Details</p>
+                              <button
+                                onClick={(e) => openEditPayment(po, e)}
+                                className="text-xs text-stitch-primary hover:text-stitch-primary/80 transition-colors"
+                              >
+                                Edit
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-[10px] text-stitch-on-surface-variant mb-1">Method</p>
+                                <p className="text-sm text-white capitalize">{po.paymentMethod || 'Cash'}</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] text-stitch-on-surface-variant mb-1">Paid Amount</p>
+                                <p className="text-sm font-bold text-stitch-primary">₨ {Number(po.paidAmount || 0).toLocaleString()}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   )}
                 </React.Fragment>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
         </div>
@@ -598,6 +723,80 @@ export default function PurchaseOrdersPage() {
                 className="px-4 py-2 bg-stitch-primary text-stitch-on-primary text-sm font-bold rounded-lg hover:bg-stitch-primary/90 disabled:opacity-50 active:scale-95 transition-all inline-flex items-center gap-2"
               >
                 {saving ? 'Receiving…' : 'Receive PO'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Payment Modal */}
+      {editPaymentPoId && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="glass-modal rounded-xl w-full max-w-sm flex flex-col border border-white/10 shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 shrink-0">
+              <h2 className="font-bold text-stitch-on-surface font-space">Edit Payment Details</h2>
+              <button onClick={() => setEditPaymentPoId(null)} className="text-stitch-on-surface-variant hover:text-white transition-colors">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              {(() => {
+                const po = orders.find(o => o.id === editPaymentPoId);
+                const total = po?.totalAmount != null ? Number(po.totalAmount) : 0;
+                const credit = Math.max(0, total - (Number(editPaidAmount) || 0));
+                
+                return (
+                  <>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-stitch-on-surface-variant">Total Amount:</span>
+                      <span className="font-bold text-stitch-on-surface">Rs {total.toLocaleString()}</span>
+                    </div>
+
+                    <div>
+                      <label className={labelCls}>Payment Method</label>
+                      <select
+                        value={editPaymentMethod}
+                        onChange={(e) => setEditPaymentMethod(e.target.value as 'cash' | 'bank')}
+                        className={inputCls}
+                      >
+                        <option value="cash" className="bg-stitch-surface text-stitch-on-surface">Cash</option>
+                        <option value="bank" className="bg-stitch-surface text-stitch-on-surface">Bank</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className={labelCls}>Paid Amount</label>
+                      <input
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        max={total}
+                        value={editPaidAmount}
+                        onChange={(e) => setEditPaidAmount(e.target.value === '' ? '' : Math.min(Number(e.target.value), total))}
+                        className={inputCls}
+                        placeholder="0.00"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm pt-2 border-t border-white/5">
+                      <span className="text-stitch-on-surface-variant">Credit Amount:</span>
+                      <span className="font-bold text-amber-400">Rs {credit.toLocaleString()}</span>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
+            <div className="px-5 py-4 flex justify-end gap-2 shrink-0 border-t border-white/5">
+              <button onClick={() => setEditPaymentPoId(null)} className="px-4 py-2 text-sm text-stitch-on-surface-variant hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                Cancel
+              </button>
+              <button
+                onClick={() => void handleSavePaymentEdit()} disabled={editingPayment}
+                className="px-4 py-2 bg-stitch-primary text-stitch-on-primary text-sm font-bold rounded-lg hover:bg-stitch-primary/90 disabled:opacity-50 active:scale-95 transition-all"
+              >
+                {editingPayment ? 'Saving…' : 'Save Changes'}
               </button>
             </div>
           </div>
