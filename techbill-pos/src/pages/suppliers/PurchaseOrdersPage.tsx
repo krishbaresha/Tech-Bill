@@ -46,6 +46,8 @@ export default function PurchaseOrdersPage() {
   const [supplierInput, setSupplierInput] = useState('');
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState<PoItem[]>([{ productId: '', quantityOrdered: 1, unitCostPrice: 0 }]);
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank'>('cash');
+  const [paidAmount, setPaidAmount] = useState<number | ''>('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -102,6 +104,8 @@ export default function PurchaseOrdersPage() {
     setSupplierInput('');
     setNotes('');
     setItems([{ productId: '', quantityOrdered: 1, unitCostPrice: 0 }]);
+    setPaymentMethod('cash');
+    setPaidAmount('');
     setError(null);
     setShowForm(true);
   };
@@ -132,6 +136,8 @@ export default function PurchaseOrdersPage() {
         supplierId: existingSupplier ? existingSupplier.id : undefined,
         newSupplierName: !existingSupplier ? supplierInput.trim() : undefined,
         notes: notes || undefined,
+        paidAmount: paidAmount === '' ? 0 : Number(paidAmount),
+        paymentMethod: paymentMethod,
         items: validItems.map(i => ({
           productId: i.productId,
           quantityOrdered: Number(i.quantityOrdered),
@@ -202,6 +208,18 @@ export default function PurchaseOrdersPage() {
       setError(Array.isArray(msg) ? msg.join(', ') : (msg || 'Failed to mark as received'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeletePo = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('Are you sure you want to delete this PO? Any stock received from it will be reversed.')) return;
+    try {
+      await api.delete(`/purchase-orders/${id}`);
+      void fetchOrders();
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Failed to delete PO');
     }
   };
 
@@ -304,16 +322,26 @@ export default function PurchaseOrdersPage() {
                       {po.totalAmount != null ? `₨ ${Number(po.totalAmount).toLocaleString()}` : '—'}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {po.status !== 'received' && po.status !== 'cancelled' && (
+                      <div className="flex justify-end gap-2">
+                        {po.status !== 'received' && po.status !== 'cancelled' && (
+                          <button
+                            onClick={(e) => openReceiveModal(po, e)}
+                            className="px-2.5 py-1.5 bg-green-500/10 text-green-400 hover:bg-green-500/20 rounded-md text-[11px] font-bold transition-colors inline-flex items-center gap-1.5"
+                            title="Mark as Received"
+                          >
+                            <CheckCircle size={12} />
+                            Receive
+                          </button>
+                        )}
                         <button
-                          onClick={(e) => openReceiveModal(po, e)}
-                          className="px-2.5 py-1.5 bg-green-500/10 text-green-400 hover:bg-green-500/20 rounded-md text-[11px] font-bold transition-colors inline-flex items-center gap-1.5"
-                          title="Mark as Received"
+                          onClick={(e) => handleDeletePo(po.id, e)}
+                          className="px-2.5 py-1.5 bg-stitch-error/10 text-stitch-error hover:bg-stitch-error/20 rounded-md text-[11px] font-bold transition-colors inline-flex items-center gap-1.5"
+                          title="Delete PO (Reverses Stock)"
                         >
-                          <CheckCircle size={12} />
-                          Receive
+                          <Trash2 size={12} />
+                          Delete
                         </button>
-                      )}
+                      </div>
                     </td>
                   </tr>
                   {/* Expanded Item Details */}
@@ -432,10 +460,42 @@ export default function PurchaseOrdersPage() {
                 </div>
               </div>
 
-              <div className="flex justify-end border-t border-white/5 pt-3">
-                <p className="text-sm font-bold text-stitch-on-surface">
-                  Total: <span className="text-stitch-primary font-mono">₨ {totalAmount.toLocaleString()}</span>
-                </p>
+              <div className="pt-2 border-t border-white/10 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-stitch-on-surface-variant">Total Amount:</span>
+                  <span className="text-sm font-bold text-stitch-on-surface">Rs {totalAmount.toFixed(2)}</span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}>Payment Method</label>
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value as 'cash' | 'bank')}
+                      className={inputCls}
+                    >
+                      <option value="cash" className="bg-stitch-surface text-stitch-on-surface">Cash</option>
+                      <option value="bank" className="bg-stitch-surface text-stitch-on-surface">Bank</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Paid Amount</label>
+                    <input
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      max={totalAmount}
+                      value={paidAmount}
+                      onChange={(e) => setPaidAmount(e.target.value === '' ? '' : Math.min(Number(e.target.value), totalAmount))}
+                      className={inputCls}
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-stitch-on-surface-variant">Credit Amount:</span>
+                  <span className="font-bold text-amber-400">Rs {Math.max(0, totalAmount - (Number(paidAmount) || 0)).toFixed(2)}</span>
+                </div>
               </div>
 
               {error && <p className="text-xs text-stitch-error">{error}</p>}

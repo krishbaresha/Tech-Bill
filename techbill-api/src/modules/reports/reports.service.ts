@@ -198,18 +198,17 @@ export class ReportsService {
 
     let totalGrossProfit = totalRevenue - totalCost;
 
-    // Deduct Purchase Order costs (only received POs create expense records)
-    const poExpenses = await this.prisma.expense.aggregate({
+    // Purchase Order outflows (paidAmount)
+    const pos = await this.prisma.purchaseOrder.aggregate({
       where: {
         tenantId,
-        category: 'purchase_order',
-        date: { gte: expenseStart, lte: expenseEnd },
+        createdAt: { gte: expenseStart, lte: expenseEnd },
       },
-      _sum: { amount: true },
+      _sum: { paidAmount: true },
     });
-    const totalPurchaseCost = Number(poExpenses._sum.amount ?? 0);
+    const totalPurchaseCost = Number(pos._sum.paidAmount ?? 0);
 
-    // Standard Daily Expenses (excluding POs)
+    // Standard Daily Expenses (excluding old PO expenses if any exist)
     const standardExpenses = await this.prisma.expense.aggregate({
       where: {
         tenantId,
@@ -245,6 +244,22 @@ export class ReportsService {
     // Supplier owe payments add to Expenses
     totalExpenses += totalCreditPaid;
 
+    // Subtract PO Outflows from Revenue
+    totalRevenue -= totalPurchaseCost;
+
+    // Cash Reconciliation Variance (Surplus increases profit, deficit decreases profit)
+    const reconciliations = await this.prisma.cashReconciliation.aggregate({
+      where: {
+        tenantId,
+        date: { gte: expenseStart, lte: expenseEnd },
+      },
+      _sum: { variance: true },
+    });
+    const totalVariance = Number(reconciliations._sum.variance ?? 0);
+    
+    // Add variance to revenue (which will affect profit)
+    totalRevenue += totalVariance;
+
     totalGrossProfit = totalRevenue - totalCost;
 
     const pendingOnlineOrders = await this.prisma.sale.count({
@@ -259,10 +274,10 @@ export class ReportsService {
     return {
       period: label,
       totalRevenue,
-      totalGrossProfit: totalGrossProfit - totalPurchaseCost,
+      totalGrossProfit,
       totalPurchaseCost,
       totalExpenses,
-      netProfit: totalGrossProfit - totalPurchaseCost - totalExpenses,
+      netProfit: totalGrossProfit - totalExpenses,
       totalSales: totals._count.id,
       totalItems: items.length,
       totalDiscounts,

@@ -341,6 +341,10 @@ model PurchaseOrder {
   supplier    Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   status      POStatus  @default(draft)
   totalAmount Decimal?  @map("total_amount") @db.Decimal(12, 2)
+  paidAmount  Decimal?  @default(0) @map("paid_amount") @db.Decimal(12, 2)
+  paymentMethod String? @map("payment_method") @db.VarChar(50)
+  creditRecordId String? @map("credit_record_id") @db.Uuid
+  creditRecord CreditRecord? @relation(fields: [creditRecordId], references: [id], onDelete: SetNull)
   notes       String?   @db.Text
   createdById String?   @map("created_by_id") @db.Uuid
   createdBy   User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
@@ -677,6 +681,7 @@ model CreditRecord {
   tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   creditPayments CreditPayment[]
+  purchaseOrders PurchaseOrder[]
 
   @@index([type])
   @@index([status])

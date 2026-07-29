@@ -225,6 +225,28 @@ export class InventoryController {
     );
   }
 
+  @Patch('purchase-orders/:id/payment')
+  @Permissions('suppliers.write')
+  updatePurchaseOrderPayment(
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.inventoryService.updatePurchaseOrderPayment(
+      id,
+      body as any,
+      req.user.tenantId,
+    );
+  }
+
+  @Delete('purchase-orders/:id')
+  @Permissions('suppliers.write')
+  deletePurchaseOrder(
+    @Param('id') id: string,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.inventoryService.deletePurchaseOrder(id, req.user.tenantId);
+  }
   // ─── GRN ─────────────────────────────────────────────────────────────────
 
   @Get('grn/:id')

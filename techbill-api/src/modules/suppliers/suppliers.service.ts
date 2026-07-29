@@ -152,8 +152,6 @@ export class SuppliersService {
 
   /**
    * Mark a Purchase Order as received.
-   * Creates an Expense record (category = "purchase_order") so the cost is
-   * automatically deducted from gross profit in the reports for that day.
    */
   async receivePurchaseOrder(
     id: string,
@@ -252,19 +250,7 @@ export class SuppliersService {
         },
       });
 
-      // Create expense record so reports can deduct this purchase cost
-      if (po.totalAmount && Number(po.totalAmount) > 0) {
-        await tx.expense.create({
-          data: {
-            amount: po.totalAmount,
-            category: 'purchase_order',
-            description: `Purchase Order received (PO: ${id.slice(-8).toUpperCase()})`,
-            date: now,
-            createdById: userId,
-            tenantId,
-          },
-        });
-      }
+
 
       return updated;
     });

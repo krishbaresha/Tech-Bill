@@ -91,6 +91,31 @@ Real-time updates are handled via `EventsGateway`.
   - Upgraded `reports.service.ts` to seamlessly integrate credit payments based on their exact payment date: "Customer Owes Us" payments explicitly **add** to daily `Revenue`, and "We Owe" payments explicitly **add** to daily `Expenses` (which correctly lowers Net Profit dynamically).
 - **Commits**: `6f4549e`, `d1b4eb3`
 
+### 10. VM `LICENSE_SIGNING_PRIVATE_KEY` Missing (Session 10 — July 20, 2026)
+- **Root Cause**: The new `LicenseModule` (pulled from GitHub) throws a hard error at startup if `LICENSE_SIGNING_PRIVATE_KEY` is not in `.env`. The key was missing on the VM, causing PM2 to crash-loop and port 3000 to go dark → "Cannot connect to API" error in the frontend.
+- **Fix**: Generated a 32-byte hex key on the VM: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` and appended `LICENSE_SIGNING_PRIVATE_KEY=<key>` to `.env`. Restarted PM2.
+- **Gotcha**: Key is VM-local only — NOT committed to Git. Must be regenerated if VM is re-provisioned.
+
+### 11. Invoice Overhaul — White Theme, PDF Fixes, Page Size Selector (Session 10 — July 20, 2026)
+- **Files**: `techbill-pos/src/components/pos/InvoiceModal.tsx`, `techbill-pos/src/pages/sales/PublicInvoicePage.tsx`
+- **Changes**:
+  - Converted both files from dark theme (`bg-zinc-950`, `text-white`) to full white theme (`bg-white`, `text-gray-900`).
+  - Removed word **"Tax"** from invoice labels (was "Tax Invoice" → now "Invoice").
+  - Added **page size selector** in toolbar: A4 (default), A5, A3, Invoice (80mm). Applies to both PDF export and browser print via `@page` CSS.
+  - Replaced custom dropdowns with a **native HTML `<select>` element** to guarantee selection reliability, particularly on mobile touch targets.
+  - **PDF Layout Fix**: Clone the element off-screen at exact page width (mm → px at 96dpi) before passing to html2pdf — prevents scroll/clip/viewport misalignment.
+  - **Badge Alignment Fix**: Changed "VERIFIED" and Payment pills from `inline-flex` to `inline-block` with explicit `line-height` and `text-align: center`. `html2canvas` breaks flexbox alignment inside pills, causing text bleeding.
+  - **PDF Performance**: Scale `3→2`, JPEG quality `1.0→0.85`, `compress: true` on jsPDF, QR level `H→M`, `logging: false`, `windowWidth` locked to element width.
+  - **Text Visibility**: All colors converted to explicit hex via inline styles (not Tailwind opacity utilities) so they survive html2canvas rasterization.
+  - Added **loading spinner** on PDF button while generating.
+- **Commits**: `ce1e141`, `e507311`, `23e7265`, `a9c103d`, `de45599`
+
+### 12. CI / Vercel Build Fixes (Session 10 — July 20, 2026)
+- **TS2345**: `html2pdf.js` `margin` typed as `number[]` — fixed with `as [number, number, number, number]` cast.
+- **TS2307**: `@tauri-apps/api/core` missing because `npm install` hadn't been run after pulling new Tauri deps. Fixed by running `npm install` in `techbill-pos/`.
+- **TS6133 Unused Variable Silent Failure**: A `tsc -b` strict check failed silently on the VM due to an unused `selectedSizeLabel` variable, which stopped the `dist` bundle from generating. The variable was removed and the deploy script updated.
+- **Commit**: `e507311`, `de45599`
+
 ## Known Gotchas
 1. **Two schema files**: `prisma/schema.prisma` (root, used for local VM tunnel scripts) AND `techbill-api/prisma/schema.prisma` (API-level, used by CI and the actual NestJS build). **Always update BOTH** when changing the DB schema.
 2. **Timezones**: The `createdAt` timestamps in Prisma rely on UTC. The Node API correctly translates local date requests (e.g. `start = new Date('2026-07-11T00:00:00+05:00')`) into UTC for database querying. Do not manually subtract timezone hours unless absolutely necessary, as `Date` handles it internally.
@@ -98,6 +123,10 @@ Real-time updates are handled via `EventsGateway`.
 4. **`@db.Date` vs Timestamp Filtering**: When querying models with `@db.Date` fields (e.g. `Expense`, `CashReconciliation`), do NOT use timezone-offset timestamps as range filters. PostgreSQL will ignore the time part and bleed into adjacent days. Always use exact UTC midnight dates (e.g. `new Date('2026-07-14T00:00:00Z')`) as both `gte` and `lte` to match a single day.
 5. **VM Schema Sync**: Use `npx prisma db push --accept-data-loss` on the VM (NOT `migrate dev`) since the VM has a local PostgreSQL DB. `migrate dev` requires interactive prompts and a `DIRECT_URL` that differs from pool URL.
 6. **VM Git Remote**: The VM's `origin` remote must always point to `https://github.com/krishbaresha/Tech-Bill.git`. It was previously stale pointing at `talharana23/test-techbill` (deleted). If a git pull fails, check remote with `git remote -v` and fix with `git remote set-url origin https://github.com/krishbaresha/Tech-Bill.git`.
+7. **VM `.env` `LICENSE_SIGNING_PRIVATE_KEY`**: Must be present or the API crashes on startup. Not in Git — lives only in `/home/techbill_admin/techbill/electrotrack-api/techbill-api/.env`.
+8. **VM Dirty Working Tree**: After manual `npm install` on VM, `package-lock.json` gets modified. Use `git checkout -- .` before `git pull` to discard it, then re-run `npm install` after the pull.
+9. **PDF Canvas Width**: When using `html2pdf.js`, always clone the element and set `windowWidth` = element width in pixels. Without this, html2canvas renders at viewport width causing layout breaks in the PDF.
+10. **`@tauri-apps/api` deps**: Must run `npm install` in `techbill-pos/` after pulling commits that add Tauri packages (they're in `package.json` but not auto-installed).
+11. **VM Pulling**: Always ensure deployment scripts use `git pull origin master` before building. A simple `npm run build` will succeed but only build the stale code. Strict `tsc` checks on VM mean unused variables can block production updates if not caught locally.
 
-*Last Updated: July 15, 2026 — Session 7*
-
+*Last Updated: July 20, 2026 — Session 10*
