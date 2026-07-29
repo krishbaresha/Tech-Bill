@@ -203,50 +203,6 @@ export class InventoryController {
     return this.inventoryService.createSupplier(body as any, req.user.tenantId);
   }
 
-  // ─── Purchase Orders ──────────────────────────────────────────────────────
-
-  @Get('purchase-orders')
-  @Permissions('suppliers.read')
-  listPurchaseOrders(@Req() req: RequestWithUser) {
-    return this.inventoryService.listPurchaseOrders(req.user.tenantId);
-  }
-
-  @Post('purchase-orders')
-  @Permissions('suppliers.write')
-  @HttpCode(HttpStatus.CREATED)
-  createPurchaseOrder(
-    @Body() body: Record<string, unknown>,
-    @Req() req: RequestWithUser,
-  ) {
-    return this.inventoryService.createPurchaseOrder(
-      body as any,
-      req.user.id,
-      req.user.tenantId,
-    );
-  }
-
-  @Patch('purchase-orders/:id/payment')
-  @Permissions('suppliers.write')
-  updatePurchaseOrderPayment(
-    @Param('id') id: string,
-    @Body() body: Record<string, unknown>,
-    @Req() req: RequestWithUser,
-  ) {
-    return this.inventoryService.updatePurchaseOrderPayment(
-      id,
-      body as any,
-      req.user.tenantId,
-    );
-  }
-
-  @Delete('purchase-orders/:id')
-  @Permissions('suppliers.write')
-  deletePurchaseOrder(
-    @Param('id') id: string,
-    @Req() req: RequestWithUser,
-  ) {
-    return this.inventoryService.deletePurchaseOrder(id, req.user.tenantId);
-  }
   // ─── GRN ─────────────────────────────────────────────────────────────────
 
   @Get('grn/:id')

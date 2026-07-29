@@ -255,4 +255,117 @@ export class SuppliersService {
       return updated;
     });
   }
+
+  async updatePurchaseOrderPayment(
+    id: string,
+    data: { paidAmount?: number; paymentMethod?: string },
+    tenantId: string,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const po = await tx.purchaseOrder.findUnique({
+        where: { id, tenantId },
+        include: { creditRecord: true },
+      });
+      if (!po) throw new NotFoundException(`Purchase order ${id} not found`);
+
+      const totalAmount = po.totalAmount ? Number(po.totalAmount) : 0;
+      const newPaidAmount = data.paidAmount !== undefined ? data.paidAmount : (po.paidAmount ? Number(po.paidAmount) : 0);
+      const newCreditAmount = totalAmount - newPaidAmount;
+
+      // Update PO
+      const updatedPo = await tx.purchaseOrder.update({
+        where: { id },
+        data: {
+          paidAmount: newPaidAmount,
+          paymentMethod: data.paymentMethod !== undefined ? data.paymentMethod : po.paymentMethod,
+        },
+      });
+
+      // Update CreditRecord if it exists
+      if (po.creditRecordId) {
+        if (newCreditAmount <= 0) {
+          await tx.creditRecord.update({
+            where: { id: po.creditRecordId },
+            data: { dueAmount: 0, paidAmount: totalAmount, status: 'PAID' },
+          });
+        } else {
+          await tx.creditRecord.update({
+            where: { id: po.creditRecordId },
+            data: { dueAmount: newCreditAmount, paidAmount: newPaidAmount },
+          });
+        }
+      } else if (newCreditAmount > 0 && po.supplierId) {
+        const newCredit = await tx.creditRecord.create({
+          data: {
+            type: 'SUPPLIER',
+            status: 'PENDING',
+            amount: totalAmount,
+            paidAmount: newPaidAmount,
+            dueAmount: newCreditAmount,
+            description: `Credit for Purchase Order (Updated)`,
+            date: new Date(),
+            supplierId: po.supplierId,
+            tenantId,
+          },
+        });
+        await tx.purchaseOrder.update({
+          where: { id },
+          data: { creditRecordId: newCredit.id },
+        });
+      }
+
+      return updatedPo;
+    });
+  }
+
+  async deletePurchaseOrder(id: string, tenantId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const po = await tx.purchaseOrder.findUnique({
+        where: { id, tenantId },
+        include: { grns: { include: { inventoryUnits: true } } },
+      });
+      if (!po) throw new NotFoundException(`Purchase order ${id} not found`);
+
+      // Check if created within last 24 hours
+      const now = new Date();
+      const createdAt = new Date(po.createdAt);
+      const diffHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+      if (diffHours > 24) {
+        throw new BadRequestException('Cannot delete purchase orders older than 24 hours');
+      }
+
+      // Reverse stock (delete inventory units from GRNs)
+      const unitIdsToDelete: string[] = [];
+      const grnIdsToDelete: string[] = [];
+      for (const grn of po.grns) {
+        grnIdsToDelete.push(grn.id);
+        for (const unit of grn.inventoryUnits) {
+          unitIdsToDelete.push(unit.id);
+        }
+      }
+
+      if (unitIdsToDelete.length > 0) {
+        await tx.inventoryUnit.deleteMany({
+          where: { id: { in: unitIdsToDelete }, tenantId },
+        });
+      }
+
+      if (grnIdsToDelete.length > 0) {
+        await tx.goodsReceivedNote.deleteMany({
+          where: { id: { in: grnIdsToDelete } },
+        });
+      }
+
+      const deletedPo = await tx.purchaseOrder.delete({
+        where: { id },
+      });
+
+      // If there was a credit record, we could delete it, but Prisma will cascade if configured or we delete manually
+      if (po.creditRecordId) {
+        await tx.creditRecord.delete({ where: { id: po.creditRecordId } }).catch(() => {});
+      }
+
+      return deletedPo;
+    });
+  }
 }
