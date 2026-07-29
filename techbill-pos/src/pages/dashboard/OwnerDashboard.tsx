@@ -55,8 +55,9 @@ export default function OwnerDashboard() {
   const statCards = summary
     ? [
         { label: 'Gross Revenue', value: formatPKR(summary.totalRevenue), icon: TrendingUp, color: 'text-stitch-tertiary', accent: 'bg-stitch-tertiary' },
-        { label: 'Total Expenses', value: formatPKR(summary.totalExpenses || 0), icon: Wallet, color: 'text-stitch-error', accent: 'bg-stitch-error' },
-        { label: 'Net Revenue', value: formatPKR(summary.totalRevenue - (summary.totalExpenses || 0)), icon: Banknote, color: 'text-emerald-400', accent: 'bg-emerald-400' },
+        { label: 'Std. Expenses', value: formatPKR((summary.totalExpenses || 0) - (summary.totalCreditPaid || 0)), icon: Wallet, color: 'text-stitch-error', accent: 'bg-stitch-error' },
+        { label: 'Credit Paid', value: formatPKR(summary.totalCreditPaid || 0), icon: Banknote, color: 'text-amber-400', accent: 'bg-amber-400' },
+        { label: 'Net Revenue', value: formatPKR(summary.totalRevenue - (summary.totalExpenses || 0)), icon: TrendingUp, color: 'text-emerald-400', accent: 'bg-emerald-400' },
         { label: 'Total Sales', value: String(summary.totalSales), icon: ShoppingCart, color: 'text-stitch-primary', accent: 'bg-stitch-primary' },
         { label: 'Items Sold', value: String(summary.totalItems), icon: Package, color: 'text-green-400', accent: 'bg-green-400' },
         { label: 'Discounts', value: formatPKR(summary.totalDiscounts), icon: Tag, color: 'text-amber-400', accent: 'bg-amber-400' },

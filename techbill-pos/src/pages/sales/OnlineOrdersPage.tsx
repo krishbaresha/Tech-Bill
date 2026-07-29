@@ -20,6 +20,7 @@ export default function OnlineOrdersPage() {
   const [payoutAmount, setPayoutAmount] = useState<number | ''>('');
   const [payoutCourier, setPayoutCourier] = useState('');
   const [payoutDate, setPayoutDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [payoutTaxDeducted, setPayoutTaxDeducted] = useState<number | ''>('');
 
   const [orders, setOrders] = useState<Sale[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -65,11 +66,15 @@ export default function OnlineOrdersPage() {
   const logPayout = async () => {
     if (!payoutAmount) return;
     setIsLoggingPayout(true);
+    const grossAmount = Number(payoutAmount);
+    const taxAmt = Number(payoutTaxDeducted) || 0;
+    const netAmount = grossAmount - taxAmt;
     try {
-      await api.post('/sales/payouts', { amount: Number(payoutAmount), courierName: payoutCourier, date: payoutDate });
+      await api.post('/sales/payouts', { amount: netAmount, courierName: payoutCourier, date: payoutDate });
       setIsPayoutModalOpen(false);
       setPayoutAmount('');
       setPayoutCourier('');
+      setPayoutTaxDeducted('');
       await fetchData();
     } catch (err) {
       console.error(err);
@@ -171,7 +176,20 @@ export default function OnlineOrdersPage() {
                 </button>
               </div>
               <div className="space-y-4">
-                <input type="number" value={payoutAmount} onChange={(e) => setPayoutAmount(Number(e.target.value))} className="w-full bg-stitch-surface-container-high/50 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500/50" placeholder="Payout Amount (₨)" />
+                <div>
+                  <label className="block text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider mb-1.5">Gross Payout Amount (₨)</label>
+                  <input type="number" value={payoutAmount} onChange={(e) => setPayoutAmount(Number(e.target.value))} className="w-full bg-stitch-surface-container-high/50 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500/50" placeholder="e.g. 50000" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-1.5">Tax Deducted by Courier (₨) <span className="text-stitch-on-surface-variant normal-case font-normal">(optional)</span></label>
+                  <input type="number" value={payoutTaxDeducted} onChange={(e) => setPayoutTaxDeducted(Number(e.target.value) || '')} className="w-full bg-amber-500/5 border border-amber-500/20 rounded-xl px-4 py-3 text-white outline-none focus:border-amber-500/50" placeholder="e.g. 2500" />
+                </div>
+                {payoutAmount && (
+                  <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+                    <span className="text-xs text-stitch-on-surface-variant font-bold uppercase tracking-wider">Net Amount to Record</span>
+                    <span className="text-emerald-400 font-bold text-base tabular-nums">₨ {(Number(payoutAmount) - (Number(payoutTaxDeducted) || 0)).toLocaleString()}</span>
+                  </div>
+                )}
                 <input type="text" value={payoutCourier} onChange={(e) => setPayoutCourier(e.target.value)} className="w-full bg-stitch-surface-container-high/50 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500/50" placeholder="Courier Name" />
                 <input type="date" value={payoutDate} onChange={(e) => setPayoutDate(e.target.value)} className="w-full bg-stitch-surface-container-high/50 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500/50" />
               </div>
