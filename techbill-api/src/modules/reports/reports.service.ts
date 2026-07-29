@@ -151,7 +151,7 @@ export class ReportsService {
     for (const s of salesList) {
       totalDiscounts += Number(s.discountAmount ?? 0);
       if (s.isOnline) {
-        onlineRevenue += Number(s.advanceAmount ?? 0);
+        onlineRevenue += Number(s.totalAmount ?? 0);
         onlineSalesCount += 1;
       } else {
         offlineRevenue += Number(s.totalAmount ?? 0);
@@ -159,7 +159,7 @@ export class ReportsService {
       }
     }
 
-    // Add Courier Payouts to Revenue for this period
+    // Payouts tracked for cash flow, NOT added to Revenue again to avoid double counting
     const payouts = await this.prisma.courierPayout.aggregate({
       where: {
         tenantId,
@@ -168,7 +168,6 @@ export class ReportsService {
       _sum: { amount: true },
     });
     const courierPayouts = Number(payouts._sum.amount ?? 0);
-    onlineRevenue += courierPayouts;
 
     totalRevenue = offlineRevenue + onlineRevenue;
 
@@ -238,14 +237,6 @@ export class ReportsService {
         totalCreditPaid += Number(cp.amount);
       }
     }
-
-    // Apply logic: Customer owe payments add to Revenue
-    totalRevenue += totalCreditCollected;
-    // Supplier owe payments add to Expenses
-    totalExpenses += totalCreditPaid;
-
-    // Subtract PO Outflows from Revenue
-    totalRevenue -= totalPurchaseCost;
 
     // Cash Reconciliation Variance (Surplus increases profit, deficit decreases profit)
     const reconciliations = await this.prisma.cashReconciliation.aggregate({

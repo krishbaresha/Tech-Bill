@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { TrendingUp, ShoppingCart, Package, Tag, Banknote, X, FileText, Wallet } from 'lucide-react';
+import { TrendingUp, ShoppingCart, Package, Tag, X, FileText, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDashboardStore } from '../../store/dashboard.store';
 import { useCan } from '../../lib/permissions';
@@ -21,6 +21,7 @@ export default function OwnerDashboard() {
   const isOnlineEnabled = useCan('pos.online_sell') && !!user?.onlineSellingEnabled;
   const syncDashboard = useDashboardStore((s) => s.syncDashboard);
   const [showItemsModal, setShowItemsModal] = useState(false);
+  const [showOutflowsModal, setShowOutflowsModal] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -55,9 +56,8 @@ export default function OwnerDashboard() {
   const statCards = summary
     ? [
         { label: 'Gross Revenue', value: formatPKR(summary.totalRevenue), icon: TrendingUp, color: 'text-stitch-tertiary', accent: 'bg-stitch-tertiary' },
-        { label: 'Std. Expenses', value: formatPKR((summary.totalExpenses || 0) - (summary.totalCreditPaid || 0)), icon: Wallet, color: 'text-stitch-error', accent: 'bg-stitch-error' },
-        { label: 'Credit Paid', value: formatPKR(summary.totalCreditPaid || 0), icon: Banknote, color: 'text-amber-400', accent: 'bg-amber-400' },
-        { label: 'Net Revenue', value: formatPKR(summary.totalRevenue - (summary.totalExpenses || 0)), icon: TrendingUp, color: 'text-emerald-400', accent: 'bg-emerald-400' },
+        { label: 'Total Outflows', value: formatPKR((summary.totalExpenses || 0) + (summary.totalCreditPaid || 0) + (summary.totalPurchaseCost || 0)), icon: Wallet, color: 'text-stitch-error', accent: 'bg-stitch-error' },
+        { label: 'Net Profit', value: formatPKR(summary.netProfit || 0), icon: TrendingUp, color: 'text-emerald-400', accent: 'bg-emerald-400' },
         { label: 'Total Sales', value: String(summary.totalSales), icon: ShoppingCart, color: 'text-stitch-primary', accent: 'bg-stitch-primary' },
         { label: 'Items Sold', value: String(summary.totalItems), icon: Package, color: 'text-green-400', accent: 'bg-green-400' },
         { label: 'Discounts', value: formatPKR(summary.totalDiscounts), icon: Tag, color: 'text-amber-400', accent: 'bg-amber-400' },
@@ -83,11 +83,12 @@ export default function OwnerDashboard() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
           {statCards.map((card) => {
             const isItemsCard = card.label === 'Items Sold';
+            const isOutflowsCard = card.label === 'Total Outflows';
             return (
               <div
                 key={card.label}
-                onClick={isItemsCard ? () => setShowItemsModal(true) : undefined}
-                className={`glass-card rounded-xl p-4 overflow-hidden relative ${isItemsCard ? 'cursor-pointer hover:bg-white/[0.04] transition-colors active:scale-[0.98]' : ''}`}
+                onClick={isItemsCard ? () => setShowItemsModal(true) : isOutflowsCard ? () => setShowOutflowsModal(true) : undefined}
+                className={`glass-card rounded-xl p-4 overflow-hidden relative ${isItemsCard || isOutflowsCard ? 'cursor-pointer hover:bg-white/[0.04] transition-colors active:scale-[0.98]' : ''}`}
               >
                 <div className={`absolute top-0 left-0 right-0 h-0.5 ${card.accent}/60`} />
                 <div className={`w-8 h-8 rounded-lg ${card.accent}/10 flex items-center justify-center mb-3`}>
@@ -194,6 +195,41 @@ export default function OwnerDashboard() {
                   <p className="text-sm text-white/50">No items sold yet today.</p>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showOutflowsModal && summary && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowOutflowsModal(false)}>
+          <div className="w-full max-w-sm bg-stitch-surface-container rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+              <h3 className="text-base font-bold text-white font-space flex items-center gap-2">
+                <Wallet size={18} className="text-stitch-error" /> Total Outflows
+              </h3>
+              <button onClick={() => setShowOutflowsModal(false)} className="text-white/50 hover:text-white transition-colors">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="flex justify-between items-center pb-3 border-b border-white/5">
+                <span className="text-sm font-semibold text-stitch-on-surface-variant">Daily Expenses</span>
+                <span className="text-sm font-bold text-white tabular-nums">{formatPKR(summary.totalExpenses || 0)}</span>
+              </div>
+              <div className="flex justify-between items-center pb-3 border-b border-white/5">
+                <span className="text-sm font-semibold text-stitch-on-surface-variant">Supplier Credit Paid</span>
+                <span className="text-sm font-bold text-white tabular-nums">{formatPKR(summary.totalCreditPaid || 0)}</span>
+              </div>
+              <div className="flex justify-between items-center pb-3 border-b border-white/5">
+                <span className="text-sm font-semibold text-stitch-on-surface-variant">Purchase Orders Paid</span>
+                <span className="text-sm font-bold text-white tabular-nums">{formatPKR(summary.totalPurchaseCost || 0)}</span>
+              </div>
+              <div className="flex justify-between items-center pt-2">
+                <span className="text-sm font-bold text-white uppercase tracking-wider">Total</span>
+                <span className="text-lg font-bold text-stitch-error tabular-nums">
+                  {formatPKR((summary.totalExpenses || 0) + (summary.totalCreditPaid || 0) + (summary.totalPurchaseCost || 0))}
+                </span>
+              </div>
             </div>
           </div>
         </div>
