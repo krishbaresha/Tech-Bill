@@ -261,6 +261,7 @@ export interface SalesSummary {
   totalRevenue: number;
   totalGrossProfit: number;
   totalExpenses: number;
+  totalCreditPaid?: number;
   netProfit: number;
   totalSales: number;
   totalItems: number;
