@@ -574,15 +574,16 @@ model Expense {
 // ─── Table 14.6: courier_payouts ──────────────────────────────────────────────
 
 model CourierPayout {
-  id          String   @id @default(uuid()) @db.Uuid
-  amount      Decimal  @db.Decimal(10, 2)
-  courierName String?  @map("courier_name") @db.VarChar(100)
-  date        DateTime @db.Date
-  createdById String?  @map("created_by_id") @db.Uuid
-  createdBy   User?    @relation("PayoutsCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  tenantId    String   @map("tenant_id") @db.Uuid
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now()) @map("created_at")
+  id           String   @id @default(uuid()) @db.Uuid
+  amount       Decimal  @db.Decimal(10, 2)
+  taxDeducted  Decimal? @map("tax_deducted") @db.Decimal(10, 2)
+  courierName  String?  @map("courier_name") @db.VarChar(100)
+  date         DateTime @db.Date
+  createdById  String?  @map("created_by_id") @db.Uuid
+  createdBy    User?    @relation("PayoutsCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  tenantId     String   @map("tenant_id") @db.Uuid
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now()) @map("created_at")
 
   @@index([date])
   @@index([tenantId])

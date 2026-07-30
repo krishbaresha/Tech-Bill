@@ -70,7 +70,12 @@ export default function OnlineOrdersPage() {
     const taxAmt = Number(payoutTaxDeducted) || 0;
     const netAmount = grossAmount - taxAmt;
     try {
-      await api.post('/sales/payouts', { amount: netAmount, courierName: payoutCourier, date: payoutDate });
+      await api.post('/sales/payouts', {
+        amount: netAmount,
+        taxDeducted: taxAmt,
+        courierName: payoutCourier,
+        date: payoutDate,
+      });
       setIsPayoutModalOpen(false);
       setPayoutAmount('');
       setPayoutCourier('');

@@ -271,6 +271,7 @@ export interface SalesSummary {
   offlineRevenue: number;
   onlineRevenue: number;
   courierPayouts: number;
+  courierTaxDeducted: number;
   onlineSalesCount: number;
   offlineSalesCount: number;
   pendingOnlineOrders: number;

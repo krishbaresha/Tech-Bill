@@ -147,6 +147,7 @@ export class ReportsService {
       select: {
         isOnline: true,
         totalAmount: true,
+        advanceAmount: true,
         discountAmount: true,
       },
     });
@@ -161,9 +162,9 @@ export class ReportsService {
     for (const s of salesList) {
       totalDiscounts += Number(s.discountAmount ?? 0);
       if (s.isOnline) {
-        // Accrual basis: use full totalAmount of the online sale (not just advanceAmount).
-        // advanceAmount is a partial cash receipt, not the recognised revenue.
-        onlineRevenue += Number(s.totalAmount ?? 0);
+        // Revenue = advance paid upfront at sale time (cash-in-hand basis).
+        // The COD portion is recognised when the courier payout is recorded.
+        onlineRevenue += Number(s.advanceAmount ?? 0);
         onlineSalesCount += 1;
       } else {
         offlineRevenue += Number(s.totalAmount ?? 0);
@@ -171,19 +172,21 @@ export class ReportsService {
       }
     }
 
-    // Courier payouts are a CASH FLOW event only — they must NOT be added to
-    // onlineRevenue or totalRevenue per accrual accounting rules.
+    // Courier payouts: net COD received from couriers after tax deduction.
+    // This IS revenue (cash received) — recorded when the bulk payout is logged.
     // Use payoutDateStart/payoutDateEnd (UTC midnight-aligned) to match the
-    // DATE-only column; PKT-offset dates cause yesterday's payouts to appear today.
-    const payouts = await this.prisma.courierPayout.aggregate({
+    // DATE-only column; PKT-offset dates caused yesterday's payouts to appear today.
+    const payoutsAgg = await this.prisma.courierPayout.aggregate({
       where: {
         tenantId,
         date: { gte: payoutDateStart, lte: payoutDateEnd },
       },
-      _sum: { amount: true },
+      _sum: { amount: true, taxDeducted: true },
     });
-    const courierPayouts = Number(payouts._sum.amount ?? 0);
-    // courierPayouts is returned separately for display purposes only.
+    const courierPayouts = Number(payoutsAgg._sum.amount ?? 0);
+    const courierTaxDeducted = Number(payoutsAgg._sum.taxDeducted ?? 0);
+    // Net COD received becomes part of online revenue.
+    onlineRevenue += courierPayouts;
 
     totalRevenue = offlineRevenue + onlineRevenue;
 
@@ -291,6 +294,7 @@ export class ReportsService {
       offlineRevenue,
       onlineRevenue,
       courierPayouts,
+      courierTaxDeducted,
       totalCreditCollected,
       totalCreditPaid,
       onlineSalesCount,

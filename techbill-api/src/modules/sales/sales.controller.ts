@@ -146,6 +146,7 @@ export class SalesController {
   @Permissions('pos.online_sell')
   recordCourierPayout(
     @Body('amount') amount: number,
+    @Body('taxDeducted') taxDeducted: number,
     @Body('courierName') courierName: string,
     @Body('date') date: string,
     @Req() req: RequestWithUser,
@@ -154,6 +155,7 @@ export class SalesController {
       req.user.tenantId,
       req.user.id,
       Number(amount),
+      Number(taxDeducted) || 0,
       courierName,
       date,
     );

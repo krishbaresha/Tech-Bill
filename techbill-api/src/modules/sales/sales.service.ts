@@ -597,6 +597,7 @@ export class SalesService {
     tenantId: string,
     userId: string,
     amount: number,
+    taxDeducted: number,
     courierName: string,
     date: string,
   ) {
@@ -605,6 +606,7 @@ export class SalesService {
         tenantId,
         createdById: userId,
         amount,
+        taxDeducted: taxDeducted > 0 ? taxDeducted : null,
         courierName,
         date: new Date(date),
       },
