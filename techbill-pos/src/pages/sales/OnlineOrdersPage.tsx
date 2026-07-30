@@ -40,15 +40,15 @@ export default function OnlineOrdersPage() {
           api.get('/sales/payouts'),
           api.get('/sales/payouts/ledger'),
         ]);
-        setPayoutsList(payoutsRes.data);
-        setLedger(ledgerRes.data);
+        setPayoutsList(payoutsRes.data.data || payoutsRes.data);
+        setLedger(ledgerRes.data.data || ledgerRes.data);
       } else {
         const [ordersRes, ledgerRes] = await Promise.all([
           api.get('/sales', { params: { isOnline: true, shippingStatus: activeTab } }),
           api.get('/sales/payouts/ledger'),
         ]);
-        setOrders(ordersRes.data.data);
-        setLedger(ledgerRes.data);
+        setOrders(ordersRes.data.data || ordersRes.data);
+        setLedger(ledgerRes.data.data || ledgerRes.data);
       }
     } catch (err) {
       console.error(err);
