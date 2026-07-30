@@ -24,7 +24,7 @@ export default function OnlineOrdersPage() {
 
   const [orders, setOrders] = useState<Sale[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [ledger, setLedger] = useState({ totalDeliveredCod: 0, totalPayouts: 0, dueFromCouriers: 0 });
+  const [ledger, setLedger] = useState({ totalDeliveredCod: 0, totalPayouts: 0, totalTaxDeducted: 0, dueFromCouriers: 0 });
   
   const { user } = useAuthStore();
   const toast = useToastStore();
@@ -152,7 +152,7 @@ export default function OnlineOrdersPage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="glass-card rounded-xl p-4 border border-white/5 bg-white/[0.02]">
             <p className="text-xs text-stitch-on-surface-variant font-bold uppercase tracking-wider mb-1">Delivered COD Value</p>
             <p className="text-2xl font-bold text-white tabular-nums">₨ {ledger.totalDeliveredCod.toLocaleString()}</p>
@@ -161,9 +161,18 @@ export default function OnlineOrdersPage() {
             <p className="text-xs text-stitch-on-surface-variant font-bold uppercase tracking-wider mb-1">Total Payouts Logged</p>
             <p className="text-2xl font-bold text-emerald-400 tabular-nums">₨ {ledger.totalPayouts.toLocaleString()}</p>
           </div>
-          <div className="glass-card rounded-xl p-4 border border-indigo-500/20 bg-indigo-500/5">
-            <p className="text-xs text-indigo-400 font-bold uppercase tracking-wider mb-1">Due from Couriers</p>
-            <p className="text-2xl font-bold text-indigo-400 tabular-nums">₨ {ledger.dueFromCouriers.toLocaleString()}</p>
+          {ledger.totalTaxDeducted > 0 && (
+            <div className="glass-card rounded-xl p-4 border border-amber-500/20 bg-amber-500/5">
+              <p className="text-xs text-amber-400 font-bold uppercase tracking-wider mb-1">Tax Deducted (Govt)</p>
+              <p className="text-2xl font-bold text-amber-400 tabular-nums">₨ {ledger.totalTaxDeducted.toLocaleString()}</p>
+            </div>
+          )}
+          <div className={`glass-card rounded-xl p-4 border ${ledger.dueFromCouriers > 0 ? 'border-indigo-500/20 bg-indigo-500/5' : 'border-emerald-500/20 bg-emerald-500/5'}`}>
+            <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${ledger.dueFromCouriers > 0 ? 'text-indigo-400' : 'text-emerald-400'}`}>Due from Couriers</p>
+            <p className={`text-2xl font-bold tabular-nums ${ledger.dueFromCouriers > 0 ? 'text-indigo-400' : 'text-emerald-400'}`}>
+              ₨ {ledger.dueFromCouriers.toLocaleString()}
+            </p>
+            {ledger.dueFromCouriers === 0 && <p className="text-[10px] text-emerald-400/70 mt-1">All settled ✓</p>}
           </div>
         </div>
 

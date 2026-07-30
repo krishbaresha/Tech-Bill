@@ -582,14 +582,21 @@ export class SalesService {
     });
     const payouts = await this.prisma.courierPayout.aggregate({
       where: { tenantId },
-      _sum: { amount: true },
+      // Sum both net amount received AND tax deducted.
+      // Tax goes to government — it is NOT money still owed by couriers.
+      // dueFromCouriers = deliveredCOD - netPayouts - taxToGovt
+      _sum: { amount: true, taxDeducted: true },
     });
     const totalDeliveredCod = Number(deliveredSales._sum.codAmount ?? 0);
     const totalPayouts = Number(payouts._sum.amount ?? 0);
+    const totalTaxDeducted = Number(payouts._sum.taxDeducted ?? 0);
+    // Couriers owe: total COD collected - what they've paid us - what govt took
+    const dueFromCouriers = Math.max(0, totalDeliveredCod - totalPayouts - totalTaxDeducted);
     return {
       totalDeliveredCod,
       totalPayouts,
-      dueFromCouriers: totalDeliveredCod - totalPayouts,
+      totalTaxDeducted,
+      dueFromCouriers,
     };
   }
 

@@ -189,8 +189,10 @@ export default function ReportsPage() {
               {isOnlineEnabled && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="glass-card rounded-xl p-5 border border-white/5 bg-white/[0.01]">
-                    <h3 className="text-xs font-bold text-stitch-on-surface-variant uppercase tracking-wider mb-2">Offline vs Online Revenue</h3>
-                    <div className="space-y-3 mt-4">
+                    <h3 className="text-xs font-bold text-stitch-on-surface-variant uppercase tracking-wider mb-3">Revenue Breakdown</h3>
+                    {/* Accrual Revenue — used for Gross Profit */}
+                    <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest mb-1.5">Accrual Revenue (for Profit)</p>
+                    <div className="space-y-2 mb-3">
                       <div className="flex justify-between text-sm">
                         <span className="text-stitch-on-surface-variant">Offline Sales</span>
                         <span className="font-bold text-white tabular-nums">{formatPKR(summary.offlineRevenue)}</span>
@@ -199,16 +201,36 @@ export default function ReportsPage() {
                         <span className="text-stitch-on-surface-variant">Online Sales</span>
                         <span className="font-bold text-emerald-400 tabular-nums">{formatPKR(summary.onlineRevenue)}</span>
                       </div>
-                      <div className="flex justify-between text-sm border-t border-white/10 pt-2">
-                        <span className="text-stitch-on-surface-variant text-xs">↳ Bulk Courier Payouts (COD)</span>
-                        <span className="font-bold text-indigo-400 tabular-nums text-xs">{formatPKR(summary.courierPayouts)}</span>
-                      </div>
-                      {(summary.courierTaxDeducted ?? 0) > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-amber-400 text-xs">↳ Tax Deducted (Govt)</span>
-                          <span className="font-bold text-amber-400 tabular-nums text-xs">− {formatPKR(summary.courierTaxDeducted)}</span>
+                    </div>
+                    {/* Cash Actually Received */}
+                    <div className="border-t border-white/10 pt-3">
+                      <p className="text-[9px] font-bold text-amber-400 uppercase tracking-widest mb-1.5">Cash Received This Period</p>
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-stitch-on-surface-variant">Offline Cash</span>
+                          <span className="font-bold text-white tabular-nums">{formatPKR(summary.offlineRevenue)}</span>
                         </div>
-                      )}
+                        {(summary.totalAdvanceAmount ?? 0) > 0 && (
+                          <div className="flex justify-between text-xs">
+                            <span className="text-stitch-on-surface-variant">Online Advances</span>
+                            <span className="font-bold text-white tabular-nums">{formatPKR(summary.totalAdvanceAmount)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-xs">
+                          <span className="text-stitch-on-surface-variant">Courier Payouts (COD)</span>
+                          <span className="font-bold text-indigo-400 tabular-nums">{formatPKR(summary.courierPayouts)}</span>
+                        </div>
+                        {(summary.courierTaxDeducted ?? 0) > 0 && (
+                          <div className="flex justify-between text-xs">
+                            <span className="text-amber-400">Tax Deducted (Govt)</span>
+                            <span className="font-bold text-amber-400 tabular-nums">− {formatPKR(summary.courierTaxDeducted)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-xs border-t border-white/10 pt-1.5 mt-1">
+                          <span className="font-bold text-white">Total Cash In Hand</span>
+                          <span className="font-bold text-emerald-400 tabular-nums">{formatPKR(summary.cashReceived ?? 0)}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <div className="glass-card rounded-xl p-5 border border-white/5 bg-white/[0.01]">
