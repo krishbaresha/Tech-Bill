@@ -63,6 +63,45 @@ export class SalesController {
     return this.salesService.lookupByInvoice(invoiceNumber, req.user.tenantId);
   }
 
+  @Get('payouts/ledger')
+  @Permissions('pos.online_sell')
+  getCourierLedger(@Req() req: RequestWithUser) {
+    return this.salesService.getCourierLedger(req.user.tenantId);
+  }
+
+  @Post('payouts')
+  @Permissions('pos.online_sell')
+  recordCourierPayout(
+    @Body('amount') amount: number,
+    @Body('taxDeducted') taxDeducted: number,
+    @Body('courierName') courierName: string,
+    @Body('date') date: string,
+    @Body('saleIds') saleIds: string[],
+    @Req() req: RequestWithUser,
+  ) {
+    return this.salesService.recordCourierPayout(
+      req.user.tenantId,
+      req.user.id,
+      Number(amount),
+      Number(taxDeducted) || 0,
+      courierName,
+      date,
+      saleIds || [],
+    );
+  }
+
+  @Get('payouts')
+  @Permissions('pos.online_sell')
+  getPayouts(@Req() req: RequestWithUser) {
+    return this.salesService.getPayouts(req.user.tenantId);
+  }
+
+  @Delete('payouts/:id')
+  @Permissions('pos.online_sell')
+  deletePayout(@Param('id') id: string, @Req() req: RequestWithUser) {
+    return this.salesService.deletePayout(req.user.tenantId, id);
+  }
+
   @Get(':id')
   @Permissions('pos.read')
   getSale(@Param('id') id: string, @Req() req: RequestWithUser) {
@@ -136,44 +175,7 @@ export class SalesController {
     return this.salesService.markDelivered(id, req.user.tenantId);
   }
 
-  @Get('payouts/ledger')
-  @Permissions('pos.online_sell')
-  getCourierLedger(@Req() req: RequestWithUser) {
-    return this.salesService.getCourierLedger(req.user.tenantId);
-  }
 
-  @Post('payouts')
-  @Permissions('pos.online_sell')
-  recordCourierPayout(
-    @Body('amount') amount: number,
-    @Body('taxDeducted') taxDeducted: number,
-    @Body('courierName') courierName: string,
-    @Body('date') date: string,
-    @Body('saleIds') saleIds: string[],
-    @Req() req: RequestWithUser,
-  ) {
-    return this.salesService.recordCourierPayout(
-      req.user.tenantId,
-      req.user.id,
-      Number(amount),
-      Number(taxDeducted) || 0,
-      courierName,
-      date,
-      saleIds || [],
-    );
-  }
-
-  @Get('payouts')
-  @Permissions('pos.online_sell')
-  getPayouts(@Req() req: RequestWithUser) {
-    return this.salesService.getPayouts(req.user.tenantId);
-  }
-
-  @Delete('payouts/:id')
-  @Permissions('pos.online_sell')
-  deletePayout(@Param('id') id: string, @Req() req: RequestWithUser) {
-    return this.salesService.deletePayout(req.user.tenantId, id);
-  }
 
   @Patch(':id/return')
   @Permissions('pos.online_sell')
