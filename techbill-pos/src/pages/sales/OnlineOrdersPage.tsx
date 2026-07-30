@@ -203,12 +203,10 @@ export default function OnlineOrdersPage() {
             <p className="text-xs text-stitch-on-surface-variant font-bold uppercase tracking-wider mb-1">Total Payouts Logged</p>
             <p className="text-2xl font-bold text-emerald-400 tabular-nums">₨ {ledger.totalPayouts.toLocaleString()}</p>
           </div>
-          {ledger.totalTaxDeducted > 0 && (
-            <div className="glass-card rounded-xl p-4 border border-amber-500/20 bg-amber-500/5">
-              <p className="text-xs text-amber-400 font-bold uppercase tracking-wider mb-1">Tax Deducted (Govt)</p>
-              <p className="text-2xl font-bold text-amber-400 tabular-nums">₨ {ledger.totalTaxDeducted.toLocaleString()}</p>
-            </div>
-          )}
+          <div className="glass-card rounded-xl p-4 border border-amber-500/20 bg-amber-500/5">
+            <p className="text-xs text-amber-400 font-bold uppercase tracking-wider mb-1">Tax Deducted (Govt)</p>
+            <p className="text-2xl font-bold text-amber-400 tabular-nums">₨ {ledger.totalTaxDeducted.toLocaleString()}</p>
+          </div>
           <div className={`glass-card rounded-xl p-4 border ${ledger.dueFromCouriers > 0 ? 'border-indigo-500/20 bg-indigo-500/5' : 'border-emerald-500/20 bg-emerald-500/5'}`}>
             <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${ledger.dueFromCouriers > 0 ? 'text-indigo-400' : 'text-emerald-400'}`}>Due from Couriers</p>
             <p className={`text-2xl font-bold tabular-nums ${ledger.dueFromCouriers > 0 ? 'text-indigo-400' : 'text-emerald-400'}`}>
