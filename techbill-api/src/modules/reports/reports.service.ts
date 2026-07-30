@@ -25,11 +25,17 @@ export class ReportsService {
     const end = new Date(date + 'T23:59:59+05:00');
     const expenseStart = new Date(date + 'T00:00:00Z');
     const expenseEnd = new Date(date + 'T23:59:59Z');
+    // For DATE-only columns (courier_payouts.date), use plain UTC midnight boundaries
+    // to avoid PKT offset mismatch (a +05:00 date converts to the previous UTC day).
+    const payoutDateStart = new Date(date + 'T00:00:00.000Z');
+    const payoutDateEnd = new Date(date + 'T23:59:59.999Z');
     return this.buildSummary(
       start,
       end,
       expenseStart,
       expenseEnd,
+      payoutDateStart,
+      payoutDateEnd,
       date,
       tenantId,
     );
@@ -42,11 +48,16 @@ export class ReportsService {
     const end = new Date(to + 'T23:59:59+05:00');
     const expenseStart = new Date(from + 'T00:00:00Z');
     const expenseEnd = new Date(to + 'T23:59:59Z');
+    // For DATE-only columns (courier_payouts.date), use plain UTC midnight boundaries
+    const payoutDateStart = new Date(from + 'T00:00:00.000Z');
+    const payoutDateEnd = new Date(to + 'T23:59:59.999Z');
     return this.buildSummary(
       start,
       end,
       expenseStart,
       expenseEnd,
+      payoutDateStart,
+      payoutDateEnd,
       `${from} to ${to}`,
       tenantId,
     );
@@ -57,6 +68,8 @@ export class ReportsService {
     end: Date,
     expenseStart: Date,
     expenseEnd: Date,
+    payoutDateStart: Date,
+    payoutDateEnd: Date,
     label: string,
     tenantId: string,
   ) {
@@ -134,9 +147,6 @@ export class ReportsService {
       select: {
         isOnline: true,
         totalAmount: true,
-        advanceAmount: true,
-        codAmount: true,
-        payoutReceivedAt: true,
         discountAmount: true,
       },
     });
@@ -148,12 +158,12 @@ export class ReportsService {
     let offlineSalesCount = 0;
     let onlineSalesCount = 0;
 
-    let totalOnlineAccrual = 0;
     for (const s of salesList) {
       totalDiscounts += Number(s.discountAmount ?? 0);
       if (s.isOnline) {
-        totalOnlineAccrual += Number(s.totalAmount ?? 0);
-        onlineRevenue += Number(s.advanceAmount ?? 0);
+        // Accrual basis: use full totalAmount of the online sale (not just advanceAmount).
+        // advanceAmount is a partial cash receipt, not the recognised revenue.
+        onlineRevenue += Number(s.totalAmount ?? 0);
         onlineSalesCount += 1;
       } else {
         offlineRevenue += Number(s.totalAmount ?? 0);
@@ -161,16 +171,19 @@ export class ReportsService {
       }
     }
 
-    // Payouts tracked for cash flow, AND added to onlineRevenue per user request
+    // Courier payouts are a CASH FLOW event only — they must NOT be added to
+    // onlineRevenue or totalRevenue per accrual accounting rules.
+    // Use payoutDateStart/payoutDateEnd (UTC midnight-aligned) to match the
+    // DATE-only column; PKT-offset dates cause yesterday's payouts to appear today.
     const payouts = await this.prisma.courierPayout.aggregate({
       where: {
         tenantId,
-        date: { gte: start, lte: end },
+        date: { gte: payoutDateStart, lte: payoutDateEnd },
       },
       _sum: { amount: true },
     });
     const courierPayouts = Number(payouts._sum.amount ?? 0);
-    onlineRevenue += courierPayouts;
+    // courierPayouts is returned separately for display purposes only.
 
     totalRevenue = offlineRevenue + onlineRevenue;
 
