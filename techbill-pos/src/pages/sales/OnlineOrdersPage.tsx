@@ -326,7 +326,7 @@ export default function OnlineOrdersPage() {
                      <p className="font-space font-bold text-stitch-primary text-lg">{payout.courierName || 'Unknown Courier'} Payout</p>
                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                        <div><p className="text-stitch-on-surface-variant text-[10px] uppercase font-bold">Date</p><p className="font-semibold text-white">{format(new Date(payout.date), 'dd MMM yyyy')}</p></div>
-                       <div><p className="text-stitch-on-surface-variant text-[10px] uppercase font-bold">Gross Amount</p><p className="font-semibold text-white">Rs {Number(payout.amount + (payout.taxDeducted || 0)).toLocaleString()}</p></div>
+                       <div><p className="text-stitch-on-surface-variant text-[10px] uppercase font-bold">Gross Amount</p><p className="font-semibold text-white">Rs {(Number(payout.amount) + Number(payout.taxDeducted || 0)).toLocaleString()}</p></div>
                        <div><p className="text-stitch-on-surface-variant text-[10px] uppercase font-bold">Tax Deducted</p><p className="font-semibold text-amber-400">Rs {Number(payout.taxDeducted || 0).toLocaleString()}</p></div>
                        <div><p className="text-stitch-on-surface-variant text-[10px] uppercase font-bold">Net Banked</p><p className="font-semibold text-emerald-400">Rs {Number(payout.amount).toLocaleString()}</p></div>
                      </div>
