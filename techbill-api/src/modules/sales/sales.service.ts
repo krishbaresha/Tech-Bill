@@ -607,16 +607,35 @@ export class SalesService {
     taxDeducted: number,
     courierName: string,
     date: string,
+    saleIds: string[],
   ) {
-    return this.prisma.courierPayout.create({
-      data: {
-        tenantId,
-        createdById: userId,
-        amount,
-        taxDeducted: taxDeducted > 0 ? taxDeducted : null,
-        courierName,
-        date: new Date(date),
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const payout = await tx.courierPayout.create({
+        data: {
+          tenantId,
+          createdById: userId,
+          amount,
+          taxDeducted: taxDeducted > 0 ? taxDeducted : null,
+          courierName,
+          date: new Date(date),
+        },
+      });
+
+      if (saleIds && saleIds.length > 0) {
+        await tx.sale.updateMany({
+          where: {
+            id: { in: saleIds },
+            tenantId,
+          },
+          data: {
+            payoutId: payout.id,
+            payoutReceivedAt: payout.date,
+            shippingStatus: 'delivered', // mark as delivered if payout received
+          },
+        });
+      }
+
+      return payout;
     });
   }
 

@@ -471,6 +471,8 @@ model Sale {
   description          String?       @db.Text
   shippingStatus       ShippingStatus @default(pending) @map("shipping_status")
   payoutReceivedAt     DateTime?      @map("payout_received_at")
+  payoutId             String?        @map("payout_id") @db.Uuid
+  courierPayout        CourierPayout? @relation(fields: [payoutId], references: [id], onDelete: SetNull)
   refundLossAmount     Decimal?       @map("refund_loss_amount") @db.Decimal(10, 2)
   createdAt            DateTime      @default(now()) @map("created_at")
 
@@ -583,10 +585,12 @@ model CourierPayout {
   createdBy    User?    @relation("PayoutsCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   tenantId     String   @map("tenant_id") @db.Uuid
   tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  createdAt    DateTime @default(now()) @map("created_at")
+  recordedAt   DateTime @default(now()) @map("recorded_at")
 
-  @@index([date])
+  sales        Sale[]
+
   @@index([tenantId])
+  @@index([date])
   @@map("courier_payouts")
 }
 

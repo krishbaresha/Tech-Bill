@@ -149,6 +149,7 @@ export class SalesController {
     @Body('taxDeducted') taxDeducted: number,
     @Body('courierName') courierName: string,
     @Body('date') date: string,
+    @Body('saleIds') saleIds: string[],
     @Req() req: RequestWithUser,
   ) {
     return this.salesService.recordCourierPayout(
@@ -158,6 +159,7 @@ export class SalesController {
       Number(taxDeducted) || 0,
       courierName,
       date,
+      saleIds || [],
     );
   }
 

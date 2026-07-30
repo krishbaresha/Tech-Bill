@@ -73,115 +73,103 @@ export class ReportsService {
     label: string,
     tenantId: string,
   ) {
-    const where = {
+    const salesWhere = {
       tenantId,
       status: { in: [SaleStatus.completed, SaleStatus.partial_return] },
-      createdAt: { gte: start, lte: end },
+      OR: [
+        { isOnline: false, createdAt: { gte: start, lte: end } },
+        { isOnline: true, createdAt: { gte: start, lte: end } },
+        { isOnline: true, payoutReceivedAt: { gte: payoutDateStart, lte: payoutDateEnd } },
+      ],
     };
 
-    const [totals, byPayment, items] = await Promise.all([
-      this.prisma.sale.aggregate({
-        where,
-        _count: { id: true },
-        _sum: { totalAmount: true, discountAmount: true },
-      }),
-      this.prisma.sale.groupBy({
-        by: ['paymentMethod'],
-        where,
-        _count: { id: true },
-        _sum: { totalAmount: true },
-      }),
-      this.prisma.saleItem.findMany({
-        where: {
-          sale: {
-            tenantId,
-            status: { in: [SaleStatus.completed, SaleStatus.partial_return] },
-            createdAt: { gte: start, lte: end },
-          },
-        },
-        select: {
-          sellingPrice: true,
-          inventoryUnit: {
-            select: {
-              purchasePrice: true,
-              product: { select: { id: true, name: true } },
+    const salesList = await this.prisma.sale.findMany({
+      where: salesWhere,
+      include: {
+        items: {
+          include: {
+            inventoryUnit: {
+              select: { purchasePrice: true, product: { select: { id: true, name: true } } },
             },
           },
-          sale: { select: { isOnline: true } },
         },
-      }),
-    ]);
+      },
+    });
 
-    const productMap = new Map<
-      string,
-      { name: string; units: number; revenue: number; onlineUnits: number }
-    >();
-    for (const item of items) {
-      const pid = item.inventoryUnit.product.id;
-      const isOnline = item.sale?.isOnline;
-      const entry = productMap.get(pid) ?? {
-        name: item.inventoryUnit.product.name,
-        units: 0,
-        revenue: 0,
-        onlineUnits: 0,
-      };
-      productMap.set(pid, {
-        ...entry,
-        units: entry.units + 1,
-        revenue: entry.revenue + Number(item.sellingPrice),
-        onlineUnits: entry.onlineUnits + (isOnline ? 1 : 0),
-      });
+    const productMap = new Map<string, { name: string; units: number; revenue: number; onlineUnits: number }>();
+    
+    let totalCost = 0;
+    let totalRevenue = 0;
+    let totalDiscounts = 0;
+    let offlineRevenue = 0;
+    let onlineRevenue = 0;       
+    let offlineSalesCount = 0;
+    let onlineSalesCount = 0;
+    let totalAdvanceAmount = 0;  
+    
+    // For totals and byPaymentMethod
+    let totalSalesCount = 0;
+    const byPaymentMap = new Map<string, { count: number; revenue: number }>();
+
+    for (const s of salesList) {
+      const createdInPeriod = s.createdAt >= start && s.createdAt <= end;
+      const paidInPeriod = s.payoutReceivedAt && s.payoutReceivedAt >= payoutDateStart && s.payoutReceivedAt <= payoutDateEnd;
+
+      if (!s.isOnline) {
+        if (createdInPeriod) {
+          offlineRevenue += Number(s.totalAmount);
+          offlineSalesCount += 1;
+          totalSalesCount += 1;
+          totalDiscounts += Number(s.discountAmount);
+          
+          const payMethod = byPaymentMap.get(s.paymentMethod) || { count: 0, revenue: 0 };
+          byPaymentMap.set(s.paymentMethod, { count: payMethod.count + 1, revenue: payMethod.revenue + Number(s.totalAmount) });
+
+          for (const item of s.items) {
+             totalCost += Number(item.inventoryUnit.purchasePrice ?? 0);
+             const pid = item.inventoryUnit.product.id;
+             const entry = productMap.get(pid) ?? { name: item.inventoryUnit.product.name, units: 0, revenue: 0, onlineUnits: 0 };
+             productMap.set(pid, { ...entry, units: entry.units + 1, revenue: entry.revenue + Number(item.sellingPrice), onlineUnits: entry.onlineUnits });
+          }
+        }
+      } else {
+        if (createdInPeriod) {
+          totalAdvanceAmount += Number(s.advanceAmount);
+          onlineSalesCount += 1;
+          totalSalesCount += 1; // count the sale in total sales when created
+          
+          // Advance is added to byPaymentMethod (assuming advance is usually bank transfer, but we use paymentMethod of the sale)
+          const payMethod = byPaymentMap.get(s.paymentMethod) || { count: 0, revenue: 0 };
+          byPaymentMap.set(s.paymentMethod, { count: payMethod.count + 1, revenue: payMethod.revenue + Number(s.advanceAmount) });
+        }
+        
+        if (paidInPeriod) {
+          onlineRevenue += Number(s.codAmount);
+          totalDiscounts += Number(s.discountAmount); // Discounts taken into account on settlement
+          
+          const codMethod = 'Cash'; // Payouts usually settle as Cash
+          const payMethod = byPaymentMap.get(codMethod) || { count: 0, revenue: 0 };
+          byPaymentMap.set(codMethod, { count: payMethod.count + (createdInPeriod ? 0 : 1), revenue: payMethod.revenue + Number(s.codAmount) });
+
+          // COGS and product items are added to reports when fully settled
+          for (const item of s.items) {
+             totalCost += Number(item.inventoryUnit.purchasePrice ?? 0);
+             const pid = item.inventoryUnit.product.id;
+             const entry = productMap.get(pid) ?? { name: item.inventoryUnit.product.name, units: 0, revenue: 0, onlineUnits: 0 };
+             productMap.set(pid, { ...entry, units: entry.units + 1, revenue: entry.revenue + Number(item.sellingPrice), onlineUnits: entry.onlineUnits + 1 });
+          }
+        }
+      }
     }
+
+    onlineRevenue += totalAdvanceAmount;
+    totalRevenue = offlineRevenue + onlineRevenue;
 
     const soldProducts = [...productMap.entries()]
       .map(([productId, d]) => ({ productId, ...d }))
       .sort((a, b) => b.revenue - a.revenue);
-
-    let totalCost = 0;
-    for (const item of items) {
-      const cost = item.inventoryUnit.purchasePrice ?? 0;
-      totalCost += Number(cost);
-    }
-    const salesList = await this.prisma.sale.findMany({
-      where,
-      select: {
-        isOnline: true,
-        totalAmount: true,
-        advanceAmount: true,
-        discountAmount: true,
-      },
-    });
-
-    let totalRevenue = 0;
-    let totalDiscounts = 0;
-    let offlineRevenue = 0;
-    let onlineRevenue = 0;       // accrual: full totalAmount of online sales
-    let offlineSalesCount = 0;
-    let onlineSalesCount = 0;
-    let totalAdvanceAmount = 0;  // cash collected upfront from online orders
-
-    for (const s of salesList) {
-      totalDiscounts += Number(s.discountAmount ?? 0);
-      if (s.isOnline) {
-        // ACCRUAL: recognise the full totalAmount when the sale is completed.
-        // This keeps Revenue and COGS in sync (both cover the same sales).
-        // Without this, COGS includes all sold items but Revenue only includes
-        // advance amounts, producing a falsely negative Gross Profit.
-        onlineRevenue += Number(s.totalAmount ?? 0);
-        totalAdvanceAmount += Number(s.advanceAmount ?? 0);
-        onlineSalesCount += 1;
-      } else {
-        offlineRevenue += Number(s.totalAmount ?? 0);
-        offlineSalesCount += 1;
-      }
-    }
-
+    
     // Courier payouts = cash actually received from couriers (COD settlements).
-    // Per project rules, these are NOT added to accrual revenue — the COD amount
-    // is already recognised via onlineRevenue above when the sale is completed.
-    // They are tracked here purely as a cash-flow / reconciliation metric.
-    // Use payoutDateStart/payoutDateEnd (UTC midnight-aligned) to match the
-    // DATE-only column; PKT-offset dates caused yesterday's payouts to appear today.
     const payoutsAgg = await this.prisma.courierPayout.aggregate({
       where: {
         tenantId,
@@ -192,11 +180,7 @@ export class ReportsService {
     const courierPayouts = Number(payoutsAgg._sum.amount ?? 0);
     const courierTaxDeducted = Number(payoutsAgg._sum.taxDeducted ?? 0);
 
-    // cashReceived = actual cash in hand this period
-    // (offline cash + online advances + COD payouts received)
     const cashReceived = offlineRevenue + totalAdvanceAmount + courierPayouts;
-
-    totalRevenue = offlineRevenue + onlineRevenue;
 
     const approvedReturns = await this.prisma.return.findMany({
       where: {
@@ -295,9 +279,20 @@ export class ReportsService {
       totalGrossProfit,
       totalPurchaseCost,
       totalExpenses,
+    let totalItemsSold = 0;
+    for (const v of productMap.values()) {
+      totalItemsSold += v.units;
+    }
+
+    return {
+      period: label,
+      totalRevenue,
+      totalGrossProfit,
+      totalPurchaseCost,
+      totalExpenses,
       netProfit: totalGrossProfit - totalExpenses,
-      totalSales: totals._count.id,
-      totalItems: items.length,
+      totalSales: totalSalesCount,
+      totalItems: totalItemsSold,
       totalDiscounts,
       offlineRevenue,
       onlineRevenue,
@@ -310,10 +305,10 @@ export class ReportsService {
       onlineSalesCount,
       offlineSalesCount,
       pendingOnlineOrders,
-      byPaymentMethod: byPayment.map((g) => ({
-        method: g.paymentMethod,
-        count: g._count.id,
-        revenue: Number(g._sum.totalAmount ?? 0),
+      byPaymentMethod: Array.from(byPaymentMap.entries()).map(([method, data]) => ({
+        method,
+        count: data.count,
+        revenue: data.revenue,
       })),
       soldProducts,
     };
