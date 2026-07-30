@@ -273,12 +273,7 @@ export class ReportsService {
       },
     });
 
-    return {
-      period: label,
-      totalRevenue,
-      totalGrossProfit,
-      totalPurchaseCost,
-      totalExpenses,
+
     let totalItemsSold = 0;
     for (const v of productMap.values()) {
       totalItemsSold += v.units;
