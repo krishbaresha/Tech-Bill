@@ -7,7 +7,7 @@ import { useAuthStore } from '../../store/auth.store';
 import { useToastStore } from '../../store/toast.store';
 
 export default function OnlineOrdersPage() {
-  const [activeTab, setActiveTab] = useState<'pending' | 'dispatched' | 'delivered' | 'returned'>('pending');
+  const [activeTab, setActiveTab] = useState<'pending' | 'dispatched' | 'delivered' | 'returned' | 'payouts'>('pending');
   const [searchQuery, setSearchQuery] = useState('');
   
   const [dispatchingId, setDispatchingId] = useState<string | null>(null);
@@ -25,6 +25,7 @@ export default function OnlineOrdersPage() {
   const [unpaidOrders, setUnpaidOrders] = useState<Sale[]>([]);
 
   const [orders, setOrders] = useState<Sale[]>([]);
+  const [payoutsList, setPayoutsList] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [ledger, setLedger] = useState({ totalDeliveredCod: 0, totalPayouts: 0, totalTaxDeducted: 0, dueFromCouriers: 0 });
   
@@ -34,12 +35,21 @@ export default function OnlineOrdersPage() {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [ordersRes, ledgerRes] = await Promise.all([
-        api.get('/sales', { params: { isOnline: true, shippingStatus: activeTab } }),
-        api.get('/sales/payouts/ledger'),
-      ]);
-      setOrders(ordersRes.data.data);
-      setLedger(ledgerRes.data);
+      if (activeTab === 'payouts') {
+        const [payoutsRes, ledgerRes] = await Promise.all([
+          api.get('/sales/payouts'),
+          api.get('/sales/payouts/ledger'),
+        ]);
+        setPayoutsList(payoutsRes.data);
+        setLedger(ledgerRes.data);
+      } else {
+        const [ordersRes, ledgerRes] = await Promise.all([
+          api.get('/sales', { params: { isOnline: true, shippingStatus: activeTab } }),
+          api.get('/sales/payouts/ledger'),
+        ]);
+        setOrders(ordersRes.data.data);
+        setLedger(ledgerRes.data);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -290,16 +300,62 @@ export default function OnlineOrdersPage() {
           <TabButton id="dispatched" active={activeTab} set={setActiveTab} label="Dispatched" icon={<Truck size={16} />} />
           <TabButton id="delivered" active={activeTab} set={setActiveTab} label="Completed" icon={<CheckCircle2 size={16} />} />
           <TabButton id="returned" active={activeTab} set={setActiveTab} label="Returned" icon={<RotateCcw size={16} />} />
+          <TabButton id="payouts" active={activeTab} set={setActiveTab} label="Payouts" icon={<CheckCircle size={16} />} />
         </div>
 
-        <div className="relative shrink-0">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stitch-on-surface-variant" size={18} />
-          <input type="text" placeholder="Search by invoice, customer, or tracking ID..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder-stitch-on-surface-variant focus:outline-none focus:border-stitch-primary transition-colors" />
-        </div>
+        {activeTab !== 'payouts' && (
+          <div className="relative shrink-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stitch-on-surface-variant" size={18} />
+            <input type="text" placeholder="Search by invoice, customer, or tracking ID..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder-stitch-on-surface-variant focus:outline-none focus:border-stitch-primary transition-colors" />
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto space-y-4 pr-2">
           {isLoading ? (
             <div className="flex items-center justify-center h-32"><span className="w-8 h-8 border-2 border-stitch-primary/30 border-t-stitch-primary rounded-full animate-spin" /></div>
+          ) : activeTab === 'payouts' ? (
+            payoutsList.length === 0 ? (
+               <div className="flex flex-col items-center justify-center h-64 text-center">
+                 <PackageSearch size={48} className="text-stitch-on-surface-variant/30 mb-4" />
+                 <p className="text-lg font-bold text-white mb-2">No payouts found</p>
+               </div>
+            ) : (
+               payoutsList.map((payout) => (
+                 <div key={payout.id} className="glass-panel p-5 rounded-2xl border border-white/5 flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
+                   <div className="space-y-3 flex-1">
+                     <p className="font-space font-bold text-stitch-primary text-lg">{payout.courierName || 'Unknown Courier'} Payout</p>
+                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                       <div><p className="text-stitch-on-surface-variant text-[10px] uppercase font-bold">Date</p><p className="font-semibold text-white">{format(new Date(payout.date), 'dd MMM yyyy')}</p></div>
+                       <div><p className="text-stitch-on-surface-variant text-[10px] uppercase font-bold">Gross Amount</p><p className="font-semibold text-white">Rs {Number(payout.amount + (payout.taxDeducted || 0)).toLocaleString()}</p></div>
+                       <div><p className="text-stitch-on-surface-variant text-[10px] uppercase font-bold">Tax Deducted</p><p className="font-semibold text-amber-400">Rs {Number(payout.taxDeducted || 0).toLocaleString()}</p></div>
+                       <div><p className="text-stitch-on-surface-variant text-[10px] uppercase font-bold">Net Banked</p><p className="font-semibold text-emerald-400">Rs {Number(payout.amount).toLocaleString()}</p></div>
+                     </div>
+                     <div>
+                       <p className="text-stitch-on-surface-variant text-[10px] uppercase font-bold mb-1">Invoices Included</p>
+                       <p className="text-xs text-white/70">
+                         {payout.sales && payout.sales.length > 0 
+                           ? payout.sales.map((s: any) => s.invoiceNumber).join(', ') 
+                           : '-'}
+                       </p>
+                     </div>
+                   </div>
+                   <div className="flex items-center gap-2">
+                     <button
+                       onClick={async () => {
+                         if (window.confirm('Delete this payout? The sales will be marked as unpaid.')) {
+                           await api.delete(`/sales/payouts/${payout.id}`);
+                           fetchData();
+                         }
+                       }}
+                       className="text-red-400 hover:text-red-300 p-2 hover:bg-red-400/10 rounded-lg transition-colors"
+                       title="Delete Payout"
+                     >
+                       <Trash2 size={20} />
+                     </button>
+                   </div>
+                 </div>
+               ))
+            )
           ) : filteredOrders.map((order) => (
             <div key={order.id} className="glass-panel p-5 rounded-2xl border border-white/5 flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
               <div className="space-y-3 flex-1">

@@ -163,6 +163,18 @@ export class SalesController {
     );
   }
 
+  @Get('payouts')
+  @Permissions('pos.online_sell')
+  getPayouts(@Req() req: RequestWithUser) {
+    return this.salesService.getPayouts(req.user.tenantId);
+  }
+
+  @Delete('payouts/:id')
+  @Permissions('pos.online_sell')
+  deletePayout(@Param('id') id: string, @Req() req: RequestWithUser) {
+    return this.salesService.deletePayout(req.user.tenantId, id);
+  }
+
   @Patch(':id/return')
   @Permissions('pos.online_sell')
   returnOnlineOrder(

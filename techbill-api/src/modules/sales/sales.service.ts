@@ -639,6 +639,35 @@ export class SalesService {
     });
   }
 
+  async getPayouts(tenantId: string) {
+    return this.prisma.courierPayout.findMany({
+      where: { tenantId },
+      include: {
+        sales: {
+          select: { invoiceNumber: true }
+        }
+      },
+      orderBy: { date: 'desc' }
+    });
+  }
+
+  async deletePayout(tenantId: string, payoutId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      // Unlink sales
+      await tx.sale.updateMany({
+        where: { tenantId, payoutId },
+        data: {
+          payoutId: null,
+          payoutReceivedAt: null
+        }
+      });
+      // Delete payout
+      return tx.courierPayout.delete({
+        where: { id: payoutId, tenantId }
+      });
+    });
+  }
+
   async returnOnlineOrder(
     id: string,
     refundLossAmount: number,
