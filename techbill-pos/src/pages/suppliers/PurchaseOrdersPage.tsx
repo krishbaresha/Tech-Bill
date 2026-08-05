@@ -146,8 +146,6 @@ export default function PurchaseOrdersPage() {
         supplierId: existingSupplier ? existingSupplier.id : undefined,
         newSupplierName: !existingSupplier ? supplierInput.trim() : undefined,
         notes: notes || undefined,
-        paidAmount: paidAmount === '' ? 0 : Number(paidAmount),
-        paymentMethod: paymentMethod,
         items: validItems.map(i => ({
           productId: i.productId,
           quantityOrdered: Number(i.quantityOrdered),
