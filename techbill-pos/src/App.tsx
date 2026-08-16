@@ -47,6 +47,8 @@ import { useLicenseStore } from './store/license.store';
 import { useDesktopLicenseStore } from './store/desktopLicense.store';
 import ActivationScreen from './pages/license/ActivationScreen';
 import { socket } from './api/socket';
+import { syncEngine } from './services/syncEngine';
+
 
 
 function RequireAuth({
@@ -264,8 +266,12 @@ export default function App() {
   useEffect(() => {
     if (user && accessToken) {
       void fetchLicense();
+      syncEngine.startAutoSync(30000);
+    } else {
+      syncEngine.stopAutoSync();
     }
   }, [user, accessToken, fetchLicense]);
+
 
   useEffect(() => {
     const handleUpdate = (payload: { tenantId: string }) => {
