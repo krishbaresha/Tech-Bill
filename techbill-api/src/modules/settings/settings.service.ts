@@ -16,6 +16,7 @@ interface UpdateSettingsDto {
   invoiceWatermarkText?: string | null;
   invoiceShowWatermark?: boolean;
   quickAddOns?: any;
+  autoBackupEmail?: string | null;
 }
 
 @Injectable()

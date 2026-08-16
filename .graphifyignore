@@ -1,0 +1,15 @@
+*.md
+*.png
+*.svg
+*.jpg
+*.jpeg
+*.gif
+*.ico
+*.yml
+*.yaml
+*.txt
+*.html
+node_modules/
+dist/
+build/
+.git/

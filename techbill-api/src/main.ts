@@ -1,3 +1,14 @@
+// BigInt values returned by Prisma (e.g. SyncRowMeta.seq) cannot be
+// serialised by V8's JSON.stringify out of the box.  This patch converts any
+// BigInt that escapes the Prisma → domain model boundary into a string rather
+// than crashing the Express response with "Do not know how to serialize a
+// BigInt".  Must run before NestFactory.create so the patch is in place for
+// every request handler.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(BigInt.prototype as any).toJSON = function () {
+  return this.toString();
+};
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -88,3 +99,4 @@ async function bootstrap() {
   console.log(`Logs are being written to ${todaysLogFilePath()}`);
 }
 void bootstrap();
+

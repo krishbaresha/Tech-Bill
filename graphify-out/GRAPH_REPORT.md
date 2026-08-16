@@ -1,396 +1,658 @@
-﻿# Graph Report - .  (2026-07-01)
+# Graph Report - C:\Tech-Bill\Tech-Bill  (2026-07-20)
 
 ## Corpus Check
-- 358 files · ~491,878 words
-- Verdict: corpus is large enough that graph structure adds value.
+- cluster-only mode — file stats not available
 
 ## Summary
-- 1179 nodes · 1808 edges · 100 communities (69 shown, 31 thin omitted)
-- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
+- 2347 nodes · 3933 edges · 184 communities (139 shown, 45 thin omitted)
+- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 22 edges (avg confidence: 0.79)
 - Token cost: 0 input · 0 output
 
+## Graph Freshness
+- Built from commit: `4b5a9150`
+- Run `git rev-parse HEAD` and compare to check if the graph is stale.
+- Run `graphify update .` after code changes (no API cost).
+
 ## Community Hubs (Navigation)
-- [[_COMMUNITY_Ai Ai Controller Group|Ai Ai Controller Group]]
-- [[_COMMUNITY_Dto Bulk Create Units Dto Group|Dto Bulk Create Units Dto Group]]
-- [[_COMMUNITY_Dto Filter Reconciliation Group|Dto Filter Reconciliation Group]]
-- [[_COMMUNITY_Tech Bill Pos Package Group|Tech Bill Pos Package Group]]
-- [[_COMMUNITY_Tech Bill Api Agents S Group|Tech Bill Api Agents S Group]]
-- [[_COMMUNITY_Tech Bill Api Claude S Group|Tech Bill Api Claude S Group]]
-- [[_COMMUNITY_Tech Bill Api Package  Group|Tech Bill Api Package  Group]]
-- [[_COMMUNITY_Dto Create Return Dto Group|Dto Create Return Dto Group]]
-- [[_COMMUNITY_Auth Auth Controller Group|Auth Auth Controller Group]]
-- [[_COMMUNITY_Layout Appshell Group|Layout Appshell Group]]
-- [[_COMMUNITY_Audit Audit Controller Au Group|Audit Audit Controller Au Group]]
-- [[_COMMUNITY_Auth Jwt Strategy Group|Auth Jwt Strategy Group]]
-- [[_COMMUNITY_Api Client Group|Api Client Group]]
-- [[_COMMUNITY_Audit Auditpage Group|Audit Auditpage Group]]
-- [[_COMMUNITY_Tech Bill Api Package  Group|Tech Bill Api Package  Group]]
-- [[_COMMUNITY_Dto Create Po Dto Group|Dto Create Po Dto Group]]
-- [[_COMMUNITY_Dto Create User Dto Group|Dto Create User Dto Group]]
-- [[_COMMUNITY_Tech Bill Api Tsconfig Group|Tech Bill Api Tsconfig Group]]
-- [[_COMMUNITY_Decorators Roles Decorato Group|Decorators Roles Decorato Group]]
-- [[_COMMUNITY_Tech Bill Pos Tsconfig Group|Tech Bill Pos Tsconfig Group]]
-- [[_COMMUNITY_Package Group|Package Group]]
-- [[_COMMUNITY_Tech Bill Pos Tsconfig Group|Tech Bill Pos Tsconfig Group]]
-- [[_COMMUNITY_Tech Bill Api Agents S Group|Tech Bill Api Agents S Group]]
-- [[_COMMUNITY_Tech Bill Api Claude S Group|Tech Bill Api Claude S Group]]
-- [[_COMMUNITY_Api Socket Group|Api Socket Group]]
-- [[_COMMUNITY_Auth Auth Module Group|Auth Auth Module Group]]
-- [[_COMMUNITY_Auth Protectedroute Group|Auth Protectedroute Group]]
-- [[_COMMUNITY_Inventory Inventorypage Group|Inventory Inventorypage Group]]
-- [[_COMMUNITY_Pos Posscreen Group|Pos Posscreen Group]]
-- [[_COMMUNITY_Tech Bill Api Package  Group|Tech Bill Api Package  Group]]
-- [[_COMMUNITY_Pos Barcodescanner Group|Pos Barcodescanner Group]]
-- [[_COMMUNITY_Ai Ai Controller Aicontro Group|Ai Ai Controller Aicontro Group]]
-- [[_COMMUNITY_Db Offline Db Group|Db Offline Db Group]]
-- [[_COMMUNITY_Events Events Gateway Group|Events Events Gateway Group]]
-- [[_COMMUNITY_Public Manifest Group|Public Manifest Group]]
-- [[_COMMUNITY_Tsconfig Group|Tsconfig Group]]
-- [[_COMMUNITY_Tech Bill Api Agents S Group|Tech Bill Api Agents S Group]]
-- [[_COMMUNITY_Tech Bill Api Agents S Group|Tech Bill Api Agents S Group]]
-- [[_COMMUNITY_Tech Bill Api Claude S Group|Tech Bill Api Claude S Group]]
-- [[_COMMUNITY_Tech Bill Api Claude S Group|Tech Bill Api Claude S Group]]
-- [[_COMMUNITY_Pos Invoicemodal Group|Pos Invoicemodal Group]]
-- [[_COMMUNITY_Pos Productgrid Group|Pos Productgrid Group]]
-- [[_COMMUNITY_Returns Returnspage Group|Returns Returnspage Group]]
-- [[_COMMUNITY_Tech Bill Api Package Group|Tech Bill Api Package Group]]
-- [[_COMMUNITY_Tech Bill Api Package  Group|Tech Bill Api Package  Group]]
-- [[_COMMUNITY_Pos Carttable Group|Pos Carttable Group]]
-- [[_COMMUNITY_Src App Controller Group|Src App Controller Group]]
-- [[_COMMUNITY_Customers Loyaltypage Group|Customers Loyaltypage Group]]
-- [[_COMMUNITY_Prisma Seed Dha Product I Group|Prisma Seed Dha Product I Group]]
-- [[_COMMUNITY_Sales Invoicehistorypage Group|Sales Invoicehistorypage Group]]
-- [[_COMMUNITY_Settings Settings Control Group|Settings Settings Control Group]]
-- [[_COMMUNITY_Tech Bill Api Prisma S Group|Tech Bill Api Prisma S Group]]
-- [[_COMMUNITY_Schemas Report Dto Group|Schemas Report Dto Group]]
-- [[_COMMUNITY_Customers Customerspage Group|Customers Customerspage Group]]
-- [[_COMMUNITY_Tech Bill Api Agents S Group|Tech Bill Api Agents S Group]]
-- [[_COMMUNITY_Tech Bill Api Claude S Group|Tech Bill Api Claude S Group]]
-- [[_COMMUNITY_Tech Bill Api Nest Cli Group|Tech Bill Api Nest Cli Group]]
-- [[_COMMUNITY_Tech Bill Api Src Main Group|Tech Bill Api Src Main Group]]
-- [[_COMMUNITY_Settings Settingspage Group|Settings Settingspage Group]]
-- [[_COMMUNITY_Tech Bill Api Agents S Group|Tech Bill Api Agents S Group]]
-- [[_COMMUNITY_Tech Bill Api Claude S Group|Tech Bill Api Claude S Group]]
-- [[_COMMUNITY_Tech Bill Api Tsconfig Group|Tech Bill Api Tsconfig Group]]
-- [[_COMMUNITY_Notifications Notificatio Group|Notifications Notificatio Group]]
-- [[_COMMUNITY_Warranty Warrantypage Group|Warranty Warrantypage Group]]
-- [[_COMMUNITY_Db Offline Db Processpend Group|Db Offline Db Processpend Group]]
-- [[_COMMUNITY_Tech Bill Api Agents S Group|Tech Bill Api Agents S Group]]
-- [[_COMMUNITY_Tech Bill Api Agents S Group|Tech Bill Api Agents S Group]]
-- [[_COMMUNITY_Tech Bill Api Claude S Group|Tech Bill Api Claude S Group]]
-- [[_COMMUNITY_Tech Bill Api Claude S Group|Tech Bill Api Claude S Group]]
-- [[_COMMUNITY_Returns Returnanalyticspa Group|Returns Returnanalyticspa Group]]
-- [[_COMMUNITY_Tech Bill Api Agents S Group|Tech Bill Api Agents S Group]]
-- [[_COMMUNITY_Tech Bill Api Agents S Group|Tech Bill Api Agents S Group]]
-- [[_COMMUNITY_Tech Bill Api Agents S Group|Tech Bill Api Agents S Group]]
-- [[_COMMUNITY_Tech Bill Api Claude S Group|Tech Bill Api Claude S Group]]
-- [[_COMMUNITY_Tech Bill Api Claude S Group|Tech Bill Api Claude S Group]]
-- [[_COMMUNITY_Tech Bill Api Claude S Group|Tech Bill Api Claude S Group]]
-- [[_COMMUNITY_Tech Bill Api Src Modu Group|Tech Bill Api Src Modu Group]]
-- [[_COMMUNITY_Tech Bill Pos Tsconfig Group|Tech Bill Pos Tsconfig Group]]
-- [[_COMMUNITY_D Tech Bill Saas Elect Group|D Tech Bill Saas Elect Group]]
-- [[_COMMUNITY_D Tech Bill Saas Elect Group|D Tech Bill Saas Elect Group]]
-- [[_COMMUNITY_D Tech Bill Saas Elect Group|D Tech Bill Saas Elect Group]]
-- [[_COMMUNITY_D Tech Bill Saas Elect Group|D Tech Bill Saas Elect Group]]
-- [[_COMMUNITY_D Tech Bill Saas Elect Group|D Tech Bill Saas Elect Group]]
-- [[_COMMUNITY_D Tech Bill Saas Elect Group|D Tech Bill Saas Elect Group]]
-- [[_COMMUNITY_Dto Approve Return Dto Group|Dto Approve Return Dto Group]]
-- [[_COMMUNITY_Dto Reject Return Dto Group|Dto Reject Return Dto Group]]
-- [[_COMMUNITY_Dto Request Otp Dto Group|Dto Request Otp Dto Group]]
-- [[_COMMUNITY_Tech Bill Api Src Comm Group|Tech Bill Api Src Comm Group]]
-- [[_COMMUNITY_Mcp Group|Mcp Group]]
-- [[_COMMUNITY_Public Sw Group|Public Sw Group]]
-- [[_COMMUNITY_Reports Reports Scheduler Group|Reports Reports Scheduler Group]]
+- [[_COMMUNITY_InventoryService|InventoryService]]
+- [[_COMMUNITY_TokenManager|TokenManager]]
+- [[_COMMUNITY_sales.controller.ts|sales.controller.ts]]
+- [[_COMMUNITY_client.ts|client.ts]]
+- [[_COMMUNITY_sync.service.ts|sync.service.ts]]
+- [[_COMMUNITY_LicenseService|LicenseService]]
+- [[_COMMUNITY_AppNavigation.kt|AppNavigation.kt]]
+- [[_COMMUNITY_App.tsx|App.tsx]]
+- [[_COMMUNITY_InventoryPage.tsx|InventoryPage.tsx]]
+- [[_COMMUNITY_PrismaService|PrismaService]]
+- [[_COMMUNITY_IntegrityService|IntegrityService]]
+- [[_COMMUNITY_ReportsService|ReportsService]]
+- [[_COMMUNITY_useAuthStore|useAuthStore]]
+- [[_COMMUNITY_dependencies|dependencies]]
+- [[_COMMUNITY_AuthService|AuthService]]
+- [[_COMMUNITY_extract_inline_html.ts|extract_inline_html.ts]]
+- [[_COMMUNITY_extract_inline_html.ts|extract_inline_html.ts]]
+- [[_COMMUNITY_tauri.conf.json|tauri.conf.json]]
+- [[_COMMUNITY_index.ts|index.ts]]
+- [[_COMMUNITY_app.module.ts|app.module.ts]]
+- [[_COMMUNITY_suppliers.controller.ts|suppliers.controller.ts]]
+- [[_COMMUNITY_tauri.conf.json|tauri.conf.json]]
+- [[_COMMUNITY_api|api]]
+- [[_COMMUNITY_PosScreen.tsx|PosScreen.tsx]]
+- [[_COMMUNITY_DashboardScreen.kt|DashboardScreen.kt]]
+- [[_COMMUNITY_auth.module.ts|auth.module.ts]]
+- [[_COMMUNITY_permissions.ts|permissions.ts]]
+- [[_COMMUNITY_devDependencies|devDependencies]]
+- [[_COMMUNITY_compilerOptions|compilerOptions]]
+- [[_COMMUNITY_license.controller.ts|license.controller.ts]]
+- [[_COMMUNITY_returns.controller.ts|returns.controller.ts]]
+- [[_COMMUNITY_TenantsService|TenantsService]]
+- [[_COMMUNITY_AuditService|AuditService]]
+- [[_COMMUNITY_users.controller.ts|users.controller.ts]]
+- [[_COMMUNITY_offline.db.ts|offline.db.ts]]
+- [[_COMMUNITY_UsersPage.tsx|UsersPage.tsx]]
+- [[_COMMUNITY_SaaSViewModel|SaaSViewModel]]
+- [[_COMMUNITY_dependencies|dependencies]]
+- [[_COMMUNITY_NetworkModels.kt|NetworkModels.kt]]
+- [[_COMMUNITY_InvoiceHistoryPage.tsx|InvoiceHistoryPage.tsx]]
+- [[_COMMUNITY_package.json|package.json]]
+- [[_COMMUNITY_credit.service.ts|credit.service.ts]]
+- [[_COMMUNITY_compilerOptions|compilerOptions]]
+- [[_COMMUNITY_InvoiceListItemCard|InvoiceListItemCard]]
+- [[_COMMUNITY_OfflineActionDao|OfflineActionDao]]
+- [[_COMMUNITY_FeaturesService|FeaturesService]]
+- [[_COMMUNITY_compilerOptions|compilerOptions]]
+- [[_COMMUNITY_OwnerDashboardHub.kt|OwnerDashboardHub.kt]]
+- [[_COMMUNITY_SaaSViewModel|SaaSViewModel]]
+- [[_COMMUNITY_scripts|scripts]]
+- [[_COMMUNITY_FileLogger|FileLogger]]
+- [[_COMMUNITY_devDependencies|devDependencies]]
+- [[_COMMUNITY_InventoryItem|InventoryItem]]
+- [[_COMMUNITY_SaaSDataRepository|SaaSDataRepository]]
+- [[_COMMUNITY_post_process.ts|post_process.ts]]
+- [[_COMMUNITY_post_process.ts|post_process.ts]]
+- [[_COMMUNITY_UniversalSearch.tsx|UniversalSearch.tsx]]
+- [[_COMMUNITY_EventsGateway|EventsGateway]]
+- [[_COMMUNITY_InvoiceLedgerScreen|InvoiceLedgerScreen]]
+- [[_COMMUNITY_SaleDao|SaleDao]]
+- [[_COMMUNITY_ExpensesService|ExpensesService]]
+- [[_COMMUNITY_manifest.json|manifest.json]]
+- [[_COMMUNITY_compilerOptions|compilerOptions]]
+- [[_COMMUNITY_SuperAdminMatrix.kt|SuperAdminMatrix.kt]]
+- [[_COMMUNITY_ApiService|ApiService]]
+- [[_COMMUNITY_package.json|package.json]]
+- [[_COMMUNITY_upload_to_stitch.py|upload_to_stitch.py]]
+- [[_COMMUNITY_package.json|package.json]]
+- [[_COMMUNITY_upload_to_stitch.py|upload_to_stitch.py]]
+- [[_COMMUNITY_features.service.ts|features.service.ts]]
+- [[_COMMUNITY_payments.controller.ts|payments.controller.ts]]
+- [[_COMMUNITY_.toDomain|.toDomain]]
+- [[_COMMUNITY_data-table.tsx|data-table.tsx]]
+- [[_COMMUNITY_StaffAnalyticsLeaderboard.kt|StaffAnalyticsLeaderboard.kt]]
+- [[_COMMUNITY_TenantModel|TenantModel]]
+- [[_COMMUNITY_jest|jest]]
+- [[_COMMUNITY_scripts|scripts]]
+- [[_COMMUNITY_ProductGrid.tsx|ProductGrid.tsx]]
+- [[_COMMUNITY_RetrofitClient|RetrofitClient]]
+- [[_COMMUNITY_package.json|package.json]]
+- [[_COMMUNITY_AppController|AppController]]
+- [[_COMMUNITY_LandingPage.tsx|LandingPage.tsx]]
+- [[_COMMUNITY_AppDatabase|AppDatabase]]
+- [[_COMMUNITY_seed.ts|seed.ts]]
+- [[_COMMUNITY_ProfileMetricRow|ProfileMetricRow]]
+- [[_COMMUNITY_SettingsService|SettingsService]]
+- [[_COMMUNITY_LoyaltyPage.tsx|LoyaltyPage.tsx]]
+- [[_COMMUNITY_PublicInvoicePage.tsx|PublicInvoicePage.tsx]]
+- [[_COMMUNITY_TenantConfigViewModel|TenantConfigViewModel]]
+- [[_COMMUNITY_TokenManager|TokenManager]]
+- [[_COMMUNITY_Theme.kt|Theme.kt]]
+- [[_COMMUNITY_seed.ts|seed.ts]]
+- [[_COMMUNITY_feature.guard.ts|feature.guard.ts]]
+- [[_COMMUNITY_report.dto.ts|report.dto.ts]]
+- [[_COMMUNITY_CheckoutPage.tsx|CheckoutPage.tsx]]
+- [[_COMMUNITY_antigravityGlass|antigravityGlass]]
+- [[_COMMUNITY_.onCreate|.onCreate]]
+- [[_COMMUNITY_.create|.create]]
+- [[_COMMUNITY_AppNavigation|AppNavigation]]
+- [[_COMMUNITY_MyApplicationTheme|MyApplicationTheme]]
+- [[_COMMUNITY_snapshot.ts|snapshot.ts]]
+- [[_COMMUNITY_snapshot.ts|snapshot.ts]]
+- [[_COMMUNITY_nest-cli.json|nest-cli.json]]
+- [[_COMMUNITY_tsconfig.build.json|tsconfig.build.json]]
+- [[_COMMUNITY_default.json|default.json]]
+- [[_COMMUNITY_CustomersPage.tsx|CustomersPage.tsx]]
+- [[_COMMUNITY_PurchaseOrdersPage.tsx|PurchaseOrdersPage.tsx]]
+- [[_COMMUNITY_default.json|default.json]]
+- [[_COMMUNITY_log_js_error|log_js_error]]
+- [[_COMMUNITY_InsightBulletItem|InsightBulletItem]]
+- [[_COMMUNITY_create_dha.js|create_dha.js]]
+- [[_COMMUNITY_generate-api-docs.js|generate-api-docs.js]]
+- [[_COMMUNITY_update_superadmin.js|update_superadmin.js]]
+- [[_COMMUNITY_helpers.ts|helpers.ts]]
+- [[_COMMUNITY_package.json|package.json]]
+- [[_COMMUNITY_helpers.ts|helpers.ts]]
+- [[_COMMUNITY_StickyWarningBanner|StickyWarningBanner]]
+- [[_COMMUNITY_AppNavigation.kt|AppNavigation.kt]]
+- [[_COMMUNITY_WalkthroughComposition.tsx|WalkthroughComposition.tsx]]
+- [[_COMMUNITY_form-pattern.tsx|form-pattern.tsx]]
+- [[_COMMUNITY_check_users.js|check_users.js]]
+- [[_COMMUNITY_WalkthroughComposition.tsx|WalkthroughComposition.tsx]]
+- [[_COMMUNITY_form-pattern.tsx|form-pattern.tsx]]
+- [[_COMMUNITY_list_users.js|list_users.js]]
+- [[_COMMUNITY_backfill-partial-returns.js|backfill-partial-returns.js]]
+- [[_COMMUNITY_test_sales.js|test_sales.js]]
+- [[_COMMUNITY_ExampleInstrumentedTest|ExampleInstrumentedTest]]
+- [[_COMMUNITY_RevenueChart|RevenueChart]]
+- [[_COMMUNITY_ExampleRobolectricTest|ExampleRobolectricTest]]
+- [[_COMMUNITY_ExampleUnitTest|ExampleUnitTest]]
+- [[_COMMUNITY_LoginScreen|LoginScreen]]
+- [[_COMMUNITY_gold-standard-card.tsx|gold-standard-card.tsx]]
+- [[_COMMUNITY_component-template.tsx|component-template.tsx]]
+- [[_COMMUNITY_screen-slide-template.tsx|screen-slide-template.tsx]]
+- [[_COMMUNITY_gold-standard-card.tsx|gold-standard-card.tsx]]
+- [[_COMMUNITY_component-template.tsx|component-template.tsx]]
+- [[_COMMUNITY_screen-slide-template.tsx|screen-slide-template.tsx]]
+- [[_COMMUNITY_JwtAuthGuard|JwtAuthGuard]]
+- [[_COMMUNITY_CheckoutModal.tsx|CheckoutModal.tsx]]
+- [[_COMMUNITY_tsconfig.json|tsconfig.json]]
+- [[_COMMUNITY_fetch-stitch.sh|fetch-stitch.sh]]
+- [[_COMMUNITY_download-stitch-asset.sh|download-stitch-asset.sh]]
+- [[_COMMUNITY_verify-setup.sh|verify-setup.sh]]
+- [[_COMMUNITY_fetch-stitch.sh|fetch-stitch.sh]]
+- [[_COMMUNITY_download-stitch-asset.sh|download-stitch-asset.sh]]
+- [[_COMMUNITY_verify-setup.sh|verify-setup.sh]]
+- [[_COMMUNITY_request-otp.dto.ts|request-otp.dto.ts]]
+- [[_COMMUNITY_reports.scheduler.ts|reports.scheduler.ts]]
+- [[_COMMUNITY_approve-return.dto.ts|approve-return.dto.ts]]
+- [[_COMMUNITY_reject-return.dto.ts|reject-return.dto.ts]]
+- [[_COMMUNITY_sw.js|sw.js]]
+- [[_COMMUNITY_vercel.json|vercel.json]]
+- [[_COMMUNITY_vercel.json|vercel.json]]
+- [[_COMMUNITY_NotificationsListener|NotificationsListener]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `PrismaService` - 34 edges
-2. `api` - 30 edges
-3. `InventoryService` - 25 edges
-4. `InventoryController` - 22 edges
-5. `compilerOptions` - 22 edges
-6. `useAuthStore` - 21 edges
-7. `AuditService` - 20 edges
-8. `ReportsService` - 19 edges
-9. `compilerOptions` - 18 edges
-10. `ReportsController` - 16 edges
+1. `PrismaService` - 79 edges
+2. `useAuthStore` - 44 edges
+3. `IntegrityService` - 37 edges
+4. `api` - 35 edges
+5. `TokenManager` - 29 edges
+6. `InventoryService` - 27 edges
+7. `SaaSDataRepository` - 26 edges
+8. `InventoryController` - 24 edges
+9. `compilerOptions` - 24 edges
+10. `FeaturesService` - 23 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `InventoryPage()` --calls--> `useCan()`  [EXTRACTED]
-  electrotrack-pos/src/pages/inventory/InventoryPage.tsx → electrotrack-pos/src/lib/permissions.ts
-- `Login()` --calls--> `useAuthStore`  [EXTRACTED]
-  electrotrack-pos/src/pages/Login.tsx → electrotrack-pos/src/store/auth.store.ts
-- `ReturnsPage()` --calls--> `useAuthStore`  [EXTRACTED]
-  electrotrack-pos/src/pages/returns/ReturnsPage.tsx → electrotrack-pos/src/store/auth.store.ts
-- `SettingsPage()` --calls--> `useAuthStore`  [EXTRACTED]
-  electrotrack-pos/src/pages/settings/SettingsPage.tsx → electrotrack-pos/src/store/auth.store.ts
-- `App()` --calls--> `useAuthStore`  [EXTRACTED]
-  electrotrack-pos/src/App.tsx → electrotrack-pos/src/store/auth.store.ts
+- `AppNavigation()` --calls--> `DashboardScreen()`  [INFERRED]
+  tech-bill-app/app/src/main/java/com/example/ui/navigation/AppNavigation.kt → tech-bill-app/app/src/main/java/com/example/ui/screens/DashboardScreen.kt
+- `DataTableExample()` --references--> `react`  [EXTRACTED]
+  techbill-api/.agents/skills/shadcn-ui/examples/data-table.tsx → techbill-pos/package.json
+- `DataTableExample()` --references--> `react`  [EXTRACTED]
+  techbill-api/.claude/skills/shadcn-ui/examples/data-table.tsx → techbill-pos/package.json
+- `useCanAny()` --calls--> `useAuthStore`  [EXTRACTED]
+  techbill-pos/src/lib/permissions.ts → techbill-pos/src/store/auth.store.ts
+- `useHasRole()` --calls--> `useAuthStore`  [EXTRACTED]
+  techbill-pos/src/lib/permissions.ts → techbill-pos/src/store/auth.store.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (100 total, 31 thin omitted)
+## Communities (184 total, 45 thin omitted)
 
-### Community 0 - "Ai Ai Controller Group"
+### Community 0 - "InventoryService"
 Cohesion: 0.06
-Nodes (21): RequestWithUser, RequestWithUser, Permissions(), CreateExpenseDto, CreateSaleDto, FilterSalesDto, UpsertCustomerDto, VoidSaleDto (+13 more)
+Nodes (10): AiService, BulkCreateUnitsDto, CreateProductDto, CreateUnitDto, FilterUnitsDto, UpdateProductDto, UpdateUnitDto, InventoryController (+2 more)
 
-### Community 1 - "Dto Bulk Create Units Dto Group"
+### Community 1 - "TokenManager"
+Cohesion: 0.05
+Nodes (26): CoroutineWorker, FirebaseMessagingService, RemoteMessage, Boolean, Flow, List, SharedPreferences, String (+18 more)
+
+### Community 2 - "sales.controller.ts"
 Cohesion: 0.06
-Nodes (9): BulkCreateUnitsDto, CreateProductDto, CreateUnitDto, FilterUnitsDto, UpdateProductDto, UpdateUnitDto, InventoryController, RequestWithUser (+1 more)
+Nodes (12): OtpGuard, SubscriptionGuard, ReturnsModule, CreateSaleDto, FilterSalesDto, UpsertCustomerDto, VoidSaleDto, PublicSalesController (+4 more)
 
-### Community 2 - "Dto Filter Reconciliation Group"
+### Community 3 - "client.ts"
+Cohesion: 0.04
+Nodes (31): client_1, prisma, prisma, { PrismaClient }, prisma, prisma, prisma, { PrismaClient } (+23 more)
+
+### Community 4 - "sync.service.ts"
+Cohesion: 0.09
+Nodes (21): PushChangeDto, PushDto, PrismaSyncRepository, SyncController, isSyncedTable(), parseCursor(), pullData(), change() (+13 more)
+
+### Community 5 - "LicenseService"
 Cohesion: 0.07
+Nodes (14): ActivateLicenseDto, CheckinDto, CreateLicenseDto, RenewLicenseDto, SetUserPermissionsDto, LicenseController, KEY_PREFIX, LicenseService (+6 more)
+
+### Community 6 - "AppNavigation.kt"
+Cohesion: 0.06
+Nodes (46): File, Invoice, NavHostController, StaffAnalyticsUiState, StoreEvent, SuperAdminDashboardUiState, AccessDeniedScreen(), AppNavigation() (+38 more)
+
+### Community 7 - "App.tsx"
+Cohesion: 0.05
+Nodes (40): AuditPage, CashReconciliationPage, CheckoutPage, CreditPage, CustomersPage, ExpensesPage, InventoryPage, InvoiceHistoryPage (+32 more)
+
+### Community 8 - "InventoryPage.tsx"
+Cohesion: 0.06
+Nodes (31): TOAST_ICONS, TOAST_STYLES, ToastContainer(), CreditPage(), CreditRecord, Customer, formatPKR(), Supplier (+23 more)
+
+### Community 9 - "PrismaService"
+Cohesion: 0.08
+Nodes (9): AiController, LogEntryInput, JwtPayload, JwtStrategy, NotificationsController, NotificationsService, UpdateSettingsDto, ALL_PERMISSIONS (+1 more)
+
+### Community 11 - "ReportsService"
+Cohesion: 0.09
 Nodes (6): FilterReconciliationDto, ReconciliationDto, SalesSummaryQueryDto, ReportsController, ReportsModule, ReportsService
 
-### Community 3 - "Tech Bill Pos Package Group"
-Cohesion: 0.06
-Nodes (35): dependencies, axios, clsx, date-fns, dexie, gsap, @hookform/resolvers, lucide-react (+27 more)
+### Community 12 - "useAuthStore"
+Cohesion: 0.11
+Nodes (27): disconnectSocket(), App(), FeatureDisabledPage(), RequireFeature(), LockOverlay(), Props, ProtectedRoute(), AppShell() (+19 more)
 
-### Community 4 - "Tech Bill Api Agents S Group"
+### Community 13 - "dependencies"
+Cohesion: 0.06
+Nodes (34): dependencies, bcrypt, class-transformer, class-validator, cookie-parser, groq-sdk, helmet, ioredis (+26 more)
+
+### Community 14 - "AuthService"
+Cohesion: 0.10
+Nodes (5): AuthController, AuthService, LoginDto, VerifyOtpDto, OtpService
+
+### Community 15 - "extract_inline_html.ts"
 Cohesion: 0.10
 Nodes (31): AllStats, autoDetectTailwind(), buildHead(), camelToKebab(), createLimiter(), CssUrlRef, embedImages(), escapeRegExp() (+23 more)
 
-### Community 5 - "Tech Bill Api Claude S Group"
+### Community 16 - "extract_inline_html.ts"
 Cohesion: 0.10
 Nodes (31): AllStats, autoDetectTailwind(), buildHead(), camelToKebab(), createLimiter(), CssUrlRef, embedImages(), escapeRegExp() (+23 more)
 
-### Community 6 - "Tech Bill Api Package  Group"
+### Community 17 - "tauri.conf.json"
 Cohesion: 0.06
-Nodes (32): dependencies, bcrypt, class-transformer, class-validator, cookie-parser, groq-sdk, helmet, ioredis (+24 more)
+Nodes (32): app, security, windows, build, beforeBuildCommand, beforeDevCommand, devUrl, frontendDist (+24 more)
 
-### Community 7 - "Dto Create Return Dto Group"
-Cohesion: 0.12
-Nodes (9): CreateReturnDto, FilterReturnsDto, ReviewReturnDto, OtpGuard, RequestWithUser, ReturnsController, ReturnsModule, ReturnsService (+1 more)
-
-### Community 8 - "Auth Auth Controller Group"
+### Community 18 - "index.ts"
 Cohesion: 0.09
-Nodes (5): AuthController, AuthService, OtpService, LoginDto, VerifyOtpDto
+Nodes (23): CartTable(), formatPKR(), formatPKR(), FormData, PaymentForm(), schema, SerialInput(), AuditMeta (+15 more)
 
-### Community 9 - "Layout Appshell Group"
-Cohesion: 0.13
-Nodes (20): AppShell(), can(), useCan(), useCanAny(), useHasRole(), RequireAuth(), useAuthStore, BatchInput (+12 more)
+### Community 19 - "app.module.ts"
+Cohesion: 0.14
+Nodes (15): AiModule, AuditModule, AuthModule, EventsModule, ExpensesModule, IntegrityModule, InventoryModule, LicenseModule (+7 more)
 
-### Community 10 - "Audit Audit Controller Au Group"
+### Community 20 - "suppliers.controller.ts"
 Cohesion: 0.12
-Nodes (5): AuditController, AuditModule, AuditService, LogEntryInput, FilterAuditLogsDto
+Nodes (8): CreatePoDto, PoItemDto, CreateSupplierDto, ReceivePoDto, ReceivePoItemDto, RequestWithUser, SuppliersController, SuppliersService
 
-### Community 11 - "Auth Jwt Strategy Group"
-Cohesion: 0.11
-Nodes (7): JwtPayload, JwtStrategy, NotificationsController, NotificationsModule, NotificationsService, PrismaService, UpdateSettingsDto
+### Community 21 - "tauri.conf.json"
+Cohesion: 0.06
+Nodes (31): app, security, windows, build, beforeBuildCommand, beforeDevCommand, devUrl, frontendDist (+23 more)
 
-### Community 12 - "Api Client Group"
-Cohesion: 0.11
-Nodes (14): api, failedQueue, InsightResponse, formatPKR(), OwnerDashboard(), DayData, Expense, CashReconciliationPage() (+6 more)
+### Community 22 - "api"
+Cohesion: 0.12
+Nodes (21): api, socket, AiInsights(), SalesChart(), FeedItem, StockAlerts(), formatPKR(), OwnerDashboard() (+13 more)
 
-### Community 13 - "Audit Auditpage Group"
-Cohesion: 0.10
-Nodes (18): AuditMeta, StockAlerts(), formatPKR(), ReportsPage(), Tab, CreateTenantForm, PLAN_COLORS, ALL_PERMISSIONS (+10 more)
+### Community 23 - "PosScreen.tsx"
+Cohesion: 0.09
+Nodes (21): CardSkeleton(), CardSkeletonProps, SkeletonProps, StatsSkeleton(), StatsSkeletonProps, TableSkeleton(), TableSkeletonProps, formatPKR() (+13 more)
 
-### Community 14 - "Tech Bill Api Package  Group"
+### Community 24 - "DashboardScreen.kt"
+Cohesion: 0.21
+Nodes (26): DashboardBottomNav(), DashboardScreen(), DashboardTopBar(), DashTab, EmptyStateCard(), EmptyStateFull(), InvoicesTab(), Boolean (+18 more)
+
+### Community 25 - "auth.module.ts"
+Cohesion: 0.21
+Nodes (13): Permissions(), JwtAuthGuard, PermissionsGuard, TenantGuard, RequestWithUser, RequestWithUser, RequestWithUser, RequestWithUser (+5 more)
+
+### Community 26 - "permissions.ts"
+Cohesion: 0.09
+Nodes (16): PublicLayout(), PublicThemeContext, PublicThemeContextType, useKeepAlive(), useCan(), useCanAny(), useHasRole(), formatPKR() (+8 more)
+
+### Community 27 - "devDependencies"
 Cohesion: 0.08
-Nodes (25): devDependencies, eslint, eslint-config-prettier, @eslint/eslintrc, @eslint/js, eslint-plugin-prettier, globals, jest (+17 more)
+Nodes (26): devDependencies, eslint, eslint-config-prettier, @eslint/eslintrc, @eslint/js, eslint-plugin-prettier, globals, jest (+18 more)
 
-### Community 15 - "Dto Create Po Dto Group"
-Cohesion: 0.12
-Nodes (5): CreatePoDto, PoItemDto, CreateSupplierDto, SuppliersController, SuppliersService
+### Community 28 - "compilerOptions"
+Cohesion: 0.08
+Nodes (25): compilerOptions, allowSyntheticDefaultImports, baseUrl, declaration, emitDecoratorMetadata, esModuleInterop, experimentalDecorators, forceConsistentCasingInFileNames (+17 more)
 
-### Community 16 - "Dto Create User Dto Group"
-Cohesion: 0.13
-Nodes (5): CreateUserDto, UpdateUserDto, UsersController, UsersModule, UsersService
+### Community 29 - "license.controller.ts"
+Cohesion: 0.14
+Nodes (8): Roles(), RolesGuard, DevicesController, DevicesModule, DevicesService, AuthUser, RequestWithUser, AuthUser
 
-### Community 17 - "Tech Bill Api Tsconfig Group"
-Cohesion: 0.09
-Nodes (22): compilerOptions, allowSyntheticDefaultImports, baseUrl, declaration, emitDecoratorMetadata, esModuleInterop, experimentalDecorators, forceConsistentCasingInFileNames (+14 more)
+### Community 30 - "returns.controller.ts"
+Cohesion: 0.16
+Nodes (6): CreateReturnDto, FilterReturnsDto, ReviewReturnDto, RequestWithUser, ReturnsController, ReturnsService
 
-### Community 18 - "Decorators Roles Decorato Group"
-Cohesion: 0.12
-Nodes (5): Roles(), RolesGuard, TenantsController, ALL_PERMISSIONS, TenantsService
+### Community 32 - "AuditService"
+Cohesion: 0.14
+Nodes (3): AuditController, AuditService, FilterAuditLogsDto
 
-### Community 19 - "Tech Bill Pos Tsconfig Group"
-Cohesion: 0.10
-Nodes (19): compilerOptions, allowImportingTsExtensions, isolatedModules, jsx, lib, module, moduleDetection, moduleResolution (+11 more)
+### Community 33 - "users.controller.ts"
+Cohesion: 0.17
+Nodes (6): CreateUserDto, UpdateUserDto, RequestWithUser, UsersController, UsersModule, UsersService
 
-### Community 20 - "Package Group"
+### Community 34 - "offline.db.ts"
 Cohesion: 0.11
-Nodes (18): dependencies, bcrypt, @prisma/client, devDependencies, prisma, ts-node, @types/bcrypt, @types/node (+10 more)
+Nodes (11): Window, ErrorBoundary, Props, State, db, PendingSale, processPendingSales(), queueSale() (+3 more)
 
-### Community 21 - "Tech Bill Pos Tsconfig Group"
+### Community 35 - "UsersPage.tsx"
+Cohesion: 0.10
+Nodes (19): DeviceInfo, LicenseRecord, PLAN_COLORS, PlatformUser, STATUS_COLORS, TenantRecord, UserPermissionInfo, ALL_POSSIBLE_PERMISSIONS (+11 more)
+
+### Community 36 - "SaaSViewModel"
+Cohesion: 0.12
+Nodes (16): CashierPerformance, Invoice, InvoiceLedgerUiState, InvoiceStatus, Boolean, Flow, List, StateFlow (+8 more)
+
+### Community 37 - "dependencies"
+Cohesion: 0.09
+Nodes (23): dependencies, axios, clsx, date-fns, dexie, framer-motion, gsap, @hookform/resolvers (+15 more)
+
+### Community 38 - "NetworkModels.kt"
+Cohesion: 0.11
+Nodes (12): Call, LoginRequest, LoginResponse, RefreshRequest, RefreshResponse, SaleItem, SalesSummary, SalesSummaryResponse (+4 more)
+
+### Community 39 - "InvoiceHistoryPage.tsx"
+Cohesion: 0.11
+Nodes (15): formatCurrency(), InvoiceModal(), InvoiceModalProps, PAGE_SIZES, PageSize, PAYMENT_BADGE_STYLES, PAYMENT_LABELS, detailsCache (+7 more)
+
+### Community 40 - "package.json"
+Cohesion: 0.10
+Nodes (20): dependencies, bcrypt, @prisma/client, ssh2, devDependencies, prisma, ts-node, @types/bcrypt (+12 more)
+
+### Community 41 - "credit.service.ts"
+Cohesion: 0.18
+Nodes (5): CreditController, CreditModule, CreditService, CreateCreditDto, RecordPaymentDto
+
+### Community 42 - "compilerOptions"
+Cohesion: 0.10
+Nodes (20): compilerOptions, allowImportingTsExtensions, isolatedModules, jsx, lib, module, moduleDetection, moduleResolution (+12 more)
+
+### Community 43 - "InvoiceListItemCard"
+Cohesion: 0.15
+Nodes (18): formatAmount(), formatIsoDateTime(), InvoiceListItemCard(), InvoicesScreen(), Boolean, com, Double, Modifier (+10 more)
+
+### Community 44 - "OfflineActionDao"
+Cohesion: 0.20
+Nodes (6): Long, OfflineActionEntity, Int, List, String, OfflineActionDao
+
+### Community 45 - "FeaturesService"
+Cohesion: 0.14
+Nodes (3): TenantActiveGuard, FeaturesController, FeaturesService
+
+### Community 46 - "compilerOptions"
 Cohesion: 0.11
 Nodes (17): compilerOptions, allowImportingTsExtensions, isolatedModules, lib, module, moduleDetection, moduleResolution, noEmit (+9 more)
 
-### Community 22 - "Tech Bill Api Agents S Group"
+### Community 47 - "OwnerDashboardHub.kt"
+Cohesion: 0.21
+Nodes (16): FinancialMetricsGrid(), Boolean, Color, Double, Int, List, Modifier, String (+8 more)
+
+### Community 48 - "SaaSViewModel"
+Cohesion: 0.17
+Nodes (8): Boolean, com, List, SaleItem, SalesSummary, StateFlow, String, SaaSViewModel
+
+### Community 49 - "scripts"
+Cohesion: 0.12
+Nodes (17): scripts, build, db:seed, format, lint, prebuild, prestart:dev, prestart:prod (+9 more)
+
+### Community 50 - "FileLogger"
+Cohesion: 0.21
+Nodes (7): AppModule, FileLogger, todaysLogFilePath(), bootstrap(), cookieParser, helmet, logFatal()
+
+### Community 51 - "devDependencies"
+Cohesion: 0.12
+Nodes (17): devDependencies, autoprefixer, jsdom, @playwright/test, postcss, @sentry/vite-plugin, tailwindcss, @tauri-apps/cli (+9 more)
+
+### Community 52 - "InventoryItem"
+Cohesion: 0.17
+Nodes (8): InventoryDao, Flow, List, String, fromDomainModel(), InventoryEntity, String, InventoryItem
+
+### Community 53 - "SaaSDataRepository"
+Cohesion: 0.27
+Nodes (4): Boolean, Flow, String, SaaSDataRepository
+
+### Community 54 - "post_process.ts"
 Cohesion: 0.18
 Nodes (14): AllStats, CssUrlRef, extractCssUrls(), FileStats, getMime(), inlineImages(), InlineStats, main() (+6 more)
 
-### Community 23 - "Tech Bill Api Claude S Group"
+### Community 55 - "post_process.ts"
 Cohesion: 0.18
 Nodes (14): AllStats, CssUrlRef, extractCssUrls(), FileStats, getMime(), inlineImages(), InlineStats, main() (+6 more)
 
-### Community 24 - "Api Socket Group"
-Cohesion: 0.18
-Nodes (10): connectSocket(), disconnectSocket(), socket, FeedItem, Login(), LoginFormData, loginSchema, AuthState (+2 more)
+### Community 56 - "UniversalSearch.tsx"
+Cohesion: 0.17
+Nodes (11): BarcodeScanner(), BarcodeScannerProps, Window, ProductSuggestion, Props, SearchProduct, SerialSuggestion, Suggestion (+3 more)
 
-### Community 25 - "Auth Auth Module Group"
-Cohesion: 0.30
-Nodes (7): AuthModule, EventsModule, ExpensesModule, PrismaModule, SettingsModule, SuppliersModule, TenantsModule
-
-### Community 26 - "Auth Protectedroute Group"
+### Community 58 - "InvoiceLedgerScreen"
 Cohesion: 0.23
-Nodes (10): Props, ProtectedRoute(), useAuth(), key, supabase, url, AuthProvider(), AuthState (+2 more)
+Nodes (12): ExportTriggerControls(), FrostedSearchField(), Invoice, InvoiceCard(), InvoiceLedgerScreen(), InvoiceLedgerUiState, InvoiceStatus, Boolean (+4 more)
 
-### Community 27 - "Inventory Inventorypage Group"
-Cohesion: 0.14
-Nodes (11): AddProductForm, AddUnitForm, InventoryPage(), ProductWithStock, StockModal, PoItem, PurchaseOrder, STATUS_COLORS (+3 more)
+### Community 59 - "SaleDao"
+Cohesion: 0.26
+Nodes (5): Flow, List, String, SaleDao, SaleEntity
 
-### Community 28 - "Pos Posscreen Group"
-Cohesion: 0.14
-Nodes (11): DashboardData, formatPKR(), InventoryUnit, PillProps, ProductCard, SectionedGridProps, StatCardProps, STATUS_LABELS (+3 more)
+### Community 60 - "ExpensesService"
+Cohesion: 0.23
+Nodes (3): CreateExpenseDto, ExpensesController, ExpensesService
 
-### Community 29 - "Tech Bill Api Package  Group"
-Cohesion: 0.14
-Nodes (14): scripts, build, db:seed, format, lint, start, start:debug, start:dev (+6 more)
-
-### Community 30 - "Pos Barcodescanner Group"
-Cohesion: 0.16
-Nodes (9): BarcodeScanner(), BarcodeScannerProps, Window, ProductSuggestion, Props, SearchProduct, SerialSuggestion, Suggestion (+1 more)
-
-### Community 31 - "Ai Ai Controller Aicontro Group"
-Cohesion: 0.19
-Nodes (4): AiController, AiModule, AiService, InventoryModule
-
-### Community 32 - "Db Offline Db Group"
-Cohesion: 0.18
-Nodes (8): db, Tech BillDB, PendingSale, queueSale(), formatPKR(), FormData, PaymentForm(), schema
-
-### Community 34 - "Public Manifest Group"
+### Community 61 - "manifest.json"
 Cohesion: 0.15
 Nodes (12): background_color, categories, description, display, icons, lang, name, orientation (+4 more)
 
-### Community 35 - "Tsconfig Group"
+### Community 62 - "compilerOptions"
 Cohesion: 0.15
 Nodes (12): compilerOptions, esModuleInterop, lib, module, outDir, rootDir, skipLibCheck, strict (+4 more)
 
-### Community 36 - "Tech Bill Api Agents S Group"
-Cohesion: 0.17
-Nodes (11): dependencies, @swc/core, description, engines, node, name, scripts, fetch (+3 more)
-
-### Community 37 - "Tech Bill Api Agents S Group"
-Cohesion: 0.24
-Nodes (11): Any, Path, build_screen_request(), call_batch_create_screens(), encode_file(), main(), parse_args(), Build a CreateScreenRequest dict from a file.    For images, the file is set a (+3 more)
-
-### Community 38 - "Tech Bill Api Claude S Group"
-Cohesion: 0.17
-Nodes (11): dependencies, @swc/core, description, engines, node, name, scripts, fetch (+3 more)
-
-### Community 39 - "Tech Bill Api Claude S Group"
-Cohesion: 0.24
-Nodes (11): Any, Path, build_screen_request(), call_batch_create_screens(), encode_file(), main(), parse_args(), Build a CreateScreenRequest dict from a file.    For images, the file is set a (+3 more)
-
-### Community 40 - "Pos Invoicemodal Group"
+### Community 63 - "SuperAdminMatrix.kt"
 Cohesion: 0.27
-Nodes (9): formatCurrency(), getPaymentBadgeClass(), getPaymentLabel(), InvoiceModal(), InvoiceModalProps, PAYMENT_BADGE_CLASSES, PAYMENT_LABELS, Sale (+1 more)
+Nodes (11): Int, List, Modifier, SuperAdminDashboardUiState, SuperAdminMatrix(), TelemetryOverviewGrid(), TenantManagementStack(), TenantRow() (+3 more)
 
-### Community 41 - "Pos Productgrid Group"
-Cohesion: 0.20
-Nodes (5): AVATAR_PALETTE, ProductCard, Props, SPEC_ICONS, ProductSpecifications
+### Community 64 - "ApiService"
+Cohesion: 0.23
+Nodes (6): ApiService, Boolean, Int, List, SaleItem, String
 
-### Community 42 - "Returns Returnspage Group"
+### Community 65 - "package.json"
+Cohesion: 0.17
+Nodes (11): dependencies, @swc/core, description, engines, node, name, scripts, fetch (+3 more)
+
+### Community 66 - "upload_to_stitch.py"
+Cohesion: 0.24
+Nodes (11): build_screen_request(), call_batch_create_screens(), encode_file(), main(), parse_args(), Any, Path, Build a CreateScreenRequest dict from a file.    For images, the file is set a (+3 more)
+
+### Community 67 - "package.json"
+Cohesion: 0.17
+Nodes (11): dependencies, @swc/core, description, engines, node, name, scripts, fetch (+3 more)
+
+### Community 68 - "upload_to_stitch.py"
+Cohesion: 0.24
+Nodes (11): build_screen_request(), call_batch_create_screens(), encode_file(), main(), parse_args(), Any, Path, Build a CreateScreenRequest dict from a file.    For images, the file is set a (+3 more)
+
+### Community 69 - "features.service.ts"
+Cohesion: 0.26
+Nodes (3): FeaturesModule, LicenseResolverService, ResolvedLicense
+
+### Community 70 - "payments.controller.ts"
+Cohesion: 0.24
+Nodes (4): CreatePaymentTransactionDto, PaymentsController, RequestWithUser, PaymentsService
+
+### Community 71 - ".toDomain"
+Cohesion: 0.25
+Nodes (6): ActionPriority, ActionStatus, OfflineActionEntity, com, List, SaleItem
+
+### Community 72 - "data-table.tsx"
 Cohesion: 0.18
-Nodes (7): OtpModalProps, RETURN_TYPES, ReturnsPage(), SaleItem, SaleLookup, STATUS_STYLES, ReturnItem
+Nodes (9): columns, data, DataTableExample(), User, columns, data, DataTableExample(), User (+1 more)
 
-### Community 43 - "Tech Bill Api Package Group"
+### Community 73 - "StaffAnalyticsLeaderboard.kt"
+Cohesion: 0.29
+Nodes (9): CashierPerformance, ClockInStatusBadge(), Boolean, Int, Modifier, String, StaffAnalyticsLeaderboard(), StaffAnalyticsUiState (+1 more)
+
+### Community 74 - "TenantModel"
+Cohesion: 0.29
+Nodes (4): CreateTenantRequest, TenantModel, Result, Unit
+
+### Community 75 - "jest"
+Cohesion: 0.20
+Nodes (10): jest, collectCoverageFrom, coverageDirectory, moduleFileExtensions, rootDir, testEnvironment, testRegex, transform (+2 more)
+
+### Community 76 - "scripts"
+Cohesion: 0.20
+Nodes (10): scripts, build, desktop:build, desktop:dev, dev, preview, tauri, test (+2 more)
+
+### Community 77 - "ProductGrid.tsx"
+Cohesion: 0.22
+Nodes (5): ProductCard, ProductGrid, Props, SPEC_ICONS, ProductSpecifications
+
+### Community 78 - "RetrofitClient"
+Cohesion: 0.22
+Nodes (6): Moshi, Response, Context, Int, RetrofitClient, TokenManager
+
+### Community 79 - "package.json"
 Cohesion: 0.22
 Nodes (8): author, description, license, name, prisma, seed, private, version
 
-### Community 44 - "Tech Bill Api Package  Group"
-Cohesion: 0.22
-Nodes (9): jest, collectCoverageFrom, coverageDirectory, moduleFileExtensions, rootDir, testEnvironment, testRegex, transform (+1 more)
+### Community 82 - "LandingPage.tsx"
+Cohesion: 0.25
+Nodes (6): usePublicTheme(), CartItem, currencies, CurrencyCode, CurrencyDetails, LandingPage()
 
-### Community 45 - "Pos Carttable Group"
+### Community 83 - "AppDatabase"
+Cohesion: 0.29
+Nodes (5): OfflineActionDao, RoomDatabase, AppDatabase, getDatabase(), Context
+
+### Community 84 - "seed.ts"
+Cohesion: 0.25
+Nodes (6): ALL_PERMISSIONS, CASHIER_PERMISSIONS, DHA_PRODUCT_IDS, GULBERG_PRODUCT_IDS, prisma, TECH_PERMISSIONS
+
+### Community 85 - "ProfileMetricRow"
+Cohesion: 0.29
+Nodes (7): Color, ImageVector, Modifier, SaaSViewModel, String, ProfileMetricRow(), ProfileScreen()
+
+### Community 87 - "LoyaltyPage.tsx"
+Cohesion: 0.36
+Nodes (7): formatPKR(), getNextTier(), getTier(), LoyaltyCustomer, LoyaltyPage(), TierConfig, TIERS
+
+### Community 88 - "PublicInvoicePage.tsx"
+Cohesion: 0.29
+Nodes (6): API_BASE, formatPKR(), PAYMENT_LABELS, PublicInvoice, PublicInvoicePage(), PublicItem
+
+### Community 89 - "TenantConfigViewModel"
+Cohesion: 0.29
+Nodes (5): Boolean, StateFlow, String, TenantConfigViewModel, ViewModel
+
+### Community 90 - "TokenManager"
 Cohesion: 0.33
-Nodes (7): CartTable(), formatPKR(), PosScreen(), SerialInput(), CartStore, useCartStore, CartItem
+Nodes (3): SharedPreferences, String, TokenManager
 
-### Community 47 - "Customers Loyaltypage Group"
+### Community 91 - "Theme.kt"
+Cohesion: 0.33
+Nodes (5): antigravityGlass(), elasticClickable(), Dp, Modifier, MutableInteractionSource
+
+### Community 92 - "seed.ts"
 Cohesion: 0.29
-Nodes (5): formatPKR(), LoyaltyCustomer, LoyaltyPage(), TierConfig, TIERS
+Nodes (5): ALL_PERMISSIONS, CASHIER_PERMISSIONS, INVENTORY_MANAGER_PERMISSIONS, prisma, TECHNICIAN_PERMISSIONS
 
-### Community 48 - "Prisma Seed Dha Product I Group"
-Cohesion: 0.25
-Nodes (6): DHA_PRODUCT_IDS, GULBERG_PRODUCT_IDS, TECH_PERMISSIONS, ALL_PERMISSIONS, CASHIER_PERMISSIONS, prisma
+### Community 93 - "feature.guard.ts"
+Cohesion: 0.33
+Nodes (3): RequiredFeatureMetadata, RequireFeature(), FeatureGuard
 
-### Community 49 - "Sales Invoicehistorypage Group"
-Cohesion: 0.25
-Nodes (4): PAYMENT_LABELS, SaleDetail, SaleListItem, STATUS_STYLE
-
-### Community 51 - "Tech Bill Api Prisma S Group"
-Cohesion: 0.29
-Nodes (5): ALL_PERMISSIONS, CASHIER_PERMISSIONS, prisma, INVENTORY_MANAGER_PERMISSIONS, TECHNICIAN_PERMISSIONS
-
-### Community 52 - "Schemas Report Dto Group"
+### Community 94 - "report.dto.ts"
 Cohesion: 0.29
 Nodes (6): CashReconciliationDto, DailySalesSummaryDto, LowStockItem, LowStockListDto, PerProductValue, StockValuationDto
 
-### Community 53 - "Customers Customerspage Group"
-Cohesion: 0.33
-Nodes (3): Customer, SALE_STATUS, SaleRow
+### Community 95 - "CheckoutPage.tsx"
+Cohesion: 0.29
+Nodes (4): currencies, CurrencyCode, CurrencyDetails, LEMON_SQUEEZY_STORE_URLS
 
-### Community 56 - "Tech Bill Api Nest Cli Group"
+### Community 96 - "antigravityGlass"
+Cohesion: 0.40
+Nodes (5): antigravityGlass(), elasticClickable(), Dp, Modifier, MutableInteractionSource
+
+### Community 97 - ".onCreate"
+Cohesion: 0.33
+Nodes (4): Bundle, ComponentActivity, SaaSViewModel, MainActivity
+
+### Community 98 - ".create"
+Cohesion: 0.33
+Nodes (4): Class, T, SaaSViewModelFactory, ViewModelProvider
+
+### Community 99 - "AppNavigation"
+Cohesion: 0.33
+Nodes (5): AppNavigation(), SaaSViewModel, Modifier, SaaSViewModel, LoginScreen()
+
+### Community 100 - "MyApplicationTheme"
+Cohesion: 0.33
+Nodes (3): Boolean, MyApplicationTheme(), GreetingScreenshotTest
+
+### Community 103 - "nest-cli.json"
 Cohesion: 0.33
 Nodes (5): collection, compilerOptions, deleteOutDir, $schema, sourceRoot
 
-### Community 57 - "Tech Bill Api Src Main Group"
-Cohesion: 0.47
-Nodes (4): AppModule, bootstrap(), cookieParser, helmet
-
-### Community 58 - "Settings Settingspage Group"
+### Community 104 - "tsconfig.build.json"
 Cohesion: 0.33
-Nodes (4): FieldGroupProps, FONT_OPTIONS, SettingsForm, SettingsPage()
+Nodes (5): compilerOptions, declaration, rootDir, exclude, extends
 
-### Community 59 - "Tech Bill Api Agents S Group"
+### Community 105 - "default.json"
+Cohesion: 0.33
+Nodes (5): description, identifier, permissions, $schema, windows
+
+### Community 106 - "CustomersPage.tsx"
+Cohesion: 0.33
+Nodes (3): Customer, SALE_STATUS, SaleRow
+
+### Community 107 - "PurchaseOrdersPage.tsx"
+Cohesion: 0.33
+Nodes (4): PoItem, PurchaseOrder, STATUS_COLORS, Supplier
+
+### Community 108 - "default.json"
+Cohesion: 0.33
+Nodes (5): description, identifier, permissions, $schema, windows
+
+### Community 109 - "log_js_error"
 Cohesion: 0.40
-Nodes (3): columns, data, User
+Nodes (3): Option, log_js_error(), String
 
-### Community 60 - "Tech Bill Api Claude S Group"
+### Community 110 - "InsightBulletItem"
+Cohesion: 0.60
+Nodes (4): AiInsightsCard(), InsightBulletItem(), Modifier, String
+
+### Community 111 - "create_dha.js"
 Cohesion: 0.40
-Nodes (3): columns, data, User
+Nodes (3): bcrypt, client_1, prisma
 
-### Community 61 - "Tech Bill Api Tsconfig Group"
+### Community 112 - "generate-api-docs.js"
 Cohesion: 0.40
-Nodes (4): compilerOptions, declaration, exclude, extends
+Nodes (3): fs, modulesDir, path
 
-### Community 63 - "Warranty Warrantypage Group"
+### Community 113 - "update_superadmin.js"
+Cohesion: 0.40
+Nodes (3): bcrypt, client_1, prisma
+
+### Community 115 - "package.json"
+Cohesion: 0.40
+Nodes (4): name, private, type, version
+
+### Community 117 - "StickyWarningBanner"
 Cohesion: 0.50
-Nodes (4): CheckedItem, getWarrantyInfo(), WarrantyPage(), WarrantyResult
+Nodes (3): Boolean, Modifier, StickyWarningBanner()
 
-### Community 64 - "Db Offline Db Processpend Group"
-Cohesion: 0.67
-Nodes (3): processPendingSales(), App(), syncOfflineSales()
-
-### Community 69 - "Returns Returnanalyticspa Group"
-Cohesion: 0.67
-Nodes (3): formatPKR(), ReturnAnalytics, ReturnAnalyticsPage()
+### Community 118 - "AppNavigation.kt"
+Cohesion: 0.83
+Nodes (3): Dashboard, Login, Screen
 
 ## Knowledge Gaps
-- **404 isolated node(s):** `supabase`, `ActivityCardProps`, `name`, `version`, `description` (+399 more)
+- **629 isolated node(s):** `InvoiceStatus`, `TenantStatus`, `name`, `version`, `private` (+624 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **31 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **45 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `PrismaService` connect `Auth Jwt Strategy Group` to `Ai Ai Controller Group`, `Dto Bulk Create Units Dto Group`, `Dto Filter Reconciliation Group`, `Dto Create Return Dto Group`, `Auth Auth Controller Group`, `Audit Audit Controller Au Group`, `Dto Create Po Dto Group`, `Dto Create User Dto Group`, `Settings Settings Control Group`, `Decorators Roles Decorato Group`, `Auth Auth Module Group`, `Ai Ai Controller Aicontro Group`?**
-  _High betweenness centrality (0.022) - this node is a cross-community bridge._
-- **Why does `EventsGateway` connect `Events Events Gateway Group` to `Auth Auth Module Group`?**
-  _High betweenness centrality (0.014) - this node is a cross-community bridge._
-- **Why does `PermissionsGuard` connect `Ai Ai Controller Group` to `Auth Auth Module Group`, `Dto Bulk Create Units Dto Group`, `Dto Create Return Dto Group`?**
+- **Why does `PrismaService` connect `PrismaService` to `InventoryService`, `sales.controller.ts`, `sync.service.ts`, `LicenseService`, `IntegrityService`, `ReportsService`, `AuthService`, `app.module.ts`, `suppliers.controller.ts`, `auth.module.ts`, `license.controller.ts`, `returns.controller.ts`, `TenantsService`, `AuditService`, `users.controller.ts`, `credit.service.ts`, `FeaturesService`, `ExpensesService`, `features.service.ts`, `payments.controller.ts`, `SettingsService`?**
+  _High betweenness centrality (0.038) - this node is a cross-community bridge._
+- **Why does `AuthService` connect `AuthService` to `auth.module.ts`?**
   _High betweenness centrality (0.012) - this node is a cross-community bridge._
-- **What connects `supabase`, `ActivityCardProps`, `name` to the rest of the system?**
-  _412 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Ai Ai Controller Group` be split into smaller, more focused modules?**
-  _Cohesion score 0.06189640035118525 - nodes in this community are weakly interconnected._
-- **Should `Dto Bulk Create Units Dto Group` be split into smaller, more focused modules?**
-  _Cohesion score 0.06140350877192982 - nodes in this community are weakly interconnected._
-- **Should `Dto Filter Reconciliation Group` be split into smaller, more focused modules?**
-  _Cohesion score 0.06923076923076923 - nodes in this community are weakly interconnected._
-
+- **What connects `InvoiceStatus`, `TenantStatus`, `name` to the rest of the system?**
+  _637 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `InventoryService` be split into smaller, more focused modules?**
+  _Cohesion score 0.058823529411764705 - nodes in this community are weakly interconnected._
+- **Should `TokenManager` be split into smaller, more focused modules?**
+  _Cohesion score 0.05254237288135593 - nodes in this community are weakly interconnected._
+- **Should `sales.controller.ts` be split into smaller, more focused modules?**
+  _Cohesion score 0.060496067755595885 - nodes in this community are weakly interconnected._
+- **Should `client.ts` be split into smaller, more focused modules?**
+  _Cohesion score 0.0444947209653092 - nodes in this community are weakly interconnected._

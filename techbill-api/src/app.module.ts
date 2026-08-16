@@ -28,6 +28,7 @@ import { FeaturesModule } from './modules/features/features.module';
 import { LicenseModule } from './modules/license/license.module';
 import { DevicesModule } from './modules/devices/devices.module';
 import { SyncModule } from './modules/sync/sync.module';
+import { RestorePointModule } from './modules/restore-point/restore-point.module';
 
 import { TenantActiveGuard } from './common/guards/tenant-active.guard';
 import { FeatureGuard } from './common/guards/feature.guard';
@@ -60,6 +61,7 @@ import { FeatureGuard } from './common/guards/feature.guard';
     LicenseModule,
     DevicesModule,
     SyncModule,
+    RestorePointModule,
   ],
   controllers: [AppController],
   providers: [

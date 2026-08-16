@@ -298,6 +298,8 @@ model Product {
   comparePrice     Decimal? @map("compare_price") @db.Decimal(10, 2)
   warrantyMonths   Int      @default(0) @map("warranty_months")
   isActive         Boolean  @default(true) @map("is_active")
+  tracksSerial     Boolean  @default(true) @map("tracks_serial")
+  stockQuantity    Int      @default(0)    @map("stock_quantity")
   createdById      String?  @map("created_by_id") @db.Uuid
   createdBy        User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
   tenantId         String   @map("tenant_id") @db.Uuid
@@ -400,6 +402,7 @@ model InventoryUnit {
   grnId         String?            @map("grn_id") @db.Uuid
   grn           GoodsReceivedNote? @relation(fields: [grnId], references: [id], onDelete: SetNull)
   notes         String?            @db.Text
+  expiryDate    DateTime?          @map("expiry_date") @db.Timestamptz
   tenantId      String             @map("tenant_id") @db.Uuid
   tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -410,6 +413,7 @@ model InventoryUnit {
   @@index([serialNumber])
   @@index([status])
   @@index([productId, status])
+  @@index([productId, expiryDate(sort: Asc), receivedAt(sort: Asc)])
   @@index([tenantId])
   @@map("inventory_units")
 }

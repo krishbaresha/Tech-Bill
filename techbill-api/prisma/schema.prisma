@@ -272,6 +272,7 @@ model ShopSettings {
   invoiceWatermarkText      String?  @map("invoice_watermark_text") @db.VarChar(255)
   invoiceShowWatermark      Boolean  @default(false) @map("invoice_show_watermark")
   quickAddOns               Json     @default("[{\"name\": \"Bag\", \"amount\": 100, \"enabled\": true}, {\"name\": \"Gift Wrap\", \"amount\": 150, \"enabled\": true}, {\"name\": \"Delivery\", \"amount\": 500, \"enabled\": false}]") @map("quick_add_ons")
+  autoBackupEmail           String?  @map("auto_backup_email") @db.VarChar(255)
   tenantId                  String   @map("tenant_id") @db.Uuid
   tenant                    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   updatedAt                 DateTime @updatedAt @map("updated_at")

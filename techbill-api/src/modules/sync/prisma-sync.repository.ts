@@ -90,6 +90,30 @@ export class PrismaSyncRepository implements SyncRepository {
     const isDeleted =
       row.data.deleted_at !== null && row.data.deleted_at !== undefined;
 
+    // ── Natural-key deduplication ──────────────────────────────────────────
+    // When the desktop creates a customer offline, `applyOne` assigns it a
+    // fresh randomUUID and calls save() as a !existing row.  If a customer
+    // with the same (tenant_id, phone) already exists on the server (created
+    // from the webapp), the upsert({ where: { id: newUUID } }) finds nothing
+    // and falls through to the CREATE branch, which collides on the unique
+    // index and throws P2002.  Resolve to the existing row's server id first
+    // so the upsert takes the UPDATE branch instead, keeping the server's
+    // canonical id and absorbing the desktop's data.
+    if (row.table === 'customers' && !isDeleted) {
+      const phone = (row.data as any).phone as string | undefined;
+      if (phone) {
+        const existing = await this.prisma.customer.findUnique({
+          where: { tenantId_phone: { tenantId: row.tenantId, phone } },
+        });
+        if (existing && existing.id !== row.id) {
+          // Use the server's canonical id — the SyncRowMeta upsert below will
+          // then record clientRowId → existing.id, so future pushes from this
+          // till resolve to the correct server row without another collision.
+          row = { ...row, id: existing.id };
+        }
+      }
+    }
+
     if (isDeleted) {
       // Hard delete from the domain table
       try {
@@ -254,6 +278,8 @@ export class PrismaSyncRepository implements SyncRepository {
         data.warranty_months = row.warrantyMonths;
         data.is_active = row.isActive;
         data.created_by_id = row.createdById;
+        data.tracks_serial = row.tracksSerial ? 1 : 0;
+        data.stock_quantity = row.stockQuantity;
         break;
 
       case 'customers':
@@ -273,6 +299,7 @@ export class PrismaSyncRepository implements SyncRepository {
         data.received_at = row.receivedAt.toISOString();
         data.grn_remote_id = row.grnId;
         data.notes = row.notes;
+        data.expiry_date = row.expiryDate ? row.expiryDate.toISOString() : null;
         break;
 
       case 'sales':
@@ -383,6 +410,8 @@ export class PrismaSyncRepository implements SyncRepository {
         prismaData.warrantyMonths = data.warranty_months;
         prismaData.isActive = !!data.is_active;
         prismaData.createdById = data.created_by_id;
+        prismaData.tracksSerial = data.tracks_serial !== undefined ? !!data.tracks_serial : true;
+        prismaData.stockQuantity = data.stock_quantity !== undefined ? Number(data.stock_quantity) : 0;
         break;
 
       case 'customers':
@@ -404,6 +433,7 @@ export class PrismaSyncRepository implements SyncRepository {
         prismaData.receivedAt = new Date(data.received_at);
         prismaData.grnId = data.grn_remote_id;
         prismaData.notes = data.notes;
+        prismaData.expiryDate = data.expiry_date ? new Date(data.expiry_date) : null;
         break;
 
       case 'sales':

@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Settings, CheckCircle, AlertTriangle, Building2, Plus, Trash2 } from 'lucide-react';
+import { Settings, CheckCircle, AlertTriangle, Building2, Plus, Trash2, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
 import { useAuthStore } from '../../store/auth.store';
 import { useLockStore } from '../../store/lock.store';
 import { useFeatureGate } from '../../hooks/useFeatureGate';
+import { RestorePointModal } from '../../components/RestorePointModal';
 import type { ShopSettings } from '../../types';
 import gsap from 'gsap';
 
@@ -91,6 +92,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
 
   // App Lock PIN Settings state
   const [settingsPin, setSettingsPin] = useState('');
@@ -251,6 +253,28 @@ export default function SettingsPage() {
       )}
 
       <form onSubmit={handleSave} className="space-y-4">
+        <FieldGroup title="Database Restore Points & Disaster Recovery">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-stitch-primary/10 border border-stitch-primary/30">
+            <div>
+              <div className="flex items-center gap-2 text-white font-semibold text-sm">
+                <ShieldCheck className="w-4 h-4 text-stitch-primary" />
+                <span>Store Backup (.techbill) & One-Click Restore</span>
+              </div>
+              <p className="text-xs text-stitch-on-surface-variant mt-1 leading-relaxed">
+                Create a full A to Z store snapshot (Invoices, Sales, Inventory, Customers, Udhaar Credits, Expenses) or restore your store from a <code className="text-stitch-primary font-mono">.techbill</code> file.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsRestoreModalOpen(true)}
+              className="py-2 px-4 bg-stitch-primary text-stitch-on-primary font-bold text-xs rounded-lg hover:brightness-110 flex items-center gap-2 transition-all shadow-lg shrink-0"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>Open Restore Center</span>
+            </button>
+          </div>
+        </FieldGroup>
+
         <FieldGroup title="General">
           <div>
             <label className={labelCls}>Shop Name</label>
@@ -658,6 +682,8 @@ export default function SettingsPage() {
           ) : 'Save Settings'}
         </button>
       </form>
+
+      <RestorePointModal isOpen={isRestoreModalOpen} onClose={() => setIsRestoreModalOpen(false)} />
     </div>
   );
 }
