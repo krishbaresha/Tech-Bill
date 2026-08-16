@@ -582,14 +582,21 @@ export class SalesService {
     });
     const payouts = await this.prisma.courierPayout.aggregate({
       where: { tenantId },
-      _sum: { amount: true },
+      // Sum both net amount received AND tax deducted.
+      // Tax goes to government — it is NOT money still owed by couriers.
+      // dueFromCouriers = deliveredCOD - netPayouts - taxToGovt
+      _sum: { amount: true, taxDeducted: true },
     });
     const totalDeliveredCod = Number(deliveredSales._sum.codAmount ?? 0);
     const totalPayouts = Number(payouts._sum.amount ?? 0);
+    const totalTaxDeducted = Number(payouts._sum.taxDeducted ?? 0);
+    // Couriers owe: total COD collected - what they've paid us - what govt took
+    const dueFromCouriers = Math.max(0, totalDeliveredCod - totalPayouts - totalTaxDeducted);
     return {
       totalDeliveredCod,
       totalPayouts,
-      dueFromCouriers: totalDeliveredCod - totalPayouts,
+      totalTaxDeducted,
+      dueFromCouriers,
     };
   }
 
@@ -597,17 +604,67 @@ export class SalesService {
     tenantId: string,
     userId: string,
     amount: number,
+    taxDeducted: number,
     courierName: string,
     date: string,
+    saleIds: string[],
   ) {
-    return this.prisma.courierPayout.create({
-      data: {
-        tenantId,
-        createdById: userId,
-        amount,
-        courierName,
-        date: new Date(date),
+    return this.prisma.$transaction(async (tx) => {
+      const payout = await tx.courierPayout.create({
+        data: {
+          tenantId,
+          createdById: userId,
+          amount,
+          taxDeducted: taxDeducted > 0 ? taxDeducted : null,
+          courierName,
+          date: new Date(date),
+        },
+      });
+
+      if (saleIds && saleIds.length > 0) {
+        await tx.sale.updateMany({
+          where: {
+            id: { in: saleIds },
+            tenantId,
+          },
+          data: {
+            payoutId: payout.id,
+            payoutReceivedAt: payout.date,
+            shippingStatus: 'delivered', // mark as delivered if payout received
+          },
+        });
+      }
+
+      return payout;
+    });
+  }
+
+  async getPayouts(tenantId: string) {
+    return this.prisma.courierPayout.findMany({
+      where: { tenantId },
+      include: {
+        sales: {
+          select: { invoiceNumber: true }
+        }
       },
+      orderBy: { date: 'desc' }
+    });
+  }
+
+  async deletePayout(tenantId: string, payoutId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      // Unlink sales
+      await tx.sale.updateMany({
+        where: { tenantId, payoutId },
+        data: {
+          payoutId: null,
+          payoutReceivedAt: null
+        }
+      });
+      // Delete payout
+      return tx.courierPayout.delete({
+        where: { id: payoutId, tenantId }
+      });
     });
   }
 

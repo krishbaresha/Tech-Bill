@@ -22,3 +22,10 @@
 4. `npx prisma db push --accept-data-loss` (if schema changed)
 5. `npm run build`
 6. `pm2 restart electrotrack-backend`
+
+## Reporting & Accounting Logic
+- **Income Statement (Accrual):** `Total Revenue` sums the exact `totalAmount` of all sales (both online and offline). It does NOT include Cash collections (e.g. Courier Payouts, Credit Payments).
+- **Gross Profit:** Calculated precisely as `Total Revenue` minus `Cost of Goods Sold` (after adjusting for returns). Purchase Order outflows are NOT deducted from revenue, as they are asset/inventory purchases.
+- **Total Outflows (Cash Basis):** Represented in the Dashboard and Reports as a single interactive card combining Daily Expenses, Supplier Khata Payments, and Purchase Orders Paid.
+- **Online Orders (Cash Flow):** Courier payouts represent cash received for online orders. Advance payments for online orders are added to revenue and cash flow immediately on the date of sale.
+- **COGS (Online Orders):** COGS for online orders is NOT deducted on the day the sale is created. It is deferred and deducted ONLY on the day the courier payout for that specific order is received.

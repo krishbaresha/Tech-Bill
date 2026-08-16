@@ -7,7 +7,7 @@ import { useAuthStore } from '../../store/auth.store';
 import { useToastStore } from '../../store/toast.store';
 
 export default function OnlineOrdersPage() {
-  const [activeTab, setActiveTab] = useState<'pending' | 'dispatched' | 'delivered' | 'returned'>('pending');
+  const [activeTab, setActiveTab] = useState<'pending' | 'dispatched' | 'delivered' | 'returned' | 'payouts'>('pending');
   const [searchQuery, setSearchQuery] = useState('');
   
   const [dispatchingId, setDispatchingId] = useState<string | null>(null);
@@ -20,10 +20,14 @@ export default function OnlineOrdersPage() {
   const [payoutAmount, setPayoutAmount] = useState<number | ''>('');
   const [payoutCourier, setPayoutCourier] = useState('');
   const [payoutDate, setPayoutDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [payoutTaxDeducted, setPayoutTaxDeducted] = useState<number | ''>('');
+  const [selectedPayoutOrderIds, setSelectedPayoutOrderIds] = useState<string[]>([]);
+  const [unpaidOrders, setUnpaidOrders] = useState<Sale[]>([]);
 
   const [orders, setOrders] = useState<Sale[]>([]);
+  const [payoutsList, setPayoutsList] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [ledger, setLedger] = useState({ totalDeliveredCod: 0, totalPayouts: 0, dueFromCouriers: 0 });
+  const [ledger, setLedger] = useState({ totalDeliveredCod: 0, totalPayouts: 0, totalTaxDeducted: 0, dueFromCouriers: 0 });
   
   const { user } = useAuthStore();
   const toast = useToastStore();
@@ -31,12 +35,21 @@ export default function OnlineOrdersPage() {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [ordersRes, ledgerRes] = await Promise.all([
-        api.get('/sales', { params: { isOnline: true, shippingStatus: activeTab } }),
-        api.get('/sales/payouts/ledger'),
-      ]);
-      setOrders(ordersRes.data.data);
-      setLedger(ledgerRes.data);
+      if (activeTab === 'payouts') {
+        const [payoutsRes, ledgerRes] = await Promise.all([
+          api.get('/sales/payouts'),
+          api.get('/sales/payouts/ledger'),
+        ]);
+        setPayoutsList(payoutsRes.data.data || payoutsRes.data);
+        setLedger(ledgerRes.data.data || ledgerRes.data);
+      } else {
+        const [ordersRes, ledgerRes] = await Promise.all([
+          api.get('/sales', { params: { isOnline: true, shippingStatus: activeTab } }),
+          api.get('/sales/payouts/ledger'),
+        ]);
+        setOrders(ordersRes.data.data || ordersRes.data);
+        setLedger(ledgerRes.data.data || ledgerRes.data);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -62,14 +75,53 @@ export default function OnlineOrdersPage() {
   };
 
   const [isLoggingPayout, setIsLoggingPayout] = useState(false);
+
+  // Fetch unpaid orders when modal opens
+  useEffect(() => {
+    if (isPayoutModalOpen) {
+      api.get('/sales', { params: { isOnline: true } }).then(res => {
+        // filter for dispatched or delivered orders that don't have a payoutId
+        // we assume payoutReceivedAt or payoutId indicates it's paid
+        const pendingPayout = res.data.data.filter((o: any) => 
+          (o.shippingStatus === 'dispatched' || o.shippingStatus === 'delivered') && 
+          !o.payoutReceivedAt
+        );
+        setUnpaidOrders(pendingPayout);
+      });
+    }
+  }, [isPayoutModalOpen]);
+
+  // Recalculate gross amount when selection changes
+  useEffect(() => {
+    if (selectedPayoutOrderIds.length > 0) {
+      const total = unpaidOrders
+        .filter(o => selectedPayoutOrderIds.includes(o.id))
+        .reduce((sum, o) => sum + Number(o.codAmount || 0), 0);
+      setPayoutAmount(total);
+    } else {
+      setPayoutAmount('');
+    }
+  }, [selectedPayoutOrderIds, unpaidOrders]);
+
   const logPayout = async () => {
-    if (!payoutAmount) return;
+    if (!payoutAmount || selectedPayoutOrderIds.length === 0) return alert('Select orders and enter amount');
     setIsLoggingPayout(true);
+    const grossAmount = Number(payoutAmount);
+    const taxAmt = Number(payoutTaxDeducted) || 0;
+    const netAmount = grossAmount - taxAmt;
     try {
-      await api.post('/sales/payouts', { amount: Number(payoutAmount), courierName: payoutCourier, date: payoutDate });
+      await api.post('/sales/payouts', {
+        amount: netAmount,
+        taxDeducted: taxAmt,
+        courierName: payoutCourier,
+        date: payoutDate,
+        saleIds: selectedPayoutOrderIds,
+      });
       setIsPayoutModalOpen(false);
       setPayoutAmount('');
       setPayoutCourier('');
+      setPayoutTaxDeducted('');
+      setSelectedPayoutOrderIds([]);
       await fetchData();
     } catch (err) {
       console.error(err);
@@ -126,9 +178,9 @@ export default function OnlineOrdersPage() {
   );
 
   return (
-    <div className="flex flex-col h-full overflow-hidden p-6 gap-6 max-w-7xl mx-auto w-full">
-      <div className="max-w-6xl mx-auto space-y-6 w-full">
-        <div className="flex items-center justify-between">
+    <div className="flex flex-col h-full p-6 gap-6 max-w-7xl mx-auto w-full">
+      <div className="flex flex-col h-full max-w-6xl mx-auto space-y-6 w-full">
+        <div className="flex items-center justify-between shrink-0">
           <div>
             <h1 className="text-2xl font-black text-white font-space uppercase tracking-tight flex items-center gap-2">
               <Truck className="text-stitch-primary" size={28} />
@@ -142,7 +194,7 @@ export default function OnlineOrdersPage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="glass-card rounded-xl p-4 border border-white/5 bg-white/[0.02]">
             <p className="text-xs text-stitch-on-surface-variant font-bold uppercase tracking-wider mb-1">Delivered COD Value</p>
             <p className="text-2xl font-bold text-white tabular-nums">₨ {ledger.totalDeliveredCod.toLocaleString()}</p>
@@ -151,36 +203,92 @@ export default function OnlineOrdersPage() {
             <p className="text-xs text-stitch-on-surface-variant font-bold uppercase tracking-wider mb-1">Total Payouts Logged</p>
             <p className="text-2xl font-bold text-emerald-400 tabular-nums">₨ {ledger.totalPayouts.toLocaleString()}</p>
           </div>
-          <div className="glass-card rounded-xl p-4 border border-indigo-500/20 bg-indigo-500/5">
-            <p className="text-xs text-indigo-400 font-bold uppercase tracking-wider mb-1">Due from Couriers</p>
-            <p className="text-2xl font-bold text-indigo-400 tabular-nums">₨ {ledger.dueFromCouriers.toLocaleString()}</p>
+          <div className="glass-card rounded-xl p-4 border border-amber-500/20 bg-amber-500/5">
+            <p className="text-xs text-amber-400 font-bold uppercase tracking-wider mb-1">Tax Deducted (Govt)</p>
+            <p className="text-2xl font-bold text-amber-400 tabular-nums">₨ {ledger.totalTaxDeducted.toLocaleString()}</p>
+          </div>
+          <div className={`glass-card rounded-xl p-4 border ${ledger.dueFromCouriers > 0 ? 'border-indigo-500/20 bg-indigo-500/5' : 'border-emerald-500/20 bg-emerald-500/5'}`}>
+            <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${ledger.dueFromCouriers > 0 ? 'text-indigo-400' : 'text-emerald-400'}`}>Due from Couriers</p>
+            <p className={`text-2xl font-bold tabular-nums ${ledger.dueFromCouriers > 0 ? 'text-indigo-400' : 'text-emerald-400'}`}>
+              ₨ {ledger.dueFromCouriers.toLocaleString()}
+            </p>
+            {ledger.dueFromCouriers === 0 && <p className="text-[10px] text-emerald-400/70 mt-1">All settled ✓</p>}
           </div>
         </div>
 
         {isPayoutModalOpen && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="glass-card max-w-md w-full rounded-2xl p-6 border border-white/10 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-500"></div>
-              <div className="flex items-start justify-between mb-6">
-                <div>
-                  <h3 className="text-xl font-bold text-white font-space">Log Courier Payout</h3>
-                  <p className="text-sm text-stitch-on-surface-variant mt-1">Record a bulk payout from your courier.</p>
+            <div className="bg-stitch-surface p-6 rounded-2xl w-full max-w-2xl border border-white/10 shadow-2xl relative max-h-[90vh] flex flex-col">
+              <button onClick={() => setIsPayoutModalOpen(false)} className="absolute top-4 right-4 text-stitch-on-surface-variant hover:text-white transition-colors">
+                <X size={20} />
+              </button>
+              <h2 className="text-xl font-bold text-white mb-6 font-space">Log Bulk Payout</h2>
+              
+              <div className="flex-1 overflow-y-auto min-h-0 space-y-4 pr-2">
+                <div className="space-y-4 border border-white/10 rounded-lg p-4 bg-white/[0.02]">
+                  <h3 className="text-sm font-bold text-white mb-2">Select Orders for Payout</h3>
+                  {unpaidOrders.length === 0 ? (
+                    <p className="text-sm text-stitch-on-surface-variant text-center py-4">No pending COD orders found.</p>
+                  ) : (
+                    <div className="max-h-60 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                      {unpaidOrders.map(o => (
+                        <label key={o.id} className="flex items-center gap-3 p-3 rounded-lg border border-white/5 hover:bg-white/5 cursor-pointer transition-colors bg-white/[0.02]">
+                          <input 
+                            type="checkbox" 
+                            className="w-4 h-4 rounded border-white/20 bg-transparent text-emerald-500 focus:ring-emerald-500/20"
+                            checked={selectedPayoutOrderIds.includes(o.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) setSelectedPayoutOrderIds([...selectedPayoutOrderIds, o.id]);
+                              else setSelectedPayoutOrderIds(selectedPayoutOrderIds.filter(id => id !== o.id));
+                            }}
+                          />
+                          <div className="flex-1">
+                            <p className="text-sm font-bold text-white">{o.invoiceNumber}</p>
+                            <p className="text-xs text-stitch-on-surface-variant">{o.customer?.name} • Tracking: {o.trackingId || 'N/A'}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-bold text-emerald-400 tabular-nums">₨ {Number(o.codAmount || 0).toLocaleString()}</p>
+                            <p className="text-[10px] text-stitch-on-surface-variant uppercase">{o.shippingStatus}</p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <button onClick={() => setIsPayoutModalOpen(false)} className="text-stitch-on-surface-variant hover:text-white p-1 rounded-lg transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-stitch-on-surface-variant uppercase tracking-wider mb-2">Courier Name</label>
+                    <input type="text" value={payoutCourier} onChange={(e) => setPayoutCourier(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-white placeholder:text-white/20 outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all" placeholder="e.g. TCS, Leopard" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-stitch-on-surface-variant uppercase tracking-wider mb-2">Date</label>
+                    <input type="date" value={payoutDate} onChange={(e) => setPayoutDate(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-white outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-stitch-on-surface-variant uppercase tracking-wider mb-2">Total COD Value (Gross)</label>
+                    <input type="number" value={payoutAmount} onChange={(e) => setPayoutAmount(Number(e.target.value) || '')} className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-white placeholder:text-white/20 outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all font-space" placeholder="0" readOnly={selectedPayoutOrderIds.length > 0} />
+                    <p className="text-[10px] text-stitch-on-surface-variant mt-1">Sum of selected orders COD</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-amber-500/70 uppercase tracking-wider mb-2">Tax Deducted (Govt)</label>
+                    <input type="number" value={payoutTaxDeducted} onChange={(e) => setPayoutTaxDeducted(Number(e.target.value) || '')} className="w-full bg-black/20 border border-amber-500/30 rounded-lg p-3 text-amber-400 placeholder:text-amber-500/30 outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition-all font-space" placeholder="0" />
+                    <p className="text-[10px] text-amber-500/50 mt-1">Tax withheld by courier</p>
+                  </div>
+                </div>
+                
+                <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-4">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-indigo-400 font-bold">Net Payout to Bank</span>
+                    <span className="text-xl font-bold font-space text-white tabular-nums">₨ {((Number(payoutAmount) || 0) - (Number(payoutTaxDeducted) || 0)).toLocaleString()}</span>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-4">
-                <input type="number" value={payoutAmount} onChange={(e) => setPayoutAmount(Number(e.target.value))} className="w-full bg-stitch-surface-container-high/50 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500/50" placeholder="Payout Amount (₨)" />
-                <input type="text" value={payoutCourier} onChange={(e) => setPayoutCourier(e.target.value)} className="w-full bg-stitch-surface-container-high/50 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500/50" placeholder="Courier Name" />
-                <input type="date" value={payoutDate} onChange={(e) => setPayoutDate(e.target.value)} className="w-full bg-stitch-surface-container-high/50 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500/50" />
-              </div>
-              <div className="flex gap-3 mt-8">
-                <button onClick={() => setIsPayoutModalOpen(false)} className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-white font-semibold hover:bg-white/5 transition-colors">Cancel</button>
-                <button onClick={logPayout} disabled={isLoggingPayout || !payoutAmount} className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white px-4 py-2.5 rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2">
-                  {isLoggingPayout ? 'Saving...' : 'Save Payout'}
-                </button>
-              </div>
+
+              <button onClick={logPayout} disabled={isLoggingPayout || !payoutAmount || selectedPayoutOrderIds.length === 0} className="w-full bg-white text-black font-bold py-3.5 rounded-lg hover:bg-gray-200 transition-colors mt-6 disabled:opacity-50 flex items-center justify-center gap-2">
+                {isLoggingPayout ? <RotateCcw size={18} className="animate-spin" /> : <CheckCircle size={18} />}
+                Confirm Bulk Payout
+              </button>
             </div>
           </div>
         )}
@@ -190,16 +298,62 @@ export default function OnlineOrdersPage() {
           <TabButton id="dispatched" active={activeTab} set={setActiveTab} label="Dispatched" icon={<Truck size={16} />} />
           <TabButton id="delivered" active={activeTab} set={setActiveTab} label="Completed" icon={<CheckCircle2 size={16} />} />
           <TabButton id="returned" active={activeTab} set={setActiveTab} label="Returned" icon={<RotateCcw size={16} />} />
+          <TabButton id="payouts" active={activeTab} set={setActiveTab} label="Payouts" icon={<CheckCircle size={16} />} />
         </div>
 
-        <div className="relative shrink-0">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stitch-on-surface-variant" size={18} />
-          <input type="text" placeholder="Search by invoice, customer, or tracking ID..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder-stitch-on-surface-variant focus:outline-none focus:border-stitch-primary transition-colors" />
-        </div>
+        {activeTab !== 'payouts' && (
+          <div className="relative shrink-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stitch-on-surface-variant" size={18} />
+            <input type="text" placeholder="Search by invoice, customer, or tracking ID..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder-stitch-on-surface-variant focus:outline-none focus:border-stitch-primary transition-colors" />
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto space-y-4 pr-2">
           {isLoading ? (
             <div className="flex items-center justify-center h-32"><span className="w-8 h-8 border-2 border-stitch-primary/30 border-t-stitch-primary rounded-full animate-spin" /></div>
+          ) : activeTab === 'payouts' ? (
+            payoutsList.length === 0 ? (
+               <div className="flex flex-col items-center justify-center h-64 text-center">
+                 <PackageSearch size={48} className="text-stitch-on-surface-variant/30 mb-4" />
+                 <p className="text-lg font-bold text-white mb-2">No payouts found</p>
+               </div>
+            ) : (
+               payoutsList.map((payout) => (
+                 <div key={payout.id} className="glass-panel p-5 rounded-2xl border border-white/5 flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
+                   <div className="space-y-3 flex-1">
+                     <p className="font-space font-bold text-stitch-primary text-lg">{payout.courierName || 'Unknown Courier'} Payout</p>
+                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                       <div><p className="text-stitch-on-surface-variant text-[10px] uppercase font-bold">Date</p><p className="font-semibold text-white">{format(new Date(payout.date), 'dd MMM yyyy')}</p></div>
+                       <div><p className="text-stitch-on-surface-variant text-[10px] uppercase font-bold">Gross Amount</p><p className="font-semibold text-white">Rs {(Number(payout.amount) + Number(payout.taxDeducted || 0)).toLocaleString()}</p></div>
+                       <div><p className="text-stitch-on-surface-variant text-[10px] uppercase font-bold">Tax Deducted</p><p className="font-semibold text-amber-400">Rs {Number(payout.taxDeducted || 0).toLocaleString()}</p></div>
+                       <div><p className="text-stitch-on-surface-variant text-[10px] uppercase font-bold">Net Banked</p><p className="font-semibold text-emerald-400">Rs {Number(payout.amount).toLocaleString()}</p></div>
+                     </div>
+                     <div>
+                       <p className="text-stitch-on-surface-variant text-[10px] uppercase font-bold mb-1">Invoices Included</p>
+                       <p className="text-xs text-white/70">
+                         {payout.sales && payout.sales.length > 0 
+                           ? payout.sales.map((s: any) => s.invoiceNumber).join(', ') 
+                           : '-'}
+                       </p>
+                     </div>
+                   </div>
+                   <div className="flex items-center gap-2">
+                     <button
+                       onClick={async () => {
+                         if (window.confirm('Delete this payout? The sales will be marked as unpaid.')) {
+                           await api.delete(`/sales/payouts/${payout.id}`);
+                           fetchData();
+                         }
+                       }}
+                       className="text-red-400 hover:text-red-300 p-2 hover:bg-red-400/10 rounded-lg transition-colors"
+                       title="Delete Payout"
+                     >
+                       <Trash2 size={20} />
+                     </button>
+                   </div>
+                 </div>
+               ))
+            )
           ) : filteredOrders.map((order) => (
             <div key={order.id} className="glass-panel p-5 rounded-2xl border border-white/5 flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
               <div className="space-y-3 flex-1">

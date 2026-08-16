@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { format, subDays } from 'date-fns';
-import { FileText, TrendingUp, Users, Package, AlertTriangle } from 'lucide-react';
+import { FileText, TrendingUp, Users, Package, AlertTriangle, Wallet, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { SalesSummary, StaffPerformance, DeadStockItem } from '../../types';
@@ -18,6 +18,7 @@ export default function ReportsPage() {
   const [to, setTo] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState<SalesSummary | null>(null);
+  const [showOutflowsModal, setShowOutflowsModal] = useState(false);
   const [staff, setStaff] = useState<StaffPerformance[]>([]);
   const [deadStock, setDeadStock] = useState<DeadStockItem[]>([]);
   const [error, setError] = useState('');
@@ -172,13 +173,13 @@ export default function ReportsPage() {
                 {[
                   { label: 'Total Revenue', value: formatPKR(summary.totalRevenue), color: 'text-stitch-tertiary' },
                   { label: 'Gross Profit', value: formatPKR(summary.totalGrossProfit || 0), color: 'text-green-500' },
-                  { label: 'Expenses', value: formatPKR(summary.totalExpenses || 0), color: 'text-stitch-error' },
+                  { label: 'Total Outflows', value: formatPKR((summary.totalExpenses || 0) + (summary.totalCreditPaid || 0) + (summary.totalPurchaseCost || 0)), color: 'text-stitch-error', onClick: () => setShowOutflowsModal(true) },
                   { label: 'Net Profit', value: formatPKR(summary.netProfit || 0), color: 'text-emerald-400' },
                   { label: 'Total Sales', value: String(summary.totalSales), color: 'text-stitch-primary' },
                   { label: 'Items Sold', value: String(summary.totalItems), color: 'text-green-400' },
                   { label: 'Discounts', value: formatPKR(summary.totalDiscounts), color: 'text-amber-400' },
                 ].map((c) => (
-                  <div key={c.label} className="glass-card rounded-xl p-4">
+                  <div key={c.label} onClick={c.onClick} className={`glass-card rounded-xl p-4 ${c.onClick ? 'cursor-pointer hover:bg-white/[0.04] transition-colors active:scale-[0.98]' : ''}`}>
                     <p className="text-[10px] font-bold text-stitch-on-surface-variant uppercase tracking-wider">{c.label}</p>
                     <p className={`text-xl font-bold font-space mt-1 tabular-nums ${c.color}`}>{c.value}</p>
                   </div>
@@ -188,19 +189,47 @@ export default function ReportsPage() {
               {isOnlineEnabled && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="glass-card rounded-xl p-5 border border-white/5 bg-white/[0.01]">
-                    <h3 className="text-xs font-bold text-stitch-on-surface-variant uppercase tracking-wider mb-2">Offline vs Online Revenue</h3>
-                    <div className="space-y-3 mt-4">
+                    <h3 className="text-xs font-bold text-stitch-on-surface-variant uppercase tracking-wider mb-3">Revenue Breakdown</h3>
+                    {/* Accrual Revenue — used for Gross Profit */}
+                    <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest mb-1.5">Accrual Revenue (for Profit)</p>
+                    <div className="space-y-2 mb-3">
                       <div className="flex justify-between text-sm">
                         <span className="text-stitch-on-surface-variant">Offline Sales</span>
                         <span className="font-bold text-white tabular-nums">{formatPKR(summary.offlineRevenue)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-stitch-on-surface-variant">Online Sales (Advances)</span>
-                        <span className="font-bold text-emerald-400 tabular-nums">{formatPKR(summary.onlineRevenue - summary.courierPayouts)}</span>
+                        <span className="text-stitch-on-surface-variant">Online Sales</span>
+                        <span className="font-bold text-emerald-400 tabular-nums">{formatPKR(summary.onlineRevenue)}</span>
                       </div>
-                      <div className="flex justify-between text-sm border-t border-white/10 pt-2">
-                        <span className="text-stitch-on-surface-variant">Bulk Courier Payouts</span>
-                        <span className="font-bold text-indigo-400 tabular-nums">{formatPKR(summary.courierPayouts)}</span>
+                    </div>
+                    {/* Cash Actually Received */}
+                    <div className="border-t border-white/10 pt-3">
+                      <p className="text-[9px] font-bold text-amber-400 uppercase tracking-widest mb-1.5">Cash Received This Period</p>
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-stitch-on-surface-variant">Offline Cash</span>
+                          <span className="font-bold text-white tabular-nums">{formatPKR(summary.offlineRevenue)}</span>
+                        </div>
+                        {(summary.totalAdvanceAmount ?? 0) > 0 && (
+                          <div className="flex justify-between text-xs">
+                            <span className="text-stitch-on-surface-variant">Online Advances</span>
+                            <span className="font-bold text-white tabular-nums">{formatPKR(summary.totalAdvanceAmount)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-xs">
+                          <span className="text-stitch-on-surface-variant">Courier Payouts (COD)</span>
+                          <span className="font-bold text-indigo-400 tabular-nums">{formatPKR(summary.courierPayouts)}</span>
+                        </div>
+                        {(summary.courierTaxDeducted ?? 0) > 0 && (
+                          <div className="flex justify-between text-xs">
+                            <span className="text-amber-400">Tax Deducted (Govt)</span>
+                            <span className="font-bold text-amber-400 tabular-nums">− {formatPKR(summary.courierTaxDeducted)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-xs border-t border-white/10 pt-1.5 mt-1">
+                          <span className="font-bold text-white">Total Cash In Hand</span>
+                          <span className="font-bold text-emerald-400 tabular-nums">{formatPKR(summary.cashReceived ?? 0)}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -337,6 +366,41 @@ export default function ReportsPage() {
           )}
         </div>
       </div>
+      
+      {showOutflowsModal && summary && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowOutflowsModal(false)}>
+          <div className="w-full max-w-sm bg-stitch-surface-container rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+              <h3 className="text-base font-bold text-white font-space flex items-center gap-2">
+                <Wallet size={18} className="text-stitch-error" /> Total Outflows
+              </h3>
+              <button onClick={() => setShowOutflowsModal(false)} className="text-white/50 hover:text-white transition-colors">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="flex justify-between items-center pb-3 border-b border-white/5">
+                <span className="text-sm font-semibold text-stitch-on-surface-variant">Daily Expenses</span>
+                <span className="text-sm font-bold text-white tabular-nums">{formatPKR(summary.totalExpenses || 0)}</span>
+              </div>
+              <div className="flex justify-between items-center pb-3 border-b border-white/5">
+                <span className="text-sm font-semibold text-stitch-on-surface-variant">Supplier Credit Paid</span>
+                <span className="text-sm font-bold text-white tabular-nums">{formatPKR(summary.totalCreditPaid || 0)}</span>
+              </div>
+              <div className="flex justify-between items-center pb-3 border-b border-white/5">
+                <span className="text-sm font-semibold text-stitch-on-surface-variant">Purchase Orders Paid</span>
+                <span className="text-sm font-bold text-white tabular-nums">{formatPKR(summary.totalPurchaseCost || 0)}</span>
+              </div>
+              <div className="flex justify-between items-center pt-2">
+                <span className="text-sm font-bold text-white uppercase tracking-wider">Total</span>
+                <span className="text-lg font-bold text-stitch-error tabular-nums">
+                  {formatPKR((summary.totalExpenses || 0) + (summary.totalCreditPaid || 0) + (summary.totalPurchaseCost || 0))}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

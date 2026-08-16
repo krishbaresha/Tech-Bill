@@ -258,16 +258,22 @@ export interface Sale {
 
 export interface SalesSummary {
   period: string;
-  totalRevenue: number;
+  totalRevenue: number;          // accrual: totalAmount of all completed sales
   totalGrossProfit: number;
   totalExpenses: number;
+  totalCreditPaid?: number;
+  totalPurchaseCost?: number;
+  totalCreditCollected?: number;
   netProfit: number;
   totalSales: number;
   totalItems: number;
   totalDiscounts: number;
   offlineRevenue: number;
-  onlineRevenue: number;
+  onlineRevenue: number;         // accrual: totalAmount of online completed sales
+  cashReceived: number;          // actual cash: offline + advances + payouts
+  totalAdvanceAmount: number;    // advance cash from online orders
   courierPayouts: number;
+  courierTaxDeducted: number;
   onlineSalesCount: number;
   offlineSalesCount: number;
   pendingOnlineOrders: number;

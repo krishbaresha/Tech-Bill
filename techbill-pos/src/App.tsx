@@ -593,7 +593,7 @@ export default function App() {
             path="online-orders"
             element={
               <RequireAuth permission="pos.online_sell">
-                <RequireFeature feature="online_orders">
+                <RequireFeature feature="online_sell">
                   <OnlineOrdersPage />
                 </RequireFeature>
               </RequireAuth>
