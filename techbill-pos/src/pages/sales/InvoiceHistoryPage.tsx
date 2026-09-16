@@ -230,18 +230,7 @@ export default function InvoiceHistoryPage() {
       .catch(() => {});
   }, []);
 
-  useEffect(() => {
-    if (!sales.length) return;
-    sales.forEach((s) => {
-      if (!detailsCache[s.id]) {
-        api.get<SaleDetail>(`/sales/${s.id}`)
-          .then((r) => {
-            detailsCache[s.id] = r.data;
-          })
-          .catch(() => undefined);
-      }
-    });
-  }, [sales]);
+
 
   useEffect(() => {
     if (!loading && containerRef.current) {
