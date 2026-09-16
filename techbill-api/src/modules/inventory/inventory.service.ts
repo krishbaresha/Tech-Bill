@@ -173,7 +173,12 @@ export class InventoryService {
 
   async listCategories(tenantId: string): Promise<string[]> {
     const rows = await this.prisma.product.findMany({
-      where: { tenantId, isActive: true, isDeleted: false, category: { not: null } },
+      where: {
+        tenantId,
+        isActive: true,
+        isDeleted: false,
+        category: { not: null },
+      },
       select: { category: true },
       distinct: ['category'],
       orderBy: { category: 'asc' },
@@ -648,23 +653,33 @@ export class InventoryService {
     return updated;
   }
 
-  async softDeleteProduct(id: string, tenantId: string, hardDeleteUnits = false) {
+  async softDeleteProduct(
+    id: string,
+    tenantId: string,
+    hardDeleteUnits = false,
+  ) {
     await this.findProductOrThrow(id, tenantId);
-    
+
     await this.prisma.$transaction(async (tx) => {
       if (hardDeleteUnits) {
         await tx.inventoryUnit.deleteMany({
-          where: { productId: id, tenantId, status: UnitStatus.in_stock }
+          where: { productId: id, tenantId, status: UnitStatus.in_stock },
         });
       }
-      
+
       await tx.product.update({
         where: { id },
-        data: hardDeleteUnits ? { isActive: false, isDeleted: true } : { isActive: false },
+        data: hardDeleteUnits
+          ? { isActive: false, isDeleted: true }
+          : { isActive: false },
       });
     });
-    
-    return { message: hardDeleteUnits ? 'Product deactivated and in-stock units deleted' : 'Product deactivated' };
+
+    return {
+      message: hardDeleteUnits
+        ? 'Product deactivated and in-stock units deleted'
+        : 'Product deactivated',
+    };
   }
 
   async activateProduct(id: string, tenantId: string) {
@@ -738,7 +753,7 @@ export class InventoryService {
     );
     const paidAmount = data.paidAmount ?? 0;
     const creditAmount = totalAmount - paidAmount;
-    
+
     return this.prisma.$transaction(async (tx) => {
       let creditRecordId: string | undefined = undefined;
 
@@ -789,7 +804,12 @@ export class InventoryService {
       if (!po) throw new NotFoundException(`Purchase order ${id} not found`);
 
       const totalAmount = po.totalAmount ? Number(po.totalAmount) : 0;
-      const newPaidAmount = data.paidAmount !== undefined ? data.paidAmount : (po.paidAmount ? Number(po.paidAmount) : 0);
+      const newPaidAmount =
+        data.paidAmount !== undefined
+          ? data.paidAmount
+          : po.paidAmount
+            ? Number(po.paidAmount)
+            : 0;
       const newCreditAmount = totalAmount - newPaidAmount;
 
       // Update PO
@@ -797,7 +817,10 @@ export class InventoryService {
         where: { id },
         data: {
           paidAmount: newPaidAmount,
-          paymentMethod: data.paymentMethod !== undefined ? data.paymentMethod : po.paymentMethod,
+          paymentMethod:
+            data.paymentMethod !== undefined
+              ? data.paymentMethod
+              : po.paymentMethod,
         },
       });
 
@@ -851,9 +874,12 @@ export class InventoryService {
       // Check if created within last 24 hours
       const now = new Date();
       const createdAt = new Date(po.createdAt);
-      const diffHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+      const diffHours =
+        (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
       if (diffHours > 24) {
-        throw new BadRequestException('Cannot delete purchase orders older than 24 hours');
+        throw new BadRequestException(
+          'Cannot delete purchase orders older than 24 hours',
+        );
       }
 
       // Reverse stock (delete inventory units from GRNs)

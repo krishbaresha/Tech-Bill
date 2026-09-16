@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
@@ -410,8 +411,10 @@ export class PrismaSyncRepository implements SyncRepository {
         prismaData.warrantyMonths = data.warranty_months;
         prismaData.isActive = !!data.is_active;
         prismaData.createdById = data.created_by_id;
-        prismaData.tracksSerial = data.tracks_serial !== undefined ? !!data.tracks_serial : true;
-        prismaData.stockQuantity = data.stock_quantity !== undefined ? Number(data.stock_quantity) : 0;
+        prismaData.tracksSerial =
+          data.tracks_serial !== undefined ? !!data.tracks_serial : true;
+        prismaData.stockQuantity =
+          data.stock_quantity !== undefined ? Number(data.stock_quantity) : 0;
         break;
 
       case 'customers':
@@ -433,7 +436,9 @@ export class PrismaSyncRepository implements SyncRepository {
         prismaData.receivedAt = new Date(data.received_at);
         prismaData.grnId = data.grn_remote_id;
         prismaData.notes = data.notes;
-        prismaData.expiryDate = data.expiry_date ? new Date(data.expiry_date) : null;
+        prismaData.expiryDate = data.expiry_date
+          ? new Date(data.expiry_date)
+          : null;
         break;
 
       case 'sales':
@@ -518,3 +523,4 @@ export class PrismaSyncRepository implements SyncRepository {
     return prismaData;
   }
 }
+

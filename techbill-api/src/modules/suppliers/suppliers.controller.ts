@@ -125,17 +125,14 @@ export class SuppliersController {
   ) {
     return this.suppliersService.updatePurchaseOrderPayment(
       id,
-      body as any,
+      body,
       req.user.tenantId,
     );
   }
 
   @Delete('purchase-orders/:id')
   @Permissions('suppliers.write')
-  deletePurchaseOrder(
-    @Param('id') id: string,
-    @Req() req: RequestWithUser,
-  ) {
+  deletePurchaseOrder(@Param('id') id: string, @Req() req: RequestWithUser) {
     return this.suppliersService.deletePurchaseOrder(id, req.user.tenantId);
   }
 }

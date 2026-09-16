@@ -79,7 +79,10 @@ export class ReportsService {
       OR: [
         { isOnline: false, createdAt: { gte: start, lte: end } },
         { isOnline: true, createdAt: { gte: start, lte: end } },
-        { isOnline: true, payoutReceivedAt: { gte: payoutDateStart, lte: payoutDateEnd } },
+        {
+          isOnline: true,
+          payoutReceivedAt: { gte: payoutDateStart, lte: payoutDateEnd },
+        },
       ],
     };
 
@@ -89,31 +92,40 @@ export class ReportsService {
         items: {
           include: {
             inventoryUnit: {
-              select: { purchasePrice: true, product: { select: { id: true, name: true } } },
+              select: {
+                purchasePrice: true,
+                product: { select: { id: true, name: true } },
+              },
             },
           },
         },
       },
     });
 
-    const productMap = new Map<string, { name: string; units: number; revenue: number; onlineUnits: number }>();
-    
+    const productMap = new Map<
+      string,
+      { name: string; units: number; revenue: number; onlineUnits: number }
+    >();
+
     let totalCost = 0;
     let totalRevenue = 0;
     let totalDiscounts = 0;
     let offlineRevenue = 0;
-    let onlineRevenue = 0;       
+    let onlineRevenue = 0;
     let offlineSalesCount = 0;
     let onlineSalesCount = 0;
-    let totalAdvanceAmount = 0;  
-    
+    let totalAdvanceAmount = 0;
+
     // For totals and byPaymentMethod
     let totalSalesCount = 0;
     const byPaymentMap = new Map<string, { count: number; revenue: number }>();
 
     for (const s of salesList) {
       const createdInPeriod = s.createdAt >= start && s.createdAt <= end;
-      const paidInPeriod = s.payoutReceivedAt && s.payoutReceivedAt >= payoutDateStart && s.payoutReceivedAt <= payoutDateEnd;
+      const paidInPeriod =
+        s.payoutReceivedAt &&
+        s.payoutReceivedAt >= payoutDateStart &&
+        s.payoutReceivedAt <= payoutDateEnd;
 
       if (!s.isOnline) {
         if (createdInPeriod) {
@@ -121,15 +133,31 @@ export class ReportsService {
           offlineSalesCount += 1;
           totalSalesCount += 1;
           totalDiscounts += Number(s.discountAmount);
-          
-          const payMethod = byPaymentMap.get(s.paymentMethod) || { count: 0, revenue: 0 };
-          byPaymentMap.set(s.paymentMethod, { count: payMethod.count + 1, revenue: payMethod.revenue + Number(s.totalAmount) });
+
+          const payMethod = byPaymentMap.get(s.paymentMethod) || {
+            count: 0,
+            revenue: 0,
+          };
+          byPaymentMap.set(s.paymentMethod, {
+            count: payMethod.count + 1,
+            revenue: payMethod.revenue + Number(s.totalAmount),
+          });
 
           for (const item of s.items) {
-             totalCost += Number(item.inventoryUnit.purchasePrice ?? 0);
-             const pid = item.inventoryUnit.product.id;
-             const entry = productMap.get(pid) ?? { name: item.inventoryUnit.product.name, units: 0, revenue: 0, onlineUnits: 0 };
-             productMap.set(pid, { ...entry, units: entry.units + 1, revenue: entry.revenue + Number(item.sellingPrice), onlineUnits: entry.onlineUnits });
+            totalCost += Number(item.inventoryUnit.purchasePrice ?? 0);
+            const pid = item.inventoryUnit.product.id;
+            const entry = productMap.get(pid) ?? {
+              name: item.inventoryUnit.product.name,
+              units: 0,
+              revenue: 0,
+              onlineUnits: 0,
+            };
+            productMap.set(pid, {
+              ...entry,
+              units: entry.units + 1,
+              revenue: entry.revenue + Number(item.sellingPrice),
+              onlineUnits: entry.onlineUnits,
+            });
           }
         }
       } else {
@@ -137,26 +165,48 @@ export class ReportsService {
           totalAdvanceAmount += Number(s.advanceAmount);
           onlineSalesCount += 1;
           totalSalesCount += 1; // count the sale in total sales when created
-          
+
           // Advance is added to byPaymentMethod (assuming advance is usually bank transfer, but we use paymentMethod of the sale)
-          const payMethod = byPaymentMap.get(s.paymentMethod) || { count: 0, revenue: 0 };
-          byPaymentMap.set(s.paymentMethod, { count: payMethod.count + 1, revenue: payMethod.revenue + Number(s.advanceAmount) });
+          const payMethod = byPaymentMap.get(s.paymentMethod) || {
+            count: 0,
+            revenue: 0,
+          };
+          byPaymentMap.set(s.paymentMethod, {
+            count: payMethod.count + 1,
+            revenue: payMethod.revenue + Number(s.advanceAmount),
+          });
         }
-        
+
         if (paidInPeriod) {
           onlineRevenue += Number(s.codAmount);
           totalDiscounts += Number(s.discountAmount); // Discounts taken into account on settlement
-          
+
           const codMethod = 'Cash'; // Payouts usually settle as Cash
-          const payMethod = byPaymentMap.get(codMethod) || { count: 0, revenue: 0 };
-          byPaymentMap.set(codMethod, { count: payMethod.count + (createdInPeriod ? 0 : 1), revenue: payMethod.revenue + Number(s.codAmount) });
+          const payMethod = byPaymentMap.get(codMethod) || {
+            count: 0,
+            revenue: 0,
+          };
+          byPaymentMap.set(codMethod, {
+            count: payMethod.count + (createdInPeriod ? 0 : 1),
+            revenue: payMethod.revenue + Number(s.codAmount),
+          });
 
           // COGS and product items are added to reports when fully settled
           for (const item of s.items) {
-             totalCost += Number(item.inventoryUnit.purchasePrice ?? 0);
-             const pid = item.inventoryUnit.product.id;
-             const entry = productMap.get(pid) ?? { name: item.inventoryUnit.product.name, units: 0, revenue: 0, onlineUnits: 0 };
-             productMap.set(pid, { ...entry, units: entry.units + 1, revenue: entry.revenue + Number(item.sellingPrice), onlineUnits: entry.onlineUnits + 1 });
+            totalCost += Number(item.inventoryUnit.purchasePrice ?? 0);
+            const pid = item.inventoryUnit.product.id;
+            const entry = productMap.get(pid) ?? {
+              name: item.inventoryUnit.product.name,
+              units: 0,
+              revenue: 0,
+              onlineUnits: 0,
+            };
+            productMap.set(pid, {
+              ...entry,
+              units: entry.units + 1,
+              revenue: entry.revenue + Number(item.sellingPrice),
+              onlineUnits: entry.onlineUnits + 1,
+            });
           }
         }
       }
@@ -168,7 +218,7 @@ export class ReportsService {
     const soldProducts = [...productMap.entries()]
       .map(([productId, d]) => ({ productId, ...d }))
       .sort((a, b) => b.revenue - a.revenue);
-    
+
     // Courier payouts = cash actually received from couriers (COD settlements).
     const payoutsAgg = await this.prisma.courierPayout.aggregate({
       where: {
@@ -227,7 +277,7 @@ export class ReportsService {
       },
       _sum: { amount: true },
     });
-    let totalExpenses = Number(standardExpenses._sum.amount ?? 0);
+    const totalExpenses = Number(standardExpenses._sum.amount ?? 0);
 
     // Credit Payments Integration
     const creditPayments = await this.prisma.creditPayment.findMany({
@@ -258,7 +308,7 @@ export class ReportsService {
       _sum: { variance: true },
     });
     const totalVariance = Number(reconciliations._sum.variance ?? 0);
-    
+
     // Add variance to revenue (which will affect profit)
     totalRevenue += totalVariance;
 
@@ -272,7 +322,6 @@ export class ReportsService {
         createdAt: { gte: start, lte: end },
       },
     });
-
 
     let totalItemsSold = 0;
     for (const v of productMap.values()) {
@@ -291,20 +340,22 @@ export class ReportsService {
       totalDiscounts,
       offlineRevenue,
       onlineRevenue,
-      cashReceived,          // actual cash in hand: offline + advances + payouts
-      totalAdvanceAmount,    // advance cash collected from online orders
-      courierPayouts,        // net COD received from couriers this period
-      courierTaxDeducted,    // govt tax deducted from payouts
+      cashReceived, // actual cash in hand: offline + advances + payouts
+      totalAdvanceAmount, // advance cash collected from online orders
+      courierPayouts, // net COD received from couriers this period
+      courierTaxDeducted, // govt tax deducted from payouts
       totalCreditCollected,
       totalCreditPaid,
       onlineSalesCount,
       offlineSalesCount,
       pendingOnlineOrders,
-      byPaymentMethod: Array.from(byPaymentMap.entries()).map(([method, data]) => ({
-        method,
-        count: data.count,
-        revenue: data.revenue,
-      })),
+      byPaymentMethod: Array.from(byPaymentMap.entries()).map(
+        ([method, data]) => ({
+          method,
+          count: data.count,
+          revenue: data.revenue,
+        }),
+      ),
       soldProducts,
     };
   }

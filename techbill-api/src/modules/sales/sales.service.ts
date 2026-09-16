@@ -52,7 +52,9 @@ export class SalesService {
       let saleDate = new Date();
       if (dto.createdAt) {
         if (user?.role !== 'owner') {
-          throw new ForbiddenException('Only owners can create sales on past dates');
+          throw new ForbiddenException(
+            'Only owners can create sales on past dates',
+          );
         }
         saleDate = new Date(dto.createdAt);
       }
@@ -601,7 +603,10 @@ export class SalesService {
     const totalPayouts = Number(payouts._sum.amount ?? 0);
     const totalTaxDeducted = Number(payouts._sum.taxDeducted ?? 0);
     // Couriers owe: total COD collected - what they've paid us - what govt took
-    const dueFromCouriers = Math.max(0, totalDeliveredCod - totalPayouts - totalTaxDeducted);
+    const dueFromCouriers = Math.max(
+      0,
+      totalDeliveredCod - totalPayouts - totalTaxDeducted,
+    );
     return {
       totalDeliveredCod,
       totalPayouts,
@@ -654,10 +659,10 @@ export class SalesService {
       where: { tenantId },
       include: {
         sales: {
-          select: { invoiceNumber: true }
-        }
+          select: { invoiceNumber: true },
+        },
       },
-      orderBy: { date: 'desc' }
+      orderBy: { date: 'desc' },
     });
   }
 
@@ -668,12 +673,12 @@ export class SalesService {
         where: { tenantId, payoutId },
         data: {
           payoutId: null,
-          payoutReceivedAt: null
-        }
+          payoutReceivedAt: null,
+        },
       });
       // Delete payout
       return tx.courierPayout.delete({
-        where: { id: payoutId, tenantId }
+        where: { id: payoutId, tenantId },
       });
     });
   }

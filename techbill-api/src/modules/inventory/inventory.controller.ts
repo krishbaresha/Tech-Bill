@@ -174,7 +174,7 @@ export class InventoryController {
     return this.inventoryService.softDeleteProduct(
       id,
       req.user.tenantId,
-      action === 'delete'
+      action === 'delete',
     );
   }
 

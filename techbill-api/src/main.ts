@@ -4,8 +4,8 @@
 // than crashing the Express response with "Do not know how to serialize a
 // BigInt".  Must run before NestFactory.create so the patch is in place for
 // every request handler.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(BigInt.prototype as any).toJSON = function () {
+
+(BigInt.prototype as any).toJSON = function (this: bigint) {
   return this.toString();
 };
 
@@ -99,4 +99,3 @@ async function bootstrap() {
   console.log(`Logs are being written to ${todaysLogFilePath()}`);
 }
 void bootstrap();
-

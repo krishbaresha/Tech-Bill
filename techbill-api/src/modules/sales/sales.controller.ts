@@ -175,8 +175,6 @@ export class SalesController {
     return this.salesService.markDelivered(id, req.user.tenantId);
   }
 
-
-
   @Patch(':id/return')
   @Permissions('pos.online_sell')
   returnOnlineOrder(

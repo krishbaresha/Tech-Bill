@@ -44,8 +44,12 @@ export class RestorePointController {
 
   @Get('download')
   @Permissions('settings.manage')
-  async downloadRestorePoint(@Req() req: RequestWithUser, @Res() res: Response) {
-    const { buffer, fileName } = await this.restorePointService.createRestorePoint(req.user.tenantId);
+  async downloadRestorePoint(
+    @Req() req: RequestWithUser,
+    @Res() res: Response,
+  ) {
+    const { buffer, fileName } =
+      await this.restorePointService.createRestorePoint(req.user.tenantId);
 
     res.set({
       'Content-Type': 'application/octet-stream',
@@ -61,7 +65,9 @@ export class RestorePointController {
   @UseInterceptors(FileInterceptor('file'))
   async inspectRestorePoint(@UploadedFile() file: CustomUploadedFile) {
     if (!file || !file.buffer) {
-      throw new BadRequestException('Please upload a valid .techbill restore point file.');
+      throw new BadRequestException(
+        'Please upload a valid .techbill restore point file.',
+      );
     }
     return this.restorePointService.inspectRestorePoint(file.buffer);
   }
@@ -69,11 +75,19 @@ export class RestorePointController {
   @Post('apply')
   @Permissions('settings.manage')
   @UseInterceptors(FileInterceptor('file'))
-  async applyRestorePoint(@Req() req: RequestWithUser, @UploadedFile() file: CustomUploadedFile) {
+  async applyRestorePoint(
+    @Req() req: RequestWithUser,
+    @UploadedFile() file: CustomUploadedFile,
+  ) {
     if (!file || !file.buffer) {
-      throw new BadRequestException('Please upload a valid .techbill restore point file.');
+      throw new BadRequestException(
+        'Please upload a valid .techbill restore point file.',
+      );
     }
-    return this.restorePointService.applyRestorePoint(req.user.tenantId, file.buffer);
+    return this.restorePointService.applyRestorePoint(
+      req.user.tenantId,
+      file.buffer,
+    );
   }
 
   @Post('reset')
@@ -84,11 +98,17 @@ export class RestorePointController {
 
   @Post('email')
   @Permissions('settings.manage')
-  async sendBackupEmail(@Req() req: RequestWithUser, @Body('email') email?: string) {
+  async sendBackupEmail(
+    @Req() req: RequestWithUser,
+    @Body('email') email?: string,
+  ) {
     const recipientEmail = email || req.user.email;
     if (!recipientEmail) {
       throw new BadRequestException('Recipient email address is required.');
     }
-    return this.restorePointService.sendRestorePointToEmail(req.user.tenantId, recipientEmail);
+    return this.restorePointService.sendRestorePointToEmail(
+      req.user.tenantId,
+      recipientEmail,
+    );
   }
 }
