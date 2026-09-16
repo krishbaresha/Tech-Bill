@@ -10,6 +10,7 @@ import { useCan } from '../../lib/permissions';
 import { useLicenseStore } from '../../store/license.store';
 import { useDesktopLicenseStore } from '../../store/desktopLicense.store';
 import { isTauriApp } from '../../lib/platform';
+import { useAuthStore } from '../../store/auth.store';
 import type { Sale, ShopSettings } from '../../types';
 
 const schema = z.object({
@@ -24,6 +25,7 @@ const schema = z.object({
   additionalCharges: z.coerce.number().min(0).default(0),
   description: z.string().optional(),
   notes: z.string().optional(),
+  createdAt: z.string().optional(),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -38,6 +40,8 @@ export default function PaymentForm({ onSaleComplete, shopSettings }: { onSaleCo
   const canSellOnline = useCan('pos.online_sell') && shopSettings?.tenant?.onlineSellingEnabled;
   const { license } = useLicenseStore();
   const isDesktopLicenseReadOnly = useDesktopLicenseStore((s) => s.isReadOnly());
+  const user = useAuthStore((s) => s.user);
+  const isOwner = user?.role === 'owner';
 
   // Check if subscription has expired
   const isSubscriptionExpired = license?.isExpired ?? false;
@@ -47,9 +51,12 @@ export default function PaymentForm({ onSaleComplete, shopSettings }: { onSaleCo
   const isDesktopExpired = isTauriApp() && isDesktopLicenseReadOnly;
   const salesBlocked = isSubscriptionExpired || isDesktopExpired;
 
+  const now = new Date();
+  const defaultDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+
   const { register, handleSubmit, watch, setValue, getValues, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { paymentMethod: 'cash', discountAmount: 0, additionalCharges: 0 },
+    defaultValues: { paymentMethod: 'cash', discountAmount: 0, additionalCharges: 0, createdAt: defaultDate },
   });
   const [activeAddOns, setActiveAddOns] = useState<string[]>([]);
 
@@ -114,6 +121,7 @@ export default function PaymentForm({ onSaleComplete, shopSettings }: { onSaleCo
       ...(isOnlineOrder && data.deliveryCharge > 0 && { deliveryCharge: data.deliveryCharge }),
       ...(isOnlineOrder && data.advanceAmount > 0 && { advanceAmount: data.advanceAmount }),
       ...(isOnlineOrder && { codAmount }),
+      ...(data.createdAt && { createdAt: new Date(data.createdAt).toISOString() }),
       idempotencyKey: generateIdempotencyKey(),
     };
     try {
@@ -230,6 +238,13 @@ export default function PaymentForm({ onSaleComplete, shopSettings }: { onSaleCo
           <label className={labelCls}>Description (Optional)</label>
           <input {...register('description')} type="text" className={inputCls} placeholder="e.g. Service fee, extra wrapping" />
         </div>
+
+        {isOwner && (
+          <div>
+            <label className={labelCls}>Invoice Date & Time</label>
+            <input {...register('createdAt')} type="datetime-local" className={inputCls} />
+          </div>
+        )}
 
         <div className="border-t border-white/5 pt-3 space-y-1.5">
           <div className="flex justify-between text-xs text-stitch-on-surface-variant">

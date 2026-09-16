@@ -91,4 +91,8 @@ export class CreateSaleDto {
   @IsUUID()
   @IsOptional()
   sessionId?: string;
+
+  @IsString()
+  @IsOptional()
+  createdAt?: string;
 }

@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ConfigService } from '@nestjs/config';
@@ -47,6 +48,14 @@ export class SalesService {
         user?.role === 'owner' ||
         user?.role === 'platform_admin' ||
         user?.role === 'inventory_manager';
+
+      let saleDate = new Date();
+      if (dto.createdAt) {
+        if (user?.role !== 'owner') {
+          throw new ForbiddenException('Only owners can create sales on past dates');
+        }
+        saleDate = new Date(dto.createdAt);
+      }
 
       const serialCounts = dto.serials.reduce(
         (acc, serial) => {
@@ -175,6 +184,7 @@ export class SalesService {
               description: dto.description,
               advanceAmount: dto.advanceAmount ?? 0,
               codAmount: dto.codAmount ?? 0,
+              createdAt: saleDate,
               items: {
                 create: saleItemsData,
               },
