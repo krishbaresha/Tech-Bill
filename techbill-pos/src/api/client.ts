@@ -2,8 +2,23 @@ import axios from 'axios';
 import { useAuthStore } from '../store/auth.store';
 import { getRootDomain, isMainDomain } from '../lib/domain';
 
+export function getApiUrl(): string {
+  const envUrl = import.meta.env.VITE_API_URL as string | undefined;
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.localhost');
+    if (!isLocalhost) {
+      if (envUrl && envUrl.startsWith('https://')) {
+        return envUrl;
+      }
+      return 'https://api.techbill.app';
+    }
+  }
+  return envUrl || 'http://localhost:3000';
+}
+
 export const api = axios.create({
-  baseURL: (import.meta.env.VITE_API_URL as string | undefined) ?? 'https://electrotrack-saas.onrender.com',
+  baseURL: getApiUrl(),
   withCredentials: true,
 });
 

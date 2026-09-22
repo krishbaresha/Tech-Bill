@@ -83,7 +83,8 @@ async function bootstrap() {
           }
         }) ||
         origin.endsWith('.techbill.app') ||
-        origin === 'https://techbill.app';
+        origin === 'https://techbill.app' ||
+        origin.endsWith('.vercel.app');
       if (isAllowed) {
         callback(null, true);
       } else {
