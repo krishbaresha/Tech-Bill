@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Plus, RefreshCw, X, ShieldAlert, CheckCircle, Ban, Edit3, Building2, Trash2, RotateCcw, CreditCard, Calendar, Key, Smartphone, Monitor } from 'lucide-react';
 import { api } from '../../api/client';
+import { useAuthStore } from '../../store/auth.store';
 import type { Tenant } from '../../types';
 import gsap from 'gsap';
 
@@ -83,7 +84,10 @@ export default function TenantsPage() {
       .finally(() => setLoading(false));
   };
 
+  const accessToken = useAuthStore((s) => s.accessToken);
+
   useEffect(() => {
+    if (!accessToken) return;
     load();
     api.get<SystemPlan[]>('/plans')
       .then((r) => setSystemPlans(r.data))
@@ -91,7 +95,7 @@ export default function TenantsPage() {
     api.get<SystemFeature[]>('/features')
       .then((r) => setSystemFeatures(r.data))
       .catch(() => console.error('Failed to load system features'));
-  }, []);
+  }, [accessToken]);
 
   const startEdit = async (tenant: Tenant) => {
     setEditingTenant(tenant);
