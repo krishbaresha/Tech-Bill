@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { api } from '../api/client';
+import { useAuthStore } from './auth.store';
 
 export interface NavigationItem {
   key: string;
@@ -33,12 +34,14 @@ export const useLicenseStore = create<LicenseState>((set, get) => ({
   isLoading: false,
   error: null,
   fetchLicense: async () => {
+    const token = useAuthStore.getState().accessToken;
+    if (!token) return;
     set({ isLoading: true, error: null });
     try {
       const res = await api.get<ResolvedLicense>('/tenant/me/license');
       set({ license: res.data, isLoading: false });
     } catch (err: any) {
-      set({ error: err.message || 'Failed to fetch license', isLoading: false });
+      set({ error: err.response?.data?.message || err.message || 'Failed to fetch license', isLoading: false });
     }
   },
   hasFeatureAccess: (featureKey, requiredAccess = 'READ') => {

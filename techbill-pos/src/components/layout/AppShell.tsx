@@ -57,13 +57,14 @@ export default function AppShell() {
   const isPlatformAdmin = user?.role === 'platform_admin';
 
   const { license, fetchLicense } = useLicenseStore();
+  const accessToken = useAuthStore((s) => s.accessToken);
 
   useEffect(() => {
-    // Only fetch for non-platform admin users, or if user is loaded
-    if (user) {
+    // Only fetch when user and accessToken are both ready
+    if (user && accessToken) {
       void fetchLicense();
     }
-  }, [user, fetchLicense]);
+  }, [user, accessToken, fetchLicense]);
 
   useEffect(() => {
     const handleUpdate = (payload: { tenantId: string }) => {

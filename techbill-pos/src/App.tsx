@@ -148,16 +148,32 @@ function RequireFeature({
   requiredAccess?: 'NONE' | 'READ' | 'WRITE' | 'FULL';
 }) {
   const { user } = useAuthStore();
-  const { hasFeatureAccess, isLoading, license } = useLicenseStore();
+  const { hasFeatureAccess, isLoading, error, license, fetchLicense } = useLicenseStore();
 
   if (user?.role === 'platform_admin') {
     return children;
   }
 
-  if (isLoading || !license) {
+  if (isLoading || (!license && !error)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-stitch-surface">
         <span className="w-8 h-8 border-2 border-stitch-primary/30 border-t-stitch-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error && !license) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-stitch-surface text-stitch-on-surface p-4">
+        <div className="glass-panel p-8 rounded-2xl max-w-md w-full text-center border border-white/10 shadow-2xl space-y-4">
+          <p className="text-sm text-stitch-error font-medium">{error}</p>
+          <button
+            onClick={() => void fetchLicense()}
+            className="w-full py-2.5 px-4 rounded-xl bg-stitch-primary hover:bg-stitch-primary/90 text-stitch-on-primary font-semibold text-sm transition-all"
+          >
+            Retry Loading Session
+          </button>
+        </div>
       </div>
     );
   }
