@@ -57,7 +57,7 @@ export default function ReturnPolicy() {
           </p>
           <div className="mt-4 p-4 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 font-mono text-xs text-slate-600 dark:text-zinc-400">
             <p><strong>Office Address:</strong> Sakhi Wahab Tower 1st Floor,Shab Cinema Sakhi Pir Road, Hyderabad, Pakistan</p>
-            <p className="mt-1"><strong>Helpline:</strong> +92 314 2291356</p>
+            <p className="mt-1"><strong>Helpline:</strong> +92 322 3561066 | +92 314 2291356</p>
             <p className="mt-1"><strong>Email:</strong> info@techbill.app</p>
           </div>
         </section>

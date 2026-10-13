@@ -322,14 +322,21 @@ export default function PublicLayout() {
                     <span className="font-bold text-slate-700 dark:text-zinc-400">Head Office:</span> Sakhi Wahab Tower 1st Floor,Shab Cinema Sakhi Pir Road, Hyderabad, Pakistan
                   </p>
                   <p>
-                    <span className="font-bold text-slate-700 dark:text-zinc-400">Helpline &amp; Contact:</span> +923142291356 | info@techbill.app
+                    <span className="font-bold text-slate-700 dark:text-zinc-400">Helpline &amp; Contact:</span> +923223561066 |  +923142291356 | info@techbill.app
                   </p>
                 </div>
 
                 <div className="text-center lg:text-right self-center">
                   <p>
                     &copy; {new Date().getFullYear()} TechBill SaaS. Built with enterprise grade standards by{' '}
-                    <span className="text-slate-700 dark:text-white/60 font-semibold">TalhaRana</span> &amp;{' '}
+                    <a
+                      href="https://talharana.me/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-slate-700 dark:text-white/60 font-semibold hover:text-indigo-600 dark:hover:text-white hover:underline transition-colors"
+                    >
+                      TalhaRana
+                    </a> &amp;{' '}
                     <span className="text-slate-700 dark:text-white/60 font-semibold">KrishBaresha</span>.
                   </p>
                 </div>

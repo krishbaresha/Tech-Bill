@@ -1081,22 +1081,53 @@ export default function LandingPage() {
             {/* TalhaRana */}
             <div className="group relative rounded-2xl border border-zinc-200 dark:border-white/10 bg-white dark:bg-zinc-900/50 backdrop-blur-xl p-8 transition-all hover:shadow-md dark:hover:shadow-none duration-300 overflow-hidden text-left shadow-sm">
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 dark:from-[#c0c1ff] dark:to-indigo-500 flex items-center justify-center text-white dark:text-[#1000a9] text-2xl font-extrabold shadow-lg shrink-0 relative">
+                <a
+                  href="https://talharana.me/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Talha Rana Portfolio"
+                  className="w-20 h-20 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 dark:from-[#c0c1ff] dark:to-indigo-500 flex items-center justify-center text-white dark:text-[#1000a9] text-2xl font-extrabold shadow-lg shrink-0 relative transition-transform hover:scale-105"
+                >
                   <div className="absolute inset-[-4px] rounded-full bg-blue-500/20 dark:bg-[#c0c1ff]/20 blur-md -z-10 group-hover:scale-110 transition-transform" />
                   TR
-                </div>
+                </a>
                 <div className="text-center sm:text-left">
-                  <h3 className="text-xl font-bold text-zinc-900 dark:text-white transition-colors duration-300">TalhaRana</h3>
+                  <h3 className="text-xl font-bold text-zinc-900 dark:text-white transition-colors duration-300">
+                    <a
+                      href="https://talharana.me/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-blue-600 dark:hover:text-[#c0c1ff] transition-colors"
+                    >
+                      TalhaRana
+                    </a>
+                  </h3>
                   <p className="text-sm font-semibold text-blue-600 dark:text-indigo-400 mt-0.5 transition-colors duration-300">Co-Founder & Chief System Architect</p>
                   <div className="flex items-center justify-center sm:justify-start gap-2 mt-3">
-                    <a href="https://www.linkedin.com/in/talharana32/" target="_blank" rel="noreferrer" className="text-zinc-400 hover:text-zinc-900 dark:hover:text-white p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                    <a
+                      href="https://talharana.me/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Portfolio / Website"
+                      className="text-zinc-400 hover:text-zinc-900 dark:hover:text-white p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                    >
+                      <Globe size={16} />
+                    </a>
+                    <a href="https://www.linkedin.com/in/talharana32/" target="_blank" rel="noreferrer" title="LinkedIn" className="text-zinc-400 hover:text-zinc-900 dark:hover:text-white p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
                       <Linkedin size={16} />
                     </a>
                   </div>
                 </div>
               </div>
               <p className="mt-6 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed transition-colors duration-300">
-                Talha handles backend scaling systems and database architecture. He leads the design of the microservices telemetry layer, multitenancy database isolation, and offline cache queuing synchronization routines.
+                <a
+                  href="https://talharana.me/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-zinc-900 dark:text-white hover:text-blue-600 dark:hover:text-[#c0c1ff] underline underline-offset-2 decoration-zinc-400/40"
+                >
+                  Talha
+                </a> handles backend scaling systems and database architecture. He leads the design of the microservices telemetry layer, multitenancy database isolation, and offline cache queuing synchronization routines.
               </p>
               <div className="flex flex-wrap gap-2 mt-6">
                 {['Distributed APIs', 'DB Optimization', 'Tenant Security', 'SaaS Scaling'].map((tag, i) => (
@@ -1118,14 +1149,14 @@ export default function LandingPage() {
                   <h3 className="text-xl font-bold text-zinc-900 dark:text-white transition-colors duration-300">KrishBaresha</h3>
                   <p className="text-sm font-semibold text-blue-600 dark:text-indigo-400 mt-0.5 transition-colors duration-300">Chief Frontend Architect / UI/UX Visionary</p>
                   <div className="flex items-center justify-center sm:justify-start gap-2 mt-3">
-                    <a href="https://www.linkedin.com/in/krish-baresha/" target="_blank" rel="noreferrer" className="text-zinc-400 hover:text-zinc-900 dark:hover:text-white p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                    <a href="https://www.linkedin.com/in/krish-baresha/" target="_blank" rel="noreferrer" title="LinkedIn" className="text-zinc-400 hover:text-zinc-900 dark:hover:text-white p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
                       <Linkedin size={16} />
                     </a>
                   </div>
                 </div>
               </div>
               <p className="mt-6 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed transition-colors duration-300">
-                Krish co-architected the entire system topology alongside Talha and led the complete UI/UX engineering lifecycle. He engineered the lightning-fast Point of Sale checkout interface, client-side database cache sync engines, and responsive layout foundations.
+                Krish co-architected the entire system topology alongside <a href="https://talharana.me/" target="_blank" rel="noopener noreferrer" className="font-medium text-zinc-900 dark:text-white hover:text-blue-600 dark:hover:text-[#c0c1ff] underline underline-offset-2 decoration-zinc-400/40">Talha</a> and led the complete UI/UX engineering lifecycle. He engineered the lightning-fast Point of Sale checkout interface, client-side database cache sync engines, and responsive layout foundations.
               </p>
 
               <div className="flex flex-wrap gap-2 mt-6">
